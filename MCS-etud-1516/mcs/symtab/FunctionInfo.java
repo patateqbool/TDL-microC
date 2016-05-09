@@ -47,14 +47,6 @@ class FunctionInfo implements SymbolInfo {
   public List<Type> parameters() {
     return this.parameters;
   }
-
-  /**
-   * Add a parameter to the list
-   * @param t type of the parameter to add
-   */
-  public void addParam(Type t) {
-    this.parameters.add(t);
-  }
 }
 
 
