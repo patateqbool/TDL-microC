@@ -6,9 +6,7 @@
  */
 package mcs.symtab;
 
-import java.utils.Map;
-
-interface SymbolTable implements Map<String, SymbolInfo> {
+interface SymbolTable {
   /**
    * Globally look up into the table.
    * @param name name to look up

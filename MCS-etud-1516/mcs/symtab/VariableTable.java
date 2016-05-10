@@ -6,10 +6,12 @@
  */
 package mcs.symtab;
 
+import java.utils.Map;
 import java.utils.HashMap;
 
-class VariableTable implements SymbolTable extends HashMap<String, SymbolInfo> {
+class VariableTable implements SymbolTable {
   // Attributes
+	private Map<String, SymbolInfo> content;
   private SymbolTable parent; // Parent of this table
 
   /**
@@ -18,15 +20,16 @@ class VariableTable implements SymbolTable extends HashMap<String, SymbolInfo> {
    */
   public VariableTable(SymbolTable p = null) {
     this.parent = p;
+		this.content = new HashMap<String, SymbolInfo>();
   }
 
   /**
    * Look up into the table
    */
   public SymbolInfo lookup(String name, boolean local = false) {
-    for (String key : this.keySet()) {
+    for (String key : this.content.keySet()) {
       if (key.equals(name))
-        return this.get(name);
+        return this.content.get(name);
     }
 
     if (!local)
@@ -36,9 +39,9 @@ class VariableTable implements SymbolTable extends HashMap<String, SymbolInfo> {
   }
 
   public boolean insert(String name, SymbolInfo info) {
-    if (this.containsKey(name))
+    if (this.content.containsKey(name))
       return false;
-    this.put(name, info);
+    this.content.put(name, info);
     return true;
   }
 

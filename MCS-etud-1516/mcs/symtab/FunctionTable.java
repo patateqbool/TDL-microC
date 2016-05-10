@@ -6,20 +6,25 @@
  */
 package mcs.symtab;
 
+import java.utils.Map;
 import java.utils.HashMap;
 
-class FunctionTable implements SymbolTable extends HashMap<String, SymbolInfo> 
+class FunctionTable implements SymbolTable 
 {
+	// Attributes
+	private Map<String, SymbolInfo> content;
+
   // Ther is no parent ("global" and "local" function does not have any sens for now
 
   public FunctionTable() {
+		this.content = new HashMap<String, SymbolInfo>();
   }
 
   public SymbolInfo lookup(String name, boolean local = false) {
     // local is unused
-    for (String key : this.keySet()) {
+    for (String key : this.content.keySet()) {
       if (key.equals(name))
-        return this.get(name);
+        return this.content.get(name);
     }
 
     return new SymbolInfoNotFound();
@@ -29,10 +34,10 @@ class FunctionTable implements SymbolTable extends HashMap<String, SymbolInfo>
     /*
      * TODO: problem for redefining functions with different signature
      */
-    if (this.containsKey(name))
+    if (this.content.containsKey(name))
       return false;
     
-    this.put(name, info);
+    this.content.put(name, info);
     return true;
   }
 
