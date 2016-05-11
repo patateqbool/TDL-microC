@@ -14,7 +14,7 @@ public interface IMachine {
 	 * 
 	 * @return
 	 */
-	String getSuffixe();
+	String getSuffix();
 
 	/**
 	 * Ecrit le code dans un fichier à partir du nom du fichier source et du
@@ -26,5 +26,12 @@ public interface IMachine {
 	 */
 
 	void writeCode(String fileName, String code) throws MCSException;
+
+	/**********************************************************
+	 * Generation function
+	 **********************************************************/
+	
+	String generateLoadVariabel(VariableInfo info);
+	String generateLoadInteger(int value);
 
 }

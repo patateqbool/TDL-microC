@@ -28,7 +28,7 @@ public abstract class AbstractMachine implements IMachine {
 			// pre verifiee au lancement
 			int pt = fname.lastIndexOf('.');
 			String name = fname.substring(0, pt);
-			String asmName = name + "." + getSuffixe();
+			String asmName = name + "." + getSuffix();
 			System.err.println("Ecriture du code dans " + asmName);
 			PrintWriter pw = new PrintWriter(new FileOutputStream(asmName));
 			pw.print("; Generated code for " + fname
