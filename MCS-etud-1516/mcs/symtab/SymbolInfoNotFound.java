@@ -8,7 +8,7 @@
  */
 package mcs.symtab;
 
-class SymbolInfoNotFound implements SymbolInfo {
+public class SymbolInfoNotFound implements SymbolInfo {
   public SymbolInfoNotFound() {}
 
   public String toString() {

@@ -9,7 +9,7 @@ package mcs.symtab;
 import java.utils.Map;
 import java.utils.HashMap;
 
-class FunctionTable implements SymbolTable 
+public class FunctionTable implements SymbolTable 
 {
 	// Attributes
 	private Map<String, SymbolInfo> content;

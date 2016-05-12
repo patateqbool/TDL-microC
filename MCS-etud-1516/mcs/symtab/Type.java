@@ -1,4 +1,5 @@
 /**
+ *
  * Type -- interface that represents a type.
  * This is used for variables, parameters, functions, etc.
  *
@@ -7,12 +8,14 @@
  */
 package mcs.symtab;
 
-interface Type {
-  /**
+public abstract class Type {
+
+    private int size;
+    /**
    * Convert a type into string for easy printing
    * @return the string
    */
-  String toString();
+  public String toString();
 
   /**
    * Detect if this type is compatible with another.

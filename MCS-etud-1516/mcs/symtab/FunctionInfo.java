@@ -9,7 +9,7 @@ package mcs.symtab;
 import java.utils.List;
 import java.utils.ArrayList;
 
-class FunctionInfo implements SymbolInfo {
+public class FunctionInfo implements SymbolInfo {
   // Attributes
   private Type retType; // Return type
   private List<Type> parameters; // Parameters

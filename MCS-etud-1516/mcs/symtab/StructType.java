@@ -1,21 +1,20 @@
 /**
- * PointeurType -- class representing the pointeur type
+ * StructType -- class representing the Struct type
  * 
  * @author J. Guilbon
  * @version 0.1
  */
 package mcs.symtab;
 
-public class PointerType implements Type {
+public class StructType implements Type {
 
 	// Attributes
-	private Type type;
+	private Champs champs;
 
 	/**
 	 * Constructor
 	 */
-	public PointeurType(Type t) {
-            type = t;
+	public PointeurType() {
 	}
 
 	/**
@@ -29,10 +28,12 @@ public class PointerType implements Type {
 	 * isCompatible()
 	 */
 	public boolean isCompatible(Type other) {
-		return (other instanceof PointerType) && other.getType.isCompatible(this.type);
+		return (other instanceof PointerType) and other.type.isCompatible(this.type);
 	}
-
+	
 	public Type getType() {
 		return this.type;
 	}
 }
+	
+

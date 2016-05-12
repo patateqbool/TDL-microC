@@ -6,7 +6,7 @@
  */
 package mcs.symtab;
 
-class VariableInfo implements SymbolInfo {
+public class VariableInfo implements SymbolInfo {
   // Attributes
   private Type type; // Type of the variable
   private int displacement; // Displacement of the variable in the memory
