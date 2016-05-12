@@ -6,10 +6,13 @@
  */
 package mcs.symtab;
 
+import mcs.gc.Register;
+
 class VariableInfo implements SymbolInfo {
   // Attributes
   private Type type; // Type of the variable
   private int displacement; // Displacement of the variable in the memory
+	private Register reg;
 
   /**
    * Constructor.
@@ -36,6 +39,31 @@ class VariableInfo implements SymbolInfo {
   public int displacement() {
     return this.displacement;
   }
+
+	/**
+	 * Assign a register to the variable
+	 * @param reg register to assign
+	 */
+	public void assignRegister(Register reg) {
+		this.reg = reg;
+		this.reg.setStatus(Register.Status.Loaded);
+	}
+
+	/**
+	 * Free the register, making it unused
+	 */
+	public void freeRegister() {
+		this.reg.setStatus(Register.Status.Empty);
+		this.reg = null;
+	}
+
+	/**
+	 * Get assigned register of the variable
+	 * @return the register
+	 */
+	public Register register() {
+		return this.reg;
+	}
 
   /**
    * Convert the information into string.
