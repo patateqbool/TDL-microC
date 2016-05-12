@@ -6,8 +6,8 @@
  */
 package mcs.symtab;
 
-import java.utils.Map;
-import java.utils.HashMap;
+import java.util.Map;
+import java.util.HashMap;
 
 public class VariableTable implements SymbolTable {
   // Attributes
@@ -18,15 +18,23 @@ public class VariableTable implements SymbolTable {
    * Constructor
    * Create a table from a parent table that could be null
    */
-  public VariableTable(SymbolTable p = null) {
+  public VariableTable(SymbolTable p) {
     this.parent = p;
 		this.content = new HashMap<String, SymbolInfo>();
   }
 
+	/**
+	 * Constructor
+	 * Create a table from a null parent table
+	 */
+	public VariableTable() {
+		this(null);
+	}
+
   /**
    * Look up into the table
    */
-  public SymbolInfo lookup(String name, boolean local = false) {
+  public SymbolInfo lookup(String name, boolean local) {
     for (String key : this.content.keySet()) {
       if (key.equals(name))
         return this.content.get(name);

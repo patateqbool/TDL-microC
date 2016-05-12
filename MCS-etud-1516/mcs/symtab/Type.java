@@ -10,12 +10,29 @@ package mcs.symtab;
 
 public abstract class Type {
 
-    private int size;
-    /**
+	// The size of this type
+  private int size;
+
+	/**
+	 * Constructor
+	 */
+	public Type(int s) {
+		this.size = s;
+	}
+
+	/**
+	 * Get the size of the type
+	 * @return the size of the type
+	 */
+	public int size() {
+		return this.size;
+	}
+  
+	/**
    * Convert a type into string for easy printing
    * @return the string
    */
-  public String toString();
+  abstract public String toString();
 
   /**
    * Detect if this type is compatible with another.
@@ -23,7 +40,7 @@ public abstract class Type {
    * @param other the other type to be compared with
    * @return true if other is compatible with this.
    */
-  boolean isCompatible(Type other);
+  abstract boolean isCompatible(Type other);
 }
 
 

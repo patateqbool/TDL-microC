@@ -6,7 +6,7 @@
  */
 package mcs.symtab;
 
-public class PointerType implements Type {
+public class PointerType extends Type {
 
 	// Attributes
 	private Type type;
@@ -14,22 +14,26 @@ public class PointerType implements Type {
 	/**
 	 * Constructor
 	 */
-	public PointeurType(Type t) {
-            type = t;
+	public PointerType(Type t) {
+		super(4);
+    type = t;
 	}
 
 	/**
 	 * toString();
 	 */
 	public String toString() {
-		return "PTR";
+		return this.type + "*";
 	}
 
 	/**
 	 * isCompatible()
 	 */
-	public boolean isCompatible(Type other) {
-		return (other instanceof PointerType) && other.getType.isCompatible(this.type);
+	public boolean isCompatible(Type other) {
+		if (other instanceof PointerType)
+			return (((PointerType)other).getType().isCompatible(this.type));
+		else
+			return false;
 	}
 
 	public Type getType() {

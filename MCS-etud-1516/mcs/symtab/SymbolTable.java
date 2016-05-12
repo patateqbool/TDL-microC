@@ -13,7 +13,7 @@ interface SymbolTable {
    * @param local whether or not to search locally or globally
    * @return the symbol info, or the special variable SymbolInfoNotFound
    */
-  public SymbolInfo lookup(String name, boolean local = false);
+  public SymbolInfo lookup(String name, boolean local);
 
   /**
    * Insert a symbol into the table

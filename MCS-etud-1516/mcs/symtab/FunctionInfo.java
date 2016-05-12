@@ -6,8 +6,8 @@
  */
 package mcs.symtab;
 
-import java.utils.List;
-import java.utils.ArrayList;
+import java.util.List;
+import java.util.ArrayList;
 
 public class FunctionInfo implements SymbolInfo {
   // Attributes
@@ -29,7 +29,7 @@ public class FunctionInfo implements SymbolInfo {
    * @param ret return type of the function
    */
   public FunctionInfo(Type ret) {
-    this(ret, List<Type>());
+    this(ret, new ArrayList<Type>());
   }
 
   /**

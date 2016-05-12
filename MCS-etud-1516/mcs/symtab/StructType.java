@@ -6,33 +6,34 @@
  */
 package mcs.symtab;
 
-public class StructType implements Type {
+import java.util.Map;
+import java.util.HashMap;
+
+public class StructType extends Type {
 
 	// Attributes
-	private Champs champs;
+	private StructFields fields;
 
 	/**
 	 * Constructor
 	 */
-	public PointeurType() {
+	public StructType(StructFields f) {
+		super(f.sumSizes());
+		this.fields = f;
 	}
 
 	/**
 	 * toString();
 	 */
 	public String toString() {
-		return "PTR";
+		return "struct { " + this.fields + " }";
 	}
 
 	/**
 	 * isCompatible()
 	 */
-	public boolean isCompatible(Type other) {
-		return (other instanceof PointerType) and other.type.isCompatible(this.type);
-	}
-	
-	public Type getType() {
-		return this.type;
+	public boolean isCompatible(Type other) {
+		return false;
 	}
 }
 	

@@ -6,8 +6,8 @@
  */
 package mcs.symtab;
 
-import java.utils.Map;
-import java.utils.HashMap;
+import java.util.Map;
+import java.util.HashMap;
 
 public class FunctionTable implements SymbolTable 
 {
@@ -20,7 +20,7 @@ public class FunctionTable implements SymbolTable
 		this.content = new HashMap<String, SymbolInfo>();
   }
 
-  public SymbolInfo lookup(String name, boolean local = false) {
+  public SymbolInfo lookup(String name, boolean local) {
     // local is unused
     for (String key : this.content.keySet()) {
       if (key.equals(name))

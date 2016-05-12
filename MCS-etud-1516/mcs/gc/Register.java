@@ -6,7 +6,7 @@ package mcs.gc;
  * @author marcel
  */
 public class Register {
-	enum Status {
+	public enum Status {
 		Empty, Loaded, Used
 	};
 
@@ -22,7 +22,17 @@ public class Register {
 		super();
 		this.name = name;
 		this.num = num;
-		this.status = Empty;
+		this.status = Status.Empty;
+	}
+
+	public Register() {
+		this("", -1);
+	}
+
+	public void copy(Register other) {
+		this.name = other.name;
+		this.num = other.num;
+		this.status = other.status;
 	}
 
 	public String getName() {
@@ -51,3 +61,5 @@ public class Register {
 	}
 
 }
+
+

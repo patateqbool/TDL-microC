@@ -1,3 +1,5 @@
+package mcs.tests;
+
 import mcs.gc.*;
 import mcs.symtab.*;
 

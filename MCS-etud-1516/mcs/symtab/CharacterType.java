@@ -6,11 +6,12 @@
  */
 package mcs.symtab;
 
-public class CharacterType implements Type {
+public class CharacterType extends Type {
 	/**
 	 * Constructor
 	 */
 	public CharacterType() {
+		super(1); // 1 byte
 	}
 
 	/**
@@ -23,7 +24,7 @@ public class CharacterType implements Type {
 	/**
 	 * isCompatible()
 	 */
-	public boolean isCompatible(Type other) {$
+	public boolean isCompatible(Type other) {
 		return (other instanceof IntegerType);
 	}
 }

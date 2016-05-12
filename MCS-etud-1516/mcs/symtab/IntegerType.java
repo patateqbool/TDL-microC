@@ -6,11 +6,13 @@
  */
 package mcs.symtab;
 
-public class IntegerType implements Type {
+public class IntegerType extends Type {
 	/**
 	 * Constructor
 	 */
-	public IntegerType() {}
+	public IntegerType() {
+		super(4); // 4 bytes
+	}
 
 	/**
 	 * toString()

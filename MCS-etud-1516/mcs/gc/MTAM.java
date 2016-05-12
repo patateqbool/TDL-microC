@@ -6,10 +6,10 @@ package mcs.gc;
  * @author marcel
  *
  */
-public class MTAM extends AbstractMachine {
+public abstract class MTAM extends AbstractMachine {
 
 	@Override
-	public String getSuffixe() {
+	public String getSuffix() {
 		return "tam";
 	}
 
