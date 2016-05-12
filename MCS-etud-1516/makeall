@@ -1,0 +1,7 @@
+#!/bin/bash
+
+javac mcs/gc/*.java
+javac mcs/symtab/*.java
+javac mcs/tests/*.java
+
+
