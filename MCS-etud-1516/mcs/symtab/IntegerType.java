@@ -6,7 +6,7 @@
  */
 package mcs.symtab;
 
-class IntegerType implements Type {
+public class IntegerType implements Type {
 	/**
 	 * Constructor
 	 */

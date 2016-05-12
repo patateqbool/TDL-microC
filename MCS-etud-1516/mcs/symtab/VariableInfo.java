@@ -6,9 +6,13 @@
  */
 package mcs.symtab;
 
+<<<<<<< HEAD
 import mcs.gc.Register;
 
 class VariableInfo implements SymbolInfo {
+=======
+public class VariableInfo implements SymbolInfo {
+>>>>>>> 1c0e9f99f1762dc54d38bd1de7bacd4cd2d2b633
   // Attributes
   private Type type; // Type of the variable
   private int displacement; // Displacement of the variable in the memory

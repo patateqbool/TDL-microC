@@ -9,7 +9,7 @@ package mcs.symtab;
 import java.utils.Map;
 import java.utils.HashMap;
 
-class VariableTable implements SymbolTable {
+public class VariableTable implements SymbolTable {
   // Attributes
 	private Map<String, SymbolInfo> content;
   private SymbolTable parent; // Parent of this table
