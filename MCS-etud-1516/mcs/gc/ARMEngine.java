@@ -6,24 +6,36 @@
  */
 package mcs.gc;
 
-import java.utils.List;
-import java.utils.ArrayList;
+import java.util.List;
+import java.util.ArrayList;
+import mcs.symtab.VariableInfo;
+import mcs.compiler.MCSException;
 
 public class ARMEngine extends AbstractMachine {
-	static private final int NUM_REGISTER = 13;
+	/**
+	 * Number of registers.
+	 * ARM has in fact 15 "multi-purpose registers", but three of them is used for stack, link and program counter.
+	 * Plus, we decided to use R12 as the heap top, as it is not implemented directly into ARM
+	 */
+	static private final int NUM_REGISTER = 12;
+	static private final String Prefix = "\t\t";
 	private List<Register> registers;
-	private Register sp, lr, pc;
+	private Register sp, lr, pc, ht;
+	private int heapbase = 0;
 
 	/**
 	 * Constructor
 	 */
 	public ARMEngine() {
+		registers = new ArrayList<Register>();
+
 		for (int i = 0; i < NUM_REGISTER; i++) {
 			registers.add(new Register("R", i));
 		}
 		sp = new Register("SP", -1);
 		lr = new Register("LR", -1);
 		pc = new Register("PC", -1);
+		ht = new Register("R", 12);
 	}
 
 	/**
@@ -33,12 +45,185 @@ public class ARMEngine extends AbstractMachine {
 		return ".asm";
 	}
 
+	public void writeCode(String fileName, String code) throws MCSException {
+		String preliminary = 
+			"HT	EQU R12\n" +
+			"HB EQU " + heapbase*4 + "\n" +
+			"\n";
+
+		super.writeCode(fileName, preliminary + code);
+	}
+
+	/**********************************************************
+	 * Generation function
+	 **********************************************************/
+
+	/**
+	 * Generate the code for loading a variable into a register, allowing for (e.g.) doing some operations.
+	 * Note: register management is done by the machine.
+	 * @param info info of the variable to load
+	 * @param output register where the value is put, for later referencing
+	 * @return the generated code
+	 */
+	public String generateLoadVariable(VariableInfo info, Register output) {
+		// Retrieve a valid register for putting the result
+		Register reg = getNextUnusedRegister();
+
+		// Generate code
+		String code = ARMEngine.Prefix + "LDR\t" + reg + ", [SP, " + info.displacement() + "]\n";
+
+		// Manage register
+		reg.setStatus(Register.Status.Loaded);
+		output.copy(reg);
+
+		// Modify heap base (added 1 instruction)
+		heapbase++;
+
+		// End
+		return code;
+	}
+
+	/**
+	 * Generate the code for loading a constant itneger into a register.
+	 * Note: register management is done by the machine.
+	 * @param value value of the constant to load
+	 * @param output register where the value is put, for later referencing
+	 * @return the generated code
+	 */
+	public String generateLoadInteger(int value, Register output) {
+		/*
+		 * The main problem is that the MOV instruction (which put a value into a register)
+		 * can only work on halfwords (16-bit data).
+		 * The trick is to use MOV and MOVT; the latter set the 16 MSB of the register to
+		 * the value specified.
+		 * Of course, we does that only if needed.
+		 */
+		// Retrieve a valid register for putting the result
+		Register reg = getNextUnusedRegister();
+
+		// Generate code
+		String code = ARMEngine.Prefix + "MOV\t" + reg + ", #0x" + Integer.toHexString(value & 0x0000FFFF) + "\n";
+
+		if (value > 65535) {
+			// If needed, we must set the top part of the value
+			code = code + ARMEngine.Prefix + "MOVT\t" + reg + ", #0x" + Integer.toHexString(value >> 16) + "\n";
+			heapbase++; // > this generate an additionnal instruction
+		}
+
+		// Manage registers
+		reg.setStatus(Register.Status.Loaded);
+		output.copy(reg);
+
+		// Modify heap base
+		heapbase++;
+
+		// End
+		return code;
+	}
+
+	/// Calculus
+	/**
+	 * Generate an arithmetic binary operation
+	 * @param r1 first register
+	 * @param r2 second register
+	 * @param rout output register
+	 * @return the generated code
+	 */
+	public String generateOperation(Operator op, Register r1, Register r2, Register rout) {
+		// TODO: wrong operation type
+		// The last part of the code never changes : xxx Rx, R<1>, R<2>
+		String code = ", " + r1 + ", " + r2 + "\n";
+
+		// Find the operation code
+		String opcode = "";
+		switch (op) {
+			case ADD:
+				opcode = "ADD";
+				break;
+			case SUB:
+				opcode = "SUB";
+				break;
+			case MUL:
+				opcode = "MUL";
+				break;
+			case DIV:
+				opcode = "SDIV";
+				break;
+		}
+
+		// Source register are no longer used
+		r1.setStatus(Register.Status.Used);
+		r2.setStatus(Register.Status.Used);
+	
+		// Get the next register
+		Register r = getNextUnusedRegister();
+
+		// Generate code
+		code = ARMEngine.Prefix + opcode + "\t" + r + code;
+
+		// Manage register
+		r.setStatus(Register.Status.Loaded);
+		rout.copy(r);
+
+		// Modify heapbase
+		heapbase++;
+
+		// End
+		return code;
+	}
+
+	/**
+	 * Generate an arithmetic unary operation
+	 * @param rin source register
+	 * @param rout destination register
+	 * @return the generated code
+	 */
+	public String generateOperation(Operator op, Register rin, Register rout) {
+		// TODO: wrong operation type
+		String code = ", " + rin + ", #0\n";
+
+		// Find the operation code
+		String opcode = "";
+		switch (op) {
+			case NEG:
+				opcode = "RSB";
+				break;
+		}
+
+		// Source register are no longer used
+		rin.setStatus(Register.Status.Used);
+
+		// Retrieve next register
+		Register r = getNextUnusedRegister();
+
+		// Generate code
+		code = ARMEngine.Prefix + opcode + "\t" + r + code;
+
+		// Manage register
+		r.setStatus(Register.Status.Loaded);
+		rout.copy(r);
+
+		// Modify heapbase
+		heapbase++;
+
+		// End
+		return code;
+	}
+
 	/**************************************************/
 	private Register getNextUnusedRegister() {
-		for (int i = 0; i < registers.length; i++) {
-			if (register.status() == Register.Status.Empty)
-				return registers[i];
+		// TODO: register use policy
+		for (int i = 0; i < registers.size(); i++) {
+			if (registers.get(i).status() == Register.Status.Empty)
+				return registers.get(i);
 		}
+
+		for (int i = 0; i < registers.size(); i++) {
+			if (registers.get(i).status() == Register.Status.Used)
+				return registers.get(i);
+		}
+
+		return null;
 	}
 }
 
