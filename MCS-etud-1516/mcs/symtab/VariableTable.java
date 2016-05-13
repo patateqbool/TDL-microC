@@ -13,6 +13,7 @@ public class VariableTable implements SymbolTable {
   // Attributes
 	private Map<String, SymbolInfo> content;
   private SymbolTable parent; // Parent of this table
+	private int displacement;
 
   /**
    * Constructor
@@ -21,6 +22,7 @@ public class VariableTable implements SymbolTable {
   public VariableTable(SymbolTable p) {
     this.parent = p;
 		this.content = new HashMap<String, SymbolInfo>();
+		this.displacement = p.offset();
   }
 
 	/**
@@ -29,6 +31,10 @@ public class VariableTable implements SymbolTable {
 	 */
 	public VariableTable() {
 		this(null);
+	}
+
+	public int offset() {
+		return this.displacement;
 	}
 
   /**

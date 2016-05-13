@@ -8,7 +8,7 @@ package mcs.gc;
 
 import java.util.List;
 import java.util.ArrayList;
-import mcs.symtab.VariableInfo;
+import mcs.symtab.*;
 import mcs.compiler.MCSException;
 
 public class ARMEngine extends AbstractMachine {
@@ -58,6 +58,7 @@ public class ARMEngine extends AbstractMachine {
 	 * Generation function
 	 **********************************************************/
 
+	/// Load an store
 	/**
 	 * Generate the code for loading a variable into a register, allowing for (e.g.) doing some operations.
 	 * Note: register management is done by the machine.
@@ -70,11 +71,22 @@ public class ARMEngine extends AbstractMachine {
 		Register reg = getNextUnusedRegister();
 
 		// Generate code
-		String code = ARMEngine.Prefix + "LDR\t" + reg + ", [SP, " + info.displacement() + "]\n";
+		String code = ARMEngine.Prefix;
+		
+		Type t = info.type();
+		
+		if (t instanceof IntegerType || t instanceof PointerType) {
+			code += "LDR\t" + reg + ", [SP, " + info.displacement() + "]\n";
+		} else if (t instanceof CharacterType) {
+			code += "LDRSB\t" + reg + ", [SP, " + info.displacement() + "]\n";
+		} else if (t instanceof StructType) {
+			// we shouldn't load a whole struct in register, isn'it ?
+		}
 
 		// Manage register
 		reg.setStatus(Register.Status.Loaded);
 		output.copy(reg);
+		info.assignRegister(reg);
 
 		// Modify heap base (added 1 instruction)
 		heapbase++;
@@ -118,6 +130,36 @@ public class ARMEngine extends AbstractMachine {
 		heapbase++;
 
 		// End
+		return code;
+	}
+
+	/**
+	 * Generate the code for storing a value into memory
+	 * @param info variable info; it MUST have a register assigned to work
+	 * @return the generated code
+	 */
+	public String generateStoreValue(VariableInfo info) {
+		String code = ARMEngine.Prefix;
+		Type t = info.type();
+
+		if (t instanceof IntegerType || t instanceof PointerType) {
+			code = code + "STR " + info.register() + ", [SP, " + info.displacement() + "]";
+		} else if (t instanceof CharacterType) {
+			code = code + "STRSB " + info.register() + ", [SP, " + info.displacement() + "]";
+		} else if (t instanceof StructType) {
+			// TODO: struct affectation is special
+			// We generate a load variable for every field of the struct
+			/*StructType st = (StructType)t;
+			Register reg = new Register();
+			VariableInfo vinfo;
+			for (String f : st.fields()) {
+				vinfo = st.getInfo(f, info.displacement());
+				code += generateLoadVariable(vinfo, reg);
+				code += generateStoreValue(vinfo);
+			}*/
+		}
+
+		info.freeRegister();
 		return code;
 	}
 

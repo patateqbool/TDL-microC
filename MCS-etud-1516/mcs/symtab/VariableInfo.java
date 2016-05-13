@@ -53,8 +53,7 @@ public class VariableInfo implements SymbolInfo {
 	 * Free the register, making it unused
 	 */
 	public void freeRegister() {
-		this.reg.setStatus(Register.Status.Empty);
-		this.reg = null;
+		this.reg.setStatus(Register.Status.Used);
 	}
 
 	/**

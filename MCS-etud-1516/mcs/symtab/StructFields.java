@@ -8,29 +8,73 @@ package mcs.symtab;
 
 import java.util.Map;
 import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
 
 class StructFields {
 	// The list of the fields
+	/*
+	 * Problem : when reading the keys of the fields, we iterate over set, which is
+	 * non-deterministic. Besides, we want the struct to have ORDERED fields;
+	 * Solution : creating an "orderer" list, which associate number of the field to
+	 * name of the field, therefore ordering the field map
+	 */
 	private Map<String, Type> fields;
+	private List<String> fieldsnb;
 
 	public StructFields() {
 		fields = new HashMap<String, Type>();
+		fieldsnb = new ArrayList<String>();
 	}
 
 	public void insert(String n, Type t) {
 		// TODO: errors when field already exists
 		this.fields.put(n, t);
+		this.fieldsnb.add(n);
 	}
 
 	public Type find(String n) {
 		// TODO: errors when field does not exists
-		return fields.get(n);
+		return this.fields.get(n);
+	}
+
+	public int size() {
+		return this.fieldsnb.size();
+	}
+
+	public List<String> fields() {
+		return this.fieldsnb;
 	}
 
 	public int sumSizes() {
 		int size = 0;
 		for (Type t : this.fields.values()) {
-			size = size + t.size();
+			int ts = t.size();
+
+			size += (ts%4 == 0 ? ts : ts + (4 - (ts % 4)));
+		}
+		return size;
+	}
+
+	/**
+	 * Sum all the sizes of the fields preceding the field "to"
+	 * @param to field
+	 * @return s = sum_{k=0}^{i(to)-1} size(i)
+	 * Note: the sum size is padded to prevent alignment problems.
+	 * Thus, if a field is of a size not a multiple of 4, the next field will be at a multiple of 4 anyway.
+	 * TODO: make better this system
+	 */
+	public int sumSizes(String to) {
+		int size = 0;
+		for (String n : this.fieldsnb) {
+			if (n.equals(to))
+				break;
+			
+			int ts = this.fields.get(n).size();
+			if (ts % 4 == 0)
+				size += ts;
+			else
+				size += ts + (4 - (ts % 4));
 		}
 		return size;
 	}

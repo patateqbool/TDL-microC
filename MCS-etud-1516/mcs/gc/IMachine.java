@@ -43,7 +43,7 @@ public interface IMachine {
 	 * Generation function
 	 **********************************************************/
 
-	/// Load variables into registers
+	/// Load and store
 	/**
 	 * Generate the code for loading a variable into a register, allowing for (e.g.) doing some operations.
 	 * Note: register management is done by the machine.
@@ -62,6 +62,13 @@ public interface IMachine {
 	 */
 	String generateLoadInteger(int value, Register output);
 
+	/**
+	 * Generate the code for storing a value into memory
+	 * @param info variable info
+	 * @return the generated code
+	 */
+	String generateStoreValue(VariableInfo info);
+
 	/// Calculus
 	/**
 	 * Generate an arithmetic binary operation
@@ -79,5 +86,6 @@ public interface IMachine {
 	 * @return the generated code
 	 */
 	String generateOperation(Operator op, Register rin, Register rout);
+
 
 }
