@@ -10,6 +10,8 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
+import mcs.compiler.MCSSymbolNotFound;
+import mcs.compiler.MCSSymbolAlreadyDefineException;
 
 class StructFields {
 	// The list of the fields
@@ -21,27 +23,54 @@ class StructFields {
 	 */
 	private Map<String, Type> fields;
 	private List<String> fieldsnb;
-
+	
+	/**
+	 * Constructor
+	 */
 	public StructFields() {
 		fields = new HashMap<String, Type>();
 		fieldsnb = new ArrayList<String>();
 	}
-
-	public void insert(String n, Type t) {
-		// TODO: errors when field already exists
-		this.fields.put(n, t);
+	
+	/**
+	 * Insert a field in the struct
+	 * @param n name of the field
+	 * @param t type of the field
+	 */
+	public void insert(String n, Type t) throws MCSException {
+		type = this.fields.put(n, t);
+		if (f != null) {
+			this.fields.put(n, type);
+			throw new MCSSymbolAlreadyDefineException();
+		}
 		this.fieldsnb.add(n);
 	}
-
+	
+	/**
+	 * Find the type of a field, raise an exception if the field is not found
+	 * @param n name of the field
+	 * @return t type of the field
+	 */ 
 	public Type find(String n) {
-		// TODO: errors when field does not exists
-		return this.fields.get(n);
+		t = this.fields.get(n);
+		if (t == null) {
+			throw new MCSSymbolNotFound();
+		}
+		return t;
 	}
-
+	
+	/**
+	 * Return the number of field in the struct
+	 * @return the number of field in the struct
+	 */
 	public int size() {
 		return this.fieldsnb.size();
 	}
-
+	
+	/**
+	 * Return the list ordered of the field in the struct
+	 * @return the list ordered of the field in the struct
+	 */
 	public List<String> fields() {
 		return this.fieldsnb;
 	}
