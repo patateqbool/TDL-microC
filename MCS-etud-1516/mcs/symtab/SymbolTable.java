@@ -6,14 +6,16 @@
  */
 package mcs.symtab;
 
-interface SymbolTable {
+import java.util.Set;
+
+public interface SymbolTable {
   /**
    * Globally look up into the table.
    * @param name name to look up
    * @param local whether or not to search locally or globally
    * @return the symbol info, or the special variable SymbolInfoNotFound
    */
-  public SymbolInfo lookup(String name, boolean local);
+  SymbolInfo lookup(String name, boolean local);
 
   /**
    * Insert a symbol into the table
@@ -21,13 +23,19 @@ interface SymbolTable {
    * @param info information of the symbol
    * @return a boolean, indicating if the insertion has been done
    */
-  public boolean insert(String name, SymbolInfo info);
+  boolean insert(String name, SymbolInfo info);
 
   /**
    * Get the parent of this table
    * @return the parent
    */
-  public SymbolTable parent();
+  SymbolTable parent();
+
+	/**
+	 * Get the list of symbol in this table
+	 * @return a SET of symbols
+	 */
+	Set<String> symbols();
 }
 
 

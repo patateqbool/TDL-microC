@@ -2,6 +2,7 @@ package mcs.gc;
 
 import mcs.compiler.MCSException;
 import mcs.symtab.VariableInfo;
+import mcs.symtab.SymbolTable;
 
 /**
  * Cette interface décrit une machine cible. A compléter, selon votre modèle
@@ -67,7 +68,15 @@ public interface IMachine {
 	 * @param info variable info
 	 * @return the generated code
 	 */
-	String generateStoreValue(VariableInfo info);
+	String generateStoreVariable(VariableInfo info);
+
+	/**
+	 * Generate the code for flushing every variable of a symbol table
+	 * Note: used when going out from a block
+	 * @param symtab the symbol table
+	 * @return the generated code
+	 */
+	String generateFlush(SymbolTable symtab);
 
 	/// Calculus
 	/**

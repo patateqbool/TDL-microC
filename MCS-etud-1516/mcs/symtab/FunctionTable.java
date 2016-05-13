@@ -6,6 +6,7 @@
  */
 package mcs.symtab;
 
+import java.util.Set;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -44,5 +45,9 @@ public class FunctionTable implements SymbolTable
   public SymbolTable parent() {
     return null;
   }
+
+	public Set<String> symbols() {
+		return this.content.keySet();
+	}
 }
 
