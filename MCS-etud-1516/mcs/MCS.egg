@@ -18,6 +18,15 @@ inh machine : IMachine for
 --       , BASE, DEFS, DEF
 --         -- fin extension MCS
          ;
+
+inh tvar : VariableTable for  --A completer --
+         ENTITES
+         ;
+
+inh tfun : FunctionTable for --A completer --
+         ENTITES
+	 ;
+
 -- ces attributs permettent de recuperer les instructions du code ASM inline       
 syn code_asm : STRING for ASM;
 -- la TDS courante
@@ -85,11 +94,11 @@ term identc is  "[A-Z][_0-9A-Za-z]*";
 -- pour les instructions en assembleur TAM 'inline'
 compil ASM;
 
---production rules
-PROGRAMME -> #init ENTITES #gen;
+-- REGLS DE PRODUCTION
+PROGRAMME -> #init #initTDS ENTITES #gen;
 global
    machine : IMachine;
--- transmission de la machine cible  (choisie par l'option -m au lancement) 
+-- Transmission de la machine cible  (choisie par l'option -m au lancement) 
 #init {
 local
 do
@@ -101,17 +110,56 @@ do
    end
 end
 }
--- ecrit le code dans un fichier
+
+-- Initialisation des TDS sans parent.
+#initTDS {
+local
+do
+  ENTITES^tvar := new VariableTable();
+  ENTITES^tfun := new FunctionTable();
+end
+}
+-- Ecrit le code dans un fichier
 #gen {
 local
 do
    machine.writeCode(PROGRAMME^source.getFileName(),"; no code\n");  
 end
 }
+
+
 ENTITES -> ;
-ENTITES -> ENTITE ENTITES ;
--- definition d'un nom de type (commence par une majuscule)
-ENTITE -> typedef TYPE identc pv ;
+
+
+ENTITES -> ENTITE #transmissionTDS ENTITES ;
+
+-- Transmission des TDS mise à jour après ENTITE à ENTITES1.
+-- (La transmission de ENTITES à ENTITE se fait, normalement, automatiquement).
+#transmissionTDS {
+local
+do
+  ENTITES1^tvar := ENTITE^tvar;
+  ENTITES1^tvar := ENTITE^tvar;
+end
+}
+
+
+-- DEFINITION D'UN NOM DE TYPE (commence par une majuscule)
+ENTITE -> typedef TYPE #ajout identc pv ;
+
+-- Ajout de identc à TDSvar.
+-- Vérifie que identc n'est pas déjà utilisé (par une variable ou une fonction).
+#ajout {
+local
+  info : SymbolInfo;
+  infoVar : VariableInfo;
+do
+  info := ENTITE^tvar.lookup(identc^txt);
+  -- A FINIR #COURSD'ANGLAISWALLAH.
+  
+end
+}
+
 -- definition d'une variable globale ou d'une fonction
 -- (commence par une minuscule)
 ENTITE ->  TYPE ident DECL ;
