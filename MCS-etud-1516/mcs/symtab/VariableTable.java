@@ -41,7 +41,7 @@ public class VariableTable implements SymbolTable {
     }
 
     if (!local)
-      return parent().lookup(name, true);
+      return parent().lookup(name, false);
 
     return new SymbolInfoNotFound();
   }
