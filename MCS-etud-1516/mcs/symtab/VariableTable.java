@@ -6,6 +6,7 @@
  */
 package mcs.symtab;
 
+import java.util.Set;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -19,10 +20,14 @@ public class VariableTable implements SymbolTable {
    * Constructor
    * Create a table from a parent table that could be null
    */
-  public VariableTable(SymbolTable p) {
+  public VariableTable(VariableTable p) {
     this.parent = p;
 		this.content = new HashMap<String, SymbolInfo>();
-		this.displacement = p.offset();
+
+		if (p != null)
+			this.displacement = p.offset();
+		else
+			this.displacement = 0;
   }
 
 	/**
@@ -33,8 +38,15 @@ public class VariableTable implements SymbolTable {
 		this(null);
 	}
 
+	/**
+	 * Get the current displacement of the table
+	 */
 	public int offset() {
 		return this.displacement;
+	}
+
+	public Set<String> symbols() {
+		return this.content.keySet();
 	}
 
   /**
@@ -52,6 +64,9 @@ public class VariableTable implements SymbolTable {
     return new SymbolInfoNotFound();
   }
 
+	/**
+	 * Insert a symbol into the table
+	 */
   public boolean insert(String name, SymbolInfo info) {
     if (this.content.containsKey(name))
       return false;
@@ -59,6 +74,9 @@ public class VariableTable implements SymbolTable {
     return true;
   }
 
+	/**
+	 * Get the parent of this table
+	 */
   public SymbolTable parent() {
     return this.parent;
   }

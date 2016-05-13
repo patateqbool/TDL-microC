@@ -138,14 +138,14 @@ public class ARMEngine extends AbstractMachine {
 	 * @param info variable info; it MUST have a register assigned to work
 	 * @return the generated code
 	 */
-	public String generateStoreValue(VariableInfo info) {
+	public String generateStoreVariable(VariableInfo info) {
 		String code = ARMEngine.Prefix;
 		Type t = info.type();
 
 		if (t instanceof IntegerType || t instanceof PointerType) {
-			code = code + "STR " + info.register() + ", [SP, " + info.displacement() + "]";
+			code = code + "STR\t" + info.register() + ", [SP, " + info.displacement() + "]\n";
 		} else if (t instanceof CharacterType) {
-			code = code + "STRSB " + info.register() + ", [SP, " + info.displacement() + "]";
+			code = code + "STRSB\t" + info.register() + ", [SP, " + info.displacement() + "]\n";
 		} else if (t instanceof StructType) {
 			// TODO: struct affectation is special
 			// We generate a load variable for every field of the struct
@@ -160,6 +160,26 @@ public class ARMEngine extends AbstractMachine {
 		}
 
 		info.freeRegister();
+		return code;
+	}
+	
+	/**
+	 * Generate the code for flushing every variable of a symbol table
+	 * Note: used when going out from a block
+	 * @param symtab the symbol table
+	 * @return the generated code
+	 */
+	public String generateFlush(SymbolTable symtab) {
+		Register reg = new Register();
+
+		String code = generateLoadInteger(0, reg);
+		
+		for (String key : symtab.symbols()) {
+			VariableInfo vi = (VariableInfo)symtab.lookup(key, true);
+			code += ARMEngine.Prefix + "LDR " + reg + ", [SP, " + vi.displacement() + "]\n";
+		}
+
+		reg.setStatus(Register.Status.Used);
 		return code;
 	}
 
@@ -266,6 +286,26 @@ public class ARMEngine extends AbstractMachine {
 		}
 
 		return null;
+	}
+
+	public String logRegisters() {
+		String txt = "";
+		for (Register r : this.registers) {
+			txt += r + " => ";
+			switch (r.status()) {
+				case Empty:
+					txt += "E";
+					break;
+				case Loaded:
+					txt += "L";
+					break;
+				case Used:
+					txt += "U";
+					break;
+			}
+			txt += "\n";
+		}
+		return txt;
 	}
 }
 
