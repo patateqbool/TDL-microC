@@ -19,13 +19,21 @@ inh machine : IMachine for
 --         -- fin extension MCS
          ;
 
-inh tvar : VariableTable for  --A completer --
-         ENTITES
+inh tvar : VariableTable for  -- A completer --
+         ENTITES, ENTITE
          ;
 
-inh tfun : FunctionTable for --A completer --
-         ENTITES
+inh tfun : FunctionTable for -- A completer --
+         ENTITES, ENTITE
 	 ;
+
+syn type : Type for -- A completer --
+         TYPE, DECL
+         ;
+
+syn nom : String for -- A completer (pas sur) --
+         DECL
+         ;
 
 -- ces attributs permettent de recuperer les instructions du code ASM inline       
 syn code_asm : STRING for ASM;
@@ -139,7 +147,7 @@ ENTITES -> ENTITE #transmissionTDS ENTITES ;
 local
 do
   ENTITES1^tvar := ENTITE^tvar;
-  ENTITES1^tvar := ENTITE^tvar;
+  ENTITES1^tfun := ENTITE^tfun;
 end
 }
 
@@ -155,26 +163,78 @@ local
   infoVar : VariableInfo;
 do
   info := ENTITE^tvar.lookup(identc^txt);
-  -- A FINIR #COURSD'ANGLAISWALLAH.
-  
+  -- Si identc est une clef dans la TDSvar, erreur.
+  if info != null then
+     error(IDENT_TAKEN, identc^txt);
+  else {
+     info := ENTITE^tfun.lookup(identc^txt);
+     -- De même si identc est déjà utilisé dans la TDSfun.
+     if info != null then
+        error(IDENT_TAKEN, identc^txt);
+     -- Sinon, on peut ajouter le nouveau type à la TDS.
+     else {
+        -- Création de la VariableInfo à ajouter à la TDS.
+      
+        -- TODO
+        
+        ENTITE^tvar.insert(identc^txt, infoVar);
+    }
+  }  
 end
 }
 
--- definition d'une variable globale ou d'une fonction
--- (commence par une minuscule)
-ENTITE ->  TYPE ident DECL ;
--- Variable
-DECL -> pv;
+-- DEFINITION D'UNE VARIABLE GLOBALE OU D'UNE FONCTION (commence par une minuscule)
+ENTITE -> TYPE ident #idLibre DECL ;
+
+-- Vérification que ident n'est pas déjà utilisé dans une TDS.
+-- On n'ajoute pas encore la variable / fonction à la table car on ne sait pas encore la nature.
+-- On fait par contre passer les infos (ident^txt et type) à DECL pour qu'il puisse effectuer lui même l'ajout.
+#idLibre {
+local
+  info : SymbolInfo;
+do
+  info := ENTITE^tvar.lookup(ident^txt);
+  -- Si identc est une clef dans la TDSvar, erreur.
+  if info != null then
+     error(IDENT_TAKEN, ident^txt);
+  else {
+     info := ENTITE^tfun.lookup(ident^txt);
+     -- De même si identc est déjà utilisé dans la TDSfun.
+     if info != null then
+        error(IDENT_TAKEN, ident^txt);
+     -- Sinon, on fait passer les infos utiles à DECL.
+     else {
+        DECL^type := TYPE^type;
+        DECL^nom := ident^txt;
+    }
+  }  
+end
+}
+
+-- VARIABLE
+DECL -> pv #ajout;
+
+-- Ajout de la variable (puisqu'on sait désormais que c'en est une) à la TDSvar.
+-- DECL possède les attributs nécessaires à la création de la VariableInfo).
+#ajout {
+local
+do
+
+end
+}
+
+-- FONCTION
 DECL -> FONCTION ;
--- Fonction
 FONCTION ->  paro PARFS parf BLOC ;
--- parametres de fonctions
+
+-- PARAMETRES DE FONCTION
 PARFS ->  ;
 PARFS ->  PARF PARFSX ;
 PARFSX ->  ;
 PARFSX ->  virg PARF PARFSX ;
 PARF ->  TYPE ident ;
--- les types (de base, noms, struct et pointeurs)
+
+-- LES TYPES (de base, noms, struct et pointeurs)
 TYPE -> STYPE  PTRS ;
 -- type de base
 -- des * pour definir un pointeur
