@@ -1,21 +1,22 @@
 /**
- * PointeurType -- class representing the pointeur type
- * 
+ * ArrayType -- class representing the array type
+ *
  * @author J. Guilbon
  * @version 0.1
  */
 package mcs.symtab;
 
-public class PointerType extends Type {
+public class ArrayType extends Type {
 
 	// Attributes
+        private int size;
 	private Type type;
 
 	/**
 	 * Constructor
 	 */
-	public PointerType(Type t) {
-		super(4);
+	public ArrayType(Type t, int s) {
+		super(t.size()*s);
                 type = t;
 	}
 
@@ -23,20 +24,21 @@ public class PointerType extends Type {
 	 * toString();
 	 */
 	public String toString() {
-		return this.type + "*";
+		return "ARRAY";
 	}
 
 	/**
 	 * isCompatible()
 	 */
 	public boolean isCompatible(Type other) {
-		if (other instanceof PointerType)
-			return (((PointerType)other).getType().isCompatible(this.type));
-		else
-			return false;
+		return false;
 	}
 
 	public Type getType() {
 		return this.type;
 	}
+
+        public Type getSize() {
+                return this.type.size()*this.size;
+        }
 }
