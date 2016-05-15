@@ -23,16 +23,24 @@ inh tvar : VariableTable for  -- A completer --
          ENTITES, ENTITE
          ;
 
+syn tvarS : VariableTable for 
+         PARFS, DECL
+         ; -- Utilisée pour récupérer la TDS màj avec les paramètres de la fonction.
+
 inh tfun : FunctionTable for -- A completer --
          ENTITES, ENTITE
 	 ;
 
-syn type : Type for -- A completer --
-         TYPE, DECL
+syn tfunS : FunctionTable for 
+         DECL
          ;
 
-syn nom : String for -- A completer (pas sur) --
-         DECL
+inh type : Type for -- A completer --
+         TYPE, DECL, FONCTION
+         ;
+
+inh nom : String for -- A completer (pas sur) --
+         DECL, FONCTION
          ;
 
 -- ces attributs permettent de recuperer les instructions du code ASM inline       
@@ -151,8 +159,11 @@ do
 end
 }
 
+---------------------------------------------
+-------- DEFINITION D'UN NOM DE TYPE --------
+--      (commence avec une majuscule)      --
+---------------------------------------------
 
--- DEFINITION D'UN NOM DE TYPE (commence par une majuscule)
 ENTITE -> typedef TYPE #ajout identc pv ;
 
 -- Ajout de identc à TDSvar.
@@ -162,43 +173,47 @@ local
   info : SymbolInfo;
   infoVar : VariableInfo;
 do
-  info := ENTITE^tvar.lookup(identc^txt);
+  info := ENTITE^tvar.lookup(identc^txt, true);
   -- Si identc est une clef dans la TDSvar, erreur.
   if info != null then
      error(IDENT_TAKEN, identc^txt);
   else {
-     info := ENTITE^tfun.lookup(identc^txt);
+     info := ENTITE^tfun.lookup(identc^txt, true);
      -- De même si identc est déjà utilisé dans la TDSfun.
      if info != null then
         error(IDENT_TAKEN, identc^txt);
      -- Sinon, on peut ajouter le nouveau type à la TDS.
      else {
+        -- TODO
         -- Création de la VariableInfo à ajouter à la TDS.
       
-        -- TODO
-        
         ENTITE^tvar.insert(identc^txt, infoVar);
     }
   }  
 end
 }
 
--- DEFINITION D'UNE VARIABLE GLOBALE OU D'UNE FONCTION (commence par une minuscule)
-ENTITE -> TYPE ident #idLibre DECL ;
+---------------------------------------------------------
+-- DEFINITION D'UNE VARIABLE GLOBALE OU D'UNE FONCTION --
+--            (commence par une minuscule)             --
+---------------------------------------------------------
+
+ENTITE -> TYPE ident #idLibre DECL #majTDS; 
 
 -- Vérification que ident n'est pas déjà utilisé dans une TDS.
 -- On n'ajoute pas encore la variable / fonction à la table car on ne sait pas encore la nature.
 -- On fait par contre passer les infos (ident^txt et type) à DECL pour qu'il puisse effectuer lui même l'ajout.
+-- On fait aussi passer les TDS pour qu'il puisse les màj.
 #idLibre {
 local
   info : SymbolInfo;
 do
-  info := ENTITE^tvar.lookup(ident^txt);
+  info := ENTITE^tvar.lookup(ident^txt, true);
   -- Si identc est une clef dans la TDSvar, erreur.
   if info != null then
      error(IDENT_TAKEN, ident^txt);
   else {
-     info := ENTITE^tfun.lookup(ident^txt);
+     info := ENTITE^tfun.lookup(ident^txt, true);
      -- De même si identc est déjà utilisé dans la TDSfun.
      if info != null then
         error(IDENT_TAKEN, ident^txt);
@@ -206,35 +221,174 @@ do
      else {
         DECL^type := TYPE^type;
         DECL^nom := ident^txt;
+        DECL^tvar := ENTITE^tvar;
+        DECL^tfun := ENTITE^tfun;
     }
   }  
 end
 }
 
--- VARIABLE
-DECL -> pv #ajout;
-
--- Ajout de la variable (puisqu'on sait désormais que c'en est une) à la TDSvar.
--- DECL possède les attributs nécessaires à la création de la VariableInfo).
-#ajout {
+-- On met à jour les TDS de ENTITE à l'aide de celles de DECL.
+#majTDS {
 local
 do
 
 end
 }
 
--- FONCTION
-DECL -> FONCTION ;
-FONCTION ->  paro PARFS parf BLOC ;
 
--- PARAMETRES DE FONCTION
-PARFS ->  ;
-PARFS ->  PARF PARFSX ;
-PARFSX ->  ;
-PARFSX ->  virg PARF PARFSX ;
+
+-- VARIABLE
+DECL -> pv #ajout;
+
+-- Ajout de la variable (puisqu'on sait désormais que c'en est une) à la TDSvar (de DECL) la TDSfun reste inchangée.
+-- DECL possède les attributs nécessaires à la création de la VariableInfo.
+-- Les tds à jours sont mises dans des attributs spéciaux de manière à ce que la règle de prod précèdete puisse les récupérer.
+#ajout {
+local
+do
+  
+
+  DECL^tvarS := 
+  DECL^tfunS := DECL^tfun ; -- La TDS fun n'est pas affectée.
+end
+}
+
+
+
+-- FONCTION
+DECL -> #transmission FONCTION #majTDS;
+
+-- L'ajout de la fonction dans la TDS nécessitant la connaissance des params, on ne peut pas le faire dans cette RP.
+-- On fait passer le type retour ainsi que le nom de la fonction à FONCTION pour l'ajout.
+#transmission {
+local
+do
+  FONCTION^nom := DECL^nom;
+  FONCTION^type := DECL^type;
+end
+}
+
+-- Mise à jour des TDS de DECL.
+#majTDS {
+local
+do
+
+end
+}
+
+
+
+FONCTION -> #creationTDSfille paro PARFS parf #ajout #recupTDSs BLOC ;
+
+-- On crée la TDSvar fille pour la passer à PARFS.
+#creationTDSfille {
+local
+do
+  PARFS^tvar := new VariableTable(FONCTION^tvar);
+  PARFS^tfun := FONCTION^tfun;
+end
+}
+
+-- Récupération de la TDS synthétisée à partir de la liste des paramètres.
+#recupTDSs {
+local
+do
+  BLOC^tvar := PARFS^tvarS;
+end
+}
+
+-- Ajout de la fonction à la TDS.
+-- On a vérifié que le nom était "libre" dans "ENTITE -> TYPE ident #idLibre DECL".
+-- Le nom ainsi que le type retour sont des attributs de FONCTION.
+-- La liste des paramètres un attribut de PARFS.
+#ajout {
+local
+  funInfo : functionInfo;
+do
+  funInfo := new FunctionInfo(FONCTION^type , PARFS^lTypes);
+end
+}
+
+
+-------------------------------------------
+-------- PARAMETRES DE FONCTION -----------
+-------------------------------------------
+PARFS ->  #creationLTypes ;
+
+-- Il n'y a pas de param à la fonction.
+-- Création de lTypes, vide.
+#creationLTypes {
+local
+do
+  PARFS^lTypes := new ArrayList<Type>;
+end
+}
+
+
+
+PARFS -> PARF PARFSX #creationLTypes #majTvarSynt;
+-- (Normalement le passage des TDS de PARFS à PARF puis de PARF à PARFSX se fait automatiquement).
+
+-- Création de lTypes de PARFS à partir de la liste des types de PARFSX et du type de PARF.
+#creationLTypes {
+local
+  lt : ArrayList<Type>; 
+do
+  lt := PARFSX^lTypes;
+  -- On ajoute le type de PARF en tête de liste.
+  lt.add(0,PARF^Type);
+  PARFS^lTypes := lt;
+end
+}
+
+-- On crée une TDSvar synthétisée à partir de la liste des paramètres qu'on passe à PARFS.
+-- Ce sera la TDS du corps de la fonction.
+#majTvarSynt {
+local
+do
+  PARFS^tvarS := PARFSX^tvar;
+end
+}
+
+
+
+PARFSX ->  #creationLTypes;
+
+-- Création de la liste des types qui sera vide pour PARFSX.
+#creationLTypes {
+local
+do
+  PARFS^lTypes := new ArrayList<Type>;
+end
+}
+
+ 
+PARFSX ->  virg PARF PARFSX #creationLTypes;
+
+-- Création de la liste des types en ajoutant le type de PARF à la liste des paramètres restants.
+#creationLTypes {
+local
+  lt : ArrayList<Type>; 
+do
+  lt := PARFSX1^lTypes;
+  -- On ajoute le type de PARF en tête de liste.
+  lt.add(0,PARF^Type);
+  PARFS^lTypes := lt;
+end
+}
+
+
+-- TODO : - Vérifier que ident n'est pas déjà use.
+--        - Ajouter ident à la TDS de la fonction.
+--        - Gestion du typage.
 PARF ->  TYPE ident ;
 
--- LES TYPES (de base, noms, struct et pointeurs)
+
+
+----------------------------------------------------------------
+-------- LES TYPES (de base, noms, struct et pointeurs) --------
+----------------------------------------------------------------
 TYPE -> STYPE  PTRS ;
 -- type de base
 -- des * pour definir un pointeur
@@ -253,7 +407,10 @@ CHAMPS -> ;
 -- un nom de champ commence par une minuscule
 CHAMPS -> CHAMP CHAMPS ;
 CHAMP -> TYPE ident pv;
--- corps de fonction et bloc d'instructions
+
+----------------------------------------------------------------
+----------- CORPS DE FONCTION ET BLOC D'INSTRUCTIONS -----------
+----------------------------------------------------------------
 BLOC ->  aco INSTS acf ;
 -- instructions
 INSTS ->   ;
@@ -271,8 +428,8 @@ SIX -> ;
 -- retour de fonction
 INST ->  retour  E pv ;
 
-
--- les expressions -------------
+-----------------------------------------------------------------------
+--------------------------- LES EXPRESSIONS ---------------------------
 -----------------------------------------------------------------------
 -- E = expression (y compris l'affectation)
 -- A = expression figurant dans une affectation
@@ -345,9 +502,10 @@ ES -> E ESX  ;
 ESX ->  ;
 ESX -> virg E ESX ;
 
-------------- inline asm ----------------
--- peut être utile pour implanter des sous-programmes
--- directement en assembleur TAM.
+
+-----------------------------------------
+------------- INLINE ASM ----------------
+-----------------------------------------
 ENTITE ->   asm #tds ASM#gen; 
 #tds {
 do 
