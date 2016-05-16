@@ -1,6 +1,6 @@
------------------------------------------------------
+----------------------------------------------------
 -- Grammaires de MC  et MCS                       --
------------------------------------------------------
+----------------------------------------------------
 --options
 option auto = true;
 option version = 0.0.1;
@@ -24,7 +24,7 @@ inh tvar : VariableTable for  -- A completer --
          ;
 
 syn tvarS : VariableTable for 
-         PARFS, DECL
+         PARFS, DECL, ENTITE
          ; -- Utilisée pour récupérer la TDS màj avec les paramètres de la fonction.
 
 inh tfun : FunctionTable for -- A completer --
@@ -32,11 +32,15 @@ inh tfun : FunctionTable for -- A completer --
 	 ;
 
 syn tfunS : FunctionTable for 
-         DECL
+         DECL, ENTITE
          ;
 
-inh type : Type for -- A completer --
-         TYPE, DECL, FONCTION
+syn type : Type for -- A completer --
+         TYPE, STYPE, PTRS, DECL, FONCTION
+         ;
+
+inh typeh : Type for
+         PTRS
          ;
 
 inh nom : String for -- A completer (pas sur) --
@@ -154,8 +158,8 @@ ENTITES -> ENTITE #transmissionTDS ENTITES ;
 #transmissionTDS {
 local
 do
-  ENTITES1^tvar := ENTITE^tvar;
-  ENTITES1^tfun := ENTITE^tfun;
+  ENTITES1^tvar := ENTITE^tvarS;
+  ENTITES1^tfun := ENTITE^tfunS;
 end
 }
 
@@ -203,7 +207,7 @@ ENTITE -> TYPE ident #idLibre DECL #majTDS;
 -- Vérification que ident n'est pas déjà utilisé dans une TDS.
 -- On n'ajoute pas encore la variable / fonction à la table car on ne sait pas encore la nature.
 -- On fait par contre passer les infos (ident^txt et type) à DECL pour qu'il puisse effectuer lui même l'ajout.
--- On fait aussi passer les TDS pour qu'il puisse les màj.
+-- On fait aussi passer les TDS pour qu'il puisse les màj et s'en servir.
 #idLibre {
 local
   info : SymbolInfo;
@@ -232,7 +236,8 @@ end
 #majTDS {
 local
 do
-
+  ENTITE^tvarS := DECL^tvarS ;
+  ENTITE^tfunS := DECL^tfunS ;
 end
 }
 
@@ -246,10 +251,13 @@ DECL -> pv #ajout;
 -- Les tds à jours sont mises dans des attributs spéciaux de manière à ce que la règle de prod précèdete puisse les récupérer.
 #ajout {
 local
+  tv : VariableTable ;
+  i : VariableInfo ;
 do
-  
-
-  DECL^tvarS := 
+  i := new VariableInfo(DECL^type, --TODO disp -- );
+  tv := DECL^tvar;
+  tv.insert(DECL^nom, i);
+  DECL^tvarS := tv;
   DECL^tfunS := DECL^tfun ; -- La TDS fun n'est pas affectée.
 end
 }
@@ -269,17 +277,20 @@ do
 end
 }
 
--- Mise à jour des TDS de DECL.
+-- "Mise à jour" des TDS de DECL.
 #majTDS {
 local
 do
-
+ -- La nouvelle TDSfun contient les infos concernant la nouvelle fonction.
+  DECL^tfunS := FONCTION^tfunS;
+ -- La TDSvar est inchangée.
+  DECL^tvarS := DECL^tvar;
 end
 }
 
 
 
-FONCTION -> #creationTDSfille paro PARFS parf #ajout #recupTDSs BLOC ;
+FONCTION -> #creationTDSfille paro PARFS parf #ajout #codeDecl BLOC #codeFin ;
 
 -- On crée la TDSvar fille pour la passer à PARFS.
 #creationTDSfille {
@@ -290,26 +301,44 @@ do
 end
 }
 
--- Récupération de la TDS synthétisée à partir de la liste des paramètres.
-#recupTDSs {
-local
-do
-  BLOC^tvar := PARFS^tvarS;
-end
-}
-
--- Ajout de la fonction à la TDS.
+-- Ajout de la fonction à tfun (stocké dans tfunS).
 -- On a vérifié que le nom était "libre" dans "ENTITE -> TYPE ident #idLibre DECL".
 -- Le nom ainsi que le type retour sont des attributs de FONCTION.
 -- La liste des paramètres un attribut de PARFS.
+-- Récupération de la TDS synthétisée à partir de la liste des paramètres.
+
 #ajout {
 local
-  funInfo : functionInfo;
+  funInfo : FunctionInfo;
+  tf : FunctionTable;
 do
   funInfo := new FunctionInfo(FONCTION^type , PARFS^lTypes);
+  tf := PARFS^tfun;
+  tf.insert(FONCTION^nom, funInfo);
+-- Passage des TDS à Fonction.
+  FONCTION^tfunS := tf;
+-- Passage des TDS à BLOC.
+  BLOC^tvar := PARFS^tvarS;
+  BLOC^tfun := tf;
 end
 }
 
+-- TODO : création du label et code asm des pops liés aux arguments.
+--        (cf pad)
+#codeDecl {
+local
+do
+
+end
+}
+
+-- TODO : fin du corps de la fonction BA LR.
+#codeFin {
+local
+do
+
+end
+}
 
 -------------------------------------------
 -------- PARAMETRES DE FONCTION -----------
@@ -353,7 +382,7 @@ end
 
 
 
-PARFSX ->  #creationLTypes;
+PARFSX ->  #creationLTypes ;
 
 -- Création de la liste des types qui sera vide pour PARFSX.
 #creationLTypes {
@@ -373,31 +402,125 @@ local
 do
   lt := PARFSX1^lTypes;
   -- On ajoute le type de PARF en tête de liste.
-  lt.add(0,PARF^Type);
+  lt.add(0,PARF^type);
   PARFS^lTypes := lt;
 end
 }
 
 
--- TODO : - Vérifier que ident n'est pas déjà use.
---        - Ajouter ident à la TDS de la fonction.
---        - Gestion du typage.
-PARF ->  TYPE ident ;
 
+PARF ->  TYPE #ajout ident ;
+
+-- Ajout de ident à la TDS locale.
+-- Passage du type de TYPE à PARF.
+-- Vérifications concernant idents.
+#ajout {
+local 
+  info : SymbolInfo;
+  infoVar : VariableInfo;
+do
+  info := PARF^tvar.lookup(ident^txt, true);
+  -- Si identc est une clef dans la TDSvar, erreur.
+  if info != null then
+     error(IDENT_TAKEN, ident^txt);
+  else {
+     info := ENTITE^tfun.lookup(ident^txt, true);
+     -- De même si identc est déjà utilisé dans la TDSfun.
+     if info != null then
+        error(IDENT_TAKEN, ident^txt);
+     -- Sinon, on ajoute cet id à la tdsvar.
+     else {
+        infoVar := new VariableInfo(TYPE^type, --TODO disp --);
+        PARF^tvar.insert(ident^txt, infoVar);
+        PARF^type := TYPE^type;
+    }
+  } 
+end
+}
 
 
 ----------------------------------------------------------------
 -------- LES TYPES (de base, noms, struct et pointeurs) --------
 ----------------------------------------------------------------
-TYPE -> STYPE  PTRS ;
--- type de base
--- des * pour definir un pointeur
-PTRS -> ;
-PTRS -> mult PTRS ;
+TYPE -> STYPE #passage PTRS #recupType;
+
+-- Passage du type de STYPE à PTRS pour qu'il "pointeurise" la chose.
+#passage {
+local
+do
+  PTRS^typeh := STYPE^type;
+end
+}
+
+-- Recuperation du type final de l'expression.
+#recupType {
+local
+do
+  TYPE^type := PTRS^type;
+end
+}
+
+
+-- Des * pour definir un pointeur
+PTRS -> #passage ;
+
+-- Passage de l'attribut hérité à celui synthétisé. 
+#passage {
+local
+do
+  PTRS^type := PTRS^typeh;
+end
+}
+
+
+PTRS -> mult #point PTRS #passage ;
+
+-- Passage du type une foix la couche de pointeur ajoutée.
+#point {
+local
+do
+  PTRS1^typeh := new PointerType(PTRS^typeh);
+end
+}
+
+-- Probablement inutile : passage de l'attribut type synthétisé.
+#passage {
+local
+do
+  PTRS^type := PTRS1^type;
+end
+}
+
+
 -- types de base
-STYPE-> void  ;
-STYPE-> int ;
-STYPE-> char ;
+STYPE-> void #typage ;
+
+#typage {
+local
+do
+  -- TODO
+end
+}
+
+STYPE-> int #typage ;
+
+#typage {
+local
+do
+  STYPE^type  := new IntegerType();
+end
+}
+
+STYPE-> char #typage ;
+
+
+#typage {
+local
+do
+  STYPE^type  := new CharacterType();
+end
+}
+
 -- nom de type (commence par une majuscule)
 STYPE -> identc;
 -------------  
@@ -408,16 +531,48 @@ CHAMPS -> ;
 CHAMPS -> CHAMP CHAMPS ;
 CHAMP -> TYPE ident pv;
 
+
+
 ----------------------------------------------------------------
 ----------- CORPS DE FONCTION ET BLOC D'INSTRUCTIONS -----------
 ----------------------------------------------------------------
-BLOC ->  aco INSTS acf ;
--- instructions
+BLOC ->  aco #passage INSTS acf ;
+
+-- Probablement inutile, mais passage des TDS de BLOC à INSTS.
+#passage {
+local
+do
+  INSTS^tvar := BLOC^tvar;
+  INSTS^tfun := BLOC^tfun;
+end
+}
+
+
+-- Instructions
+-- Fin des instructions de la fonction, rien de particulier à faire.
 INSTS ->   ;
-INSTS ->  INST INSTS  ;
--- declaration de variable locale avec ou sans init 
+
+
+
+INSTS ->  INST #passage INSTS  ;
+
+-- Passage des TDS de INST à INSTS1.
+#passage {
+local
+do
+  INSTS1^tvar := INST^tvarS;
+  INSTS1^tfun := INST^tfun;  -- La table des fonctions ne changera pas.
+end
+}
+
+
+
+-- Declaration de variable locale avec ou sans init 
 INST ->  TYPE ident AFFX pv ;
--- instruction expression (affectation et appel de procedure)
+
+
+
+-- Instruction expression (affectation et appel de procedure)
 INST -> E pv ;
 -- bloc d'instructions
 INST ->  BLOC  ;
