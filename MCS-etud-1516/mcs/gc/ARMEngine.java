@@ -49,6 +49,8 @@ public class ARMEngine extends AbstractMachine {
 		String preliminary = 
 			"HT	EQU R12\n" +
 			"HB EQU " + heapbase*4 + "\n" +
+      "\n" +
+      "MOV HT, HB\n" +
 			"\n";
 
 		super.writeCode(fileName, preliminary + code);
@@ -108,7 +110,7 @@ public class ARMEngine extends AbstractMachine {
 		 * can only work on halfwords (16-bit data).
 		 * The trick is to use MOV and MOVT; the latter set the 16 MSB of the register to
 		 * the value specified.
-		 * Of course, we does that only if needed.
+		 * Of course, we do that only if needed.
 		 */
 		// Retrieve a valid register for putting the result
 		Register reg = getNextUnusedRegister();
@@ -144,8 +146,10 @@ public class ARMEngine extends AbstractMachine {
 
 		if (t instanceof IntegerType || t instanceof PointerType) {
 			code = code + "STR\t" + info.register() + ", [SP, " + info.displacement() + "]\n";
+      heapbase++;
 		} else if (t instanceof CharacterType) {
 			code = code + "STRSB\t" + info.register() + ", [SP, " + info.displacement() + "]\n";
+      heapbase++;
 		} else if (t instanceof StructType) {
 			// TODO: struct affectation is special
 			// We generate a load variable for every field of the struct
@@ -177,13 +181,43 @@ public class ARMEngine extends AbstractMachine {
 		for (String key : symtab.symbols()) {
 			VariableInfo vi = (VariableInfo)symtab.lookup(key, true);
 			code += ARMEngine.Prefix + "LDR " + reg + ", [SP, " + vi.displacement() + "]\n";
+      heapbase++;
 		}
 
 		reg.setStatus(Register.Status.Used);
 		return code;
 	}
 
-	/// Calculus
+  /**
+   * Generate the code for memory allocation in the heap
+   * @param size size to allocate
+   * @param rout register in which the address will be
+   * @return the generated code
+   */
+  public String generateMemoryAllocation(Register rsize, Register rout) {
+    Register reg = getNextUnusedRegister();
+    String code =
+      ARMEngine.Prefix + "MOV\t" + reg + ", HT\n" +
+      ARMEngine.Prefix + "ADD\tHT, HT, " + rsize + "\n" +
+      /*
+       * This part is a realignment code;
+       * In the case where the size is not a multiple of 4, we
+       * could have an alignement problem. The solution is to
+       * realign the heap top by making it dividable by 4. For that,
+       * we first get rid of the 2 LSB so that they equals 0 (hence creating
+       * a value that is a multiple of 4). Then, we add 4 beacause we want
+       * to majorate the value (not minorate, which the first step does).
+       */
+      ARMEngine.Prefix + "LSR\tHT, HT, #2\n" +
+      ARMEngine.Prefix + "LSL\tHT, HT, #2\n" +
+      ARMEngine.Prefix + "ADD\tHT, HT, #4\n";
+    rsize.setStatus(Register.Status.Used);
+    reg.setStatus(Register.Status.Loaded);
+    rout.copy(reg);
+    return code;
+  }
+	
+  /// Calculus
 	/**
 	 * Generate an arithmetic binary operation
 	 * @param r1 first register

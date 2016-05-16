@@ -78,6 +78,14 @@ public interface IMachine {
 	 */
 	String generateFlush(SymbolTable symtab);
 
+  /**
+   * Generate the code for memory allocation in the heap
+   * @param rsize register containing the size to allocate
+   * @param rout register in which the address will be
+   * @return the generated code
+   */
+  String generateMemoryAllocation(Register rsize, Register rout);
+
 	/// Calculus
 	/**
 	 * Generate an arithmetic binary operation
