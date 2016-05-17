@@ -6,6 +6,7 @@
  */
 package mcs.symtab;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
@@ -50,6 +51,13 @@ public class StructType extends Type {
 	public List<String> fields() {
 		return this.fields.fields();
 	}
+
+  /**
+   * Get the type of the fields
+   */
+  public Collection<Type> fieldsTypes() {
+    return this.fields.types();
+  }
 
 	/**
 	 * Get the info of the requested field
