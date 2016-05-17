@@ -828,7 +828,20 @@ OPUN -> non;
 F -> null  ;
 -- expression parenthesee
 F ->  paro E parf FX ;
-F ->  paro TYPE parf  F ;
+
+F ->  paro TYPE parf #cast  F ;
+
+#cast {
+local
+do
+  if F1^type.isCompatible(TYPE^type) then
+	   F1^type := TYPE^type;
+  else {
+     error(TYPE_NOT_COMPATIBLE, F1^type^name, TYPE^type^name);	   
+  } 
+end
+}
+
 F -> mult F ;
 F -> ident FX ;
 FX -> ;
