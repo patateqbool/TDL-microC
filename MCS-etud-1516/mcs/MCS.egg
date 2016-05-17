@@ -261,11 +261,9 @@ DECL -> pv #ajout;
 #ajout {
 local
   tv : VariableTable ;
-  i : VariableInfo ;
 do
-  i := new VariableInfo(DECL^type, --TODO disp -- );
   tv := DECL^tvar;
-  tv.insert(DECL^nom, i);
+  tv.insert(DECL^nom, DECL^type);
   DECL^tvarS := tv;
   DECL^tfunS := DECL^tfun ; -- La TDS fun n'est pas affectée.
 end
@@ -453,7 +451,6 @@ PARF ->  TYPE #ajout ident ;
 #ajout {
 local 
   info : SymbolInfo;
-  infoVar : VariableInfo;
 do
   info := PARF^tvar.lookup(ident^txt, false);
   -- Si identc est une clef dans la TDSvar, erreur.
@@ -466,8 +463,7 @@ do
         error(IDENT_TAKEN, ident^txt);
      -- Sinon, on ajoute cet id à la tdsvar.
      else {
-        infoVar := new VariableInfo(TYPE^type, --TODO disp --);
-        PARF^tvar.insert(ident^txt, infoVar);
+        PARF^tvar.insert(ident^txt, TYPE^type);
         PARF^type := TYPE^type;
     }
   } 
@@ -560,12 +556,14 @@ end
 -- TODO
 -- Nom de type (commence par une majuscule)
 STYPE -> identc;
--------------  
--- et struct
+-- Comment vérifier qu'il s'agit de l'identifiant d'un type ? Utiliser isCompatible ?  
+
+
+-- Struct
 STYPE -> struct aco #ch CHAMPS acf  #type ;
 
 global 
- lc : StructFields ;
+  lc : StructFields ;
 #ch {
 do
   lc := new StructFields();
@@ -574,21 +572,25 @@ end
 }
 
 #type {
- do
-   TYPE^type := new StructType(lc);
- end
+do
+  STYPE^type := new StructType(lc);
+end
 }
 
 CHAMPS -> ;
--- un nom de champ commence par une minuscule
+
+-- Un nom de champ commence par une minuscule
 CHAMPS -> CHAMP #ch CHAMPS ;
 #ch {
  local
  do
-    if CHAMPS^champs.exist(CHAMP^ident^txt) then
-       error(IDENT_TAKEN, CHAMP^ident^txt);
-    else    
-       call CHAMPS^champs.insert(CHAMP^ident^txt,CHAMP^type);
+ -- J'ai changé l'attribut pour récupérer l'identifiant
+ -- Il vaut mieux stocker directement la chaine comme attribut de CHAMP.
+    if CHAMPS^champs.exist(CHAMP^nom) then
+       error(IDENT_TAKEN, CHAMP^nom);
+    else 
+		-- Pourquoi le call ?
+       call CHAMPS^champs.insert(CHAMP^nom,CHAMP^type);
     end
  end
 }
@@ -599,7 +601,7 @@ CHAMP -> TYPE #ajout ident pv;
 #ajout {
   local
   do
-    CHAMP^ident = ident;
+    CHAMP^nom = ident^txt;
     CHAMP^type = TYPE^type;
   end
 }
