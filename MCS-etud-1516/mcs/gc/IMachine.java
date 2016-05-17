@@ -80,6 +80,13 @@ public interface IMachine {
 	 */
 	String generateStoreVariable(VariableInfo info);
 
+  /**
+   * Generate the code for flushing the stack top variable
+   * @param info the info of the variable
+   * @return the generated code
+   */
+  String generateFlushVariable(VariableInfo info);
+
 	/**
 	 * Generate the code for flushing every variable of a symbol table
 	 * Note: used when going out from a block
@@ -111,6 +118,20 @@ public interface IMachine {
    * @return the generated code
    */
   String generateFunctionDeclarationEnd(FunctionInfo info);
+
+  /**
+   * Generate the code for pushing an argument
+   * @param reg register in which the argument is stored
+   * @return the generated code
+   */
+  //String generateFunctionPushArgument();
+
+  /**
+   * Generate the code for the call to a function
+   * @param info info of the function
+   * @return the generated code
+   */
+  //String generateFunctionCall(FunctionInfo info);
 
 	/// Calculus
 	/**
