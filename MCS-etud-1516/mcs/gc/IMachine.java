@@ -63,6 +63,15 @@ public interface IMachine {
 	 */
 	String generateLoadInteger(int value, Register output);
 
+  /**
+   * Generate the code for loading data directly from memory
+   * @param raddr register containing the address
+   * @param size size of the data to retrieve
+   * @param rout register that will contain the data
+   * @return the generated code
+   */
+  String generateLoadFromMemory(Register raddr, int size, Register rout);
+
 	/**
 	 * Generate the code for storing a value into memory
 	 * @param info variable info

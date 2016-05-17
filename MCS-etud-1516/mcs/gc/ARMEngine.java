@@ -135,7 +135,41 @@ public class ARMEngine extends AbstractMachine {
 		return code;
 	}
 
-	/**
+  /**
+   * Generate the code for loading data directly from memory
+   * @param raddr register containing the address
+   * @param size size of the data to retrieve
+   * @param rout register that will contain the data
+   * @return the generated code
+   */
+  public String generateLoadFromMemory(Register raddr, int size, Register rout){
+    String code = ARMEngine.Prefix + "LDR";
+    Register reg = getNextUnusedRegister();
+
+    if (size == 1)
+      code += "SB"; // We load a signed byte
+    /*else
+      //probably an error
+      */
+
+    // Generate code
+    code += "\t" + reg + ", [" + raddr + "]\n";
+
+    // Update register status
+    reg.setStatus(Register.Status.Loaded);
+    raddr.setStatus(Register.Status.Used);
+
+    // Copy register in output
+    rout.copy(reg);
+
+    // Modify heap base
+    heapbase++;
+
+    // End
+    return code;
+  }
+	
+  /**
 	 * Generate the code for storing a value into memory
 	 * @param info variable info; it MUST have a register assigned to work
 	 * @return the generated code
@@ -153,14 +187,14 @@ public class ARMEngine extends AbstractMachine {
 		} else if (t instanceof StructType) {
 			// TODO: struct affectation is special
 			// We generate a load variable for every field of the struct
-			/*StructType st = (StructType)t;
+			StructType st = (StructType)t;
 			Register reg = new Register();
 			VariableInfo vinfo;
 			for (String f : st.fields()) {
 				vinfo = st.getInfo(f, info.displacement());
 				code += generateLoadVariable(vinfo, reg);
-				code += generateStoreValue(vinfo);
-			}*/
+				code += generateStoreVariable(vinfo);
+			}
 		}
 
 		info.freeRegister();
@@ -180,7 +214,7 @@ public class ARMEngine extends AbstractMachine {
 		
 		for (String key : symtab.symbols()) {
 			VariableInfo vi = (VariableInfo)symtab.lookup(key, true);
-			code += ARMEngine.Prefix + "LDR " + reg + ", [SP, " + vi.displacement() + "]\n";
+			code += ARMEngine.Prefix + "LDR\t" + reg + ", [SP, " + vi.displacement() + "]\n";
       heapbase++;
 		}
 
