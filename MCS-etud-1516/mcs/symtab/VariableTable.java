@@ -68,10 +68,26 @@ public class VariableTable implements SymbolTable {
 	 * Insert a symbol into the table
 	 */
   public boolean insert(String name, SymbolInfo info) {
+    VariableInfo vi = (VariableInfo)info;
     if (this.content.containsKey(name))
       return false;
-    this.content.put(name, info);
+    this.content.put(name, vi);
+
+    int ts = vi.type().size();
+    this.displacement += (ts % 4 == 0 ? ts : ts + (4 - (ts % 4)));
     return true;
+  }
+
+  /**
+   * Insert a symbol into the table from its name and type, giving it
+   * a default displacement
+   * @param name name of the symbol
+   * @param type type of the symbol
+   * @return true if it is possible
+   */
+  public boolean insert(String name, Type type) {
+    VariableInfo vi = new VariableInfo(type, this.displacement);
+    return this.insert(name, vi);
   }
 
 	/**
