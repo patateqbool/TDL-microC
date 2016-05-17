@@ -6,6 +6,7 @@
  */
 package mcs.symtab;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
@@ -88,6 +89,13 @@ class StructFields {
 	public List<String> fields() {
 		return this.fieldsnb;
 	}
+
+  /**
+   * Return the list of types
+   */
+  public Collection<Type> types() {
+    return this.fields.values();
+  }
 
 	public int sumSizes() {
 		int size = 0;

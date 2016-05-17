@@ -81,9 +81,9 @@ public class ARMEngine extends AbstractMachine {
 		Type t = info.type();
 		
 		if (t instanceof IntegerType || t instanceof PointerType) {
-			code += "LDR\t" + reg + ", [SP, " + info.displacement() + "]\n";
+			code += "LDR\t" + reg + ", [SB, " + (-info.displacement()) + "]\n";
 		} else if (t instanceof CharacterType) {
-			code += "LDRSB\t" + reg + ", [SP, " + info.displacement() + "]\n";
+			code += "LDRSB\t" + reg + ", [SB, " + (-info.displacement()) + "]\n";
 		} else if (t instanceof StructType) {
 			// we shouldn't load a whole struct in register, isn'it ?
 		}
@@ -181,14 +181,14 @@ public class ARMEngine extends AbstractMachine {
 		String code = ARMEngine.Prefix;
 		Type t = info.type();
 
-		if (t instanceof IntegerType || t instanceof PointerType) {
+		/*if (t instanceof IntegerType || t instanceof PointerType) {
 			code = code + "STR\t" + info.register() + ", [SP, " + info.displacement() + "]\n";
       heapbase++;
 		} else if (t instanceof CharacterType) {
 			code = code + "STRSB\t" + info.register() + ", [SP, " + info.displacement() + "]\n";
       heapbase++;
-		} 
-    else if (t instanceof StructType) {
+		}*/ 
+    if (t instanceof StructType) {
 			// TODO: struct affectation is special
 			// We generate a load variable for every field of the struct
 			StructType st = (StructType)t;
@@ -199,11 +199,35 @@ public class ARMEngine extends AbstractMachine {
 				code += generateLoadVariable(vinfo, reg);
 				code += generateStoreVariable(vinfo);
 			}
-		}
+		} else {
+      code += "PUSH\t" + info.register() + "\n";
+    }
 
 		info.freeRegister();
 		return code;
 	}
+
+  /**
+   * Generate the code for flushing the stack top variable
+   * @param info the info of the variable
+   * @return the generated code
+   */
+  public String generateFlushVariable(VariableInfo info) {
+    Register reg = getNextUnusedRegister();
+    String code = ARMEngine.Prefix;
+
+    if (info.type() instanceof StructType) {
+      StructType ts = (StructType)info.type();
+      for (Type tsf : ts.fieldsTypes()) {
+        generateFlushVariable(new VariableInfo(tsf, 0));
+      }
+    } else {
+      code += "POP\t" + reg + "\n";
+      heapbase++;
+    }
+
+    return code;
+  }
 	
 	/**
 	 * Generate the code for flushing every variable of a symbol table
@@ -212,14 +236,14 @@ public class ARMEngine extends AbstractMachine {
 	 * @return the generated code
 	 */
 	public String generateFlush(SymbolTable symtab) {
-		Register reg = new Register();
+		Register reg = getNextUnusedRegister();
 
 		String code = generateLoadInteger(0, reg);
 		
 		for (String key : symtab.symbols()) {
 			VariableInfo vi = (VariableInfo)symtab.lookup(key, true);
-			code += ARMEngine.Prefix + "LDR\t" + reg + ", [SP, " + vi.displacement() + "]\n";
-      heapbase++;
+			//code += ARMEngine.Prefix + "LDR\t" + reg + ", [SP, " + vi.displacement() + "]\n";
+      generateFlushVariable(vi);
 		}
 
 		reg.setStatus(Register.Status.Used);
