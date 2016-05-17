@@ -2,6 +2,7 @@ package mcs.gc;
 
 import mcs.compiler.MCSException;
 import mcs.symtab.VariableInfo;
+import mcs.symtab.FunctionInfo;
 import mcs.symtab.SymbolTable;
 
 /**
@@ -94,6 +95,22 @@ public interface IMachine {
    * @return the generated code
    */
   String generateMemoryAllocation(Register rsize, Register rout);
+
+  /// Functions related
+  
+  /**
+   * Generate the code for the beginning of declaring a function
+   * @param info the info of the function
+   * @return the generated code
+   */
+  String generateFunctionDeclarationBegin(FunctionInfo info);
+
+  /**
+   * Generate the code for the end of the function declaration
+   * @param info info of the function
+   * @return the generated code
+   */
+  String generateFunctionDeclarationEnd(FunctionInfo info);
 
 	/// Calculus
 	/**

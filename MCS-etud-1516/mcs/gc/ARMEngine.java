@@ -17,10 +17,10 @@ public class ARMEngine extends AbstractMachine {
 	 * ARM has in fact 15 "multi-purpose registers", but three of them is used for stack, link and program counter.
 	 * Plus, we decided to use R12 as the heap top, as it is not implemented directly into ARM
 	 */
-	static private final int NUM_REGISTER = 12;
+	static private final int NUM_REGISTER = 11;
 	static private final String Prefix = "\t\t";
 	private List<Register> registers;
-	private Register sp, lr, pc, ht;
+	private Register sp, lr, pc, ht, sb;
 	private int heapbase = 0;
 
 	/**
@@ -36,6 +36,7 @@ public class ARMEngine extends AbstractMachine {
 		lr = new Register("LR", -1);
 		pc = new Register("PC", -1);
 		ht = new Register("R", 12);
+    sb = new Register("R", 11);
 	}
 
 	/**
@@ -47,10 +48,12 @@ public class ARMEngine extends AbstractMachine {
 
 	public void writeCode(String fileName, String code) throws MCSException {
 		String preliminary = 
-			"HT	EQU R12\n" +
+			"HT	EQU " + ht + "\n" +
+      "SB EQU " + sb + "\n" +
 			"HB EQU " + heapbase*4 + "\n" +
       "\n" +
-      "MOV HT, HB\n" +
+      ARMEngine.Prefix + "MOV\tHT, HB\n" +
+      ARMEngine.Prefix + "MOV\tSB, ST\n" +
 			"\n";
 
 		super.writeCode(fileName, preliminary + code);
@@ -184,7 +187,8 @@ public class ARMEngine extends AbstractMachine {
 		} else if (t instanceof CharacterType) {
 			code = code + "STRSB\t" + info.register() + ", [SP, " + info.displacement() + "]\n";
       heapbase++;
-		} else if (t instanceof StructType) {
+		} 
+    else if (t instanceof StructType) {
 			// TODO: struct affectation is special
 			// We generate a load variable for every field of the struct
 			StructType st = (StructType)t;
@@ -249,6 +253,48 @@ public class ARMEngine extends AbstractMachine {
     reg.setStatus(Register.Status.Loaded);
     rout.copy(reg);
     return code;
+  }
+
+  /// Functions related
+  
+  /**
+   * Generate the code for the beginning of declaring a function
+   * @param info the info of the function
+   * @return the generated code
+   */
+  public String generateFunctionDeclarationBegin(FunctionInfo info) {
+    String code =
+      info.label() + ":\n" +
+      ARMEngine.Prefix + "; Push link register, stack base and stack pointer\n" +
+      ARMEngine.Prefix + "PUSH\t" + lr + "\n" +
+      ARMEngine.Prefix + "PUSH\t" + sb + "\n" + 
+      ARMEngine.Prefix + "PUSH\t" + sp + "\n";
+    return code;
+  }
+
+  /**
+   * Generate the code for the end of the function declaration
+   * @param info info of the function
+   * @return the generated code
+   */
+  public String generateFunctionDeclarationEnd(FunctionInfo info) {
+    Register reg = getNextUnusedRegister();
+
+    String code =
+      ARMEngine.Prefix + "; Pop registers and branch to precedent LR (= return)\n" +
+      ARMEngine.Prefix + "POP\t" + sp + "\n" +
+      ARMEngine.Prefix + "POP\t" + sb + "\n" +
+      ARMEngine.Prefix + "POP\t" + lr + "\n";
+
+    code +=
+      ARMEngine.Prefix + "; Pop arguments \n";
+
+    for (Type t : info.parameters()) {
+      code += ARMEngine.Prefix + "POP\t" + reg + "\n";
+    }
+
+    code +=
+      ARMEngine.Prefix + "BA\t" + lr + "\n\n";
   }
 	
   /// Calculus
