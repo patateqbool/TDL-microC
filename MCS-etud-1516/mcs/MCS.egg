@@ -43,6 +43,15 @@ inh typeh : Type for
          PTRS
          ;
 
+inh funInfoH : FunctionInfo for
+         PARFS, PARFSX
+				 ;
+
+syn funInfo : FunctionInfo for
+         PARFS, PARFSX
+	       ;
+
+
 inh nom : String for -- A completer (pas sur) --
          DECL, FONCTION
          ;
@@ -252,11 +261,9 @@ DECL -> pv #ajout;
 #ajout {
 local
   tv : VariableTable ;
-  i : VariableInfo ;
 do
-  i := new VariableInfo(DECL^type, --TODO disp -- );
   tv := DECL^tvar;
-  tv.insert(DECL^nom, i);
+  tv.insert(DECL^nom, DECL^type);
   DECL^tvarS := tv;
   DECL^tfunS := DECL^tfun ; -- La TDS fun n'est pas affectée.
 end
@@ -290,7 +297,7 @@ end
 
 
 
-FONCTION -> #creationTDSfille paro PARFS parf #ajout #codeDecl BLOC #codeFin ;
+FONCTION -> #creationTDSfille #creationFunctionInfo paro PARFS parf #ajout #codeDecl BLOC #codeFin ;
 
 -- On crée la TDSvar fille pour la passer à PARFS.
 #creationTDSfille {
@@ -298,6 +305,14 @@ local
 do
   PARFS^tvar := new VariableTable(FONCTION^tvar);
   PARFS^tfun := FONCTION^tfun;
+end
+}
+
+-- Creation de la FunctionInfo avec le type retour.
+#creationFunctionInfo {
+local
+do
+  PARFS^funInfoH := new FunctionInfo(PARFS^type);
 end
 }
 
@@ -309,12 +324,10 @@ end
 
 #ajout {
 local
-  funInfo : FunctionInfo;
   tf : FunctionTable;
 do
-  funInfo := new FunctionInfo(FONCTION^type , PARFS^lTypes);
   tf := PARFS^tfun;
-  tf.insert(FONCTION^nom, funInfo);
+  tf.insert(FONCTION^nom, PARFS^funInfo);
 -- Passage des TDS à Fonction.
   FONCTION^tfunS := tf;
 -- Passage des TDS à BLOC.
@@ -343,31 +356,37 @@ end
 -------------------------------------------
 -------- PARAMETRES DE FONCTION -----------
 -------------------------------------------
-PARFS ->  #creationLTypes ;
+PARFS ->  #passageFunInfo #transTvar ;
 
--- Il n'y a pas de param à la fonction.
--- Création de lTypes, vide.
-#creationLTypes {
+#passageFunInfo {
 local
 do
-  PARFS^lTypes := new ArrayList<Type>;
+  PARFS^funInfo := PARFS^funInfoH ;
+end
+}
+
+-- Passage de tvar, de manière à ce que l'attribut tvarS de PARFS soit initialisé.
+#transTvar {
+local
+do
+  PARFS^tvarS := PARFS^tvar;
 end
 }
 
 
 
-PARFS -> PARF PARFSX #creationLTypes #majTvarSynt;
+PARFS -> PARF #ajoutType PARFSX #majTvarSynt #transFI ;
 -- (Normalement le passage des TDS de PARFS à PARF puis de PARF à PARFSX se fait automatiquement).
 
 -- Création de lTypes de PARFS à partir de la liste des types de PARFSX et du type de PARF.
-#creationLTypes {
+#ajoutType {
 local
-  lt : ArrayList<Type>; 
+  fi : functionInfo ; 
 do
-  lt := PARFSX^lTypes;
-  -- On ajoute le type de PARF en tête de liste.
-  lt.add(0,PARF^Type);
-  PARFS^lTypes := lt;
+  fi := PARFS^funInfoH ;
+  -- On ajoute le type de PARF à la variable FunctionInfo.
+  fi.add(PARF^type);
+  PARFSX^funInfoH := fi;
 end
 }
 
@@ -380,30 +399,45 @@ do
 end
 }
 
-
-
-PARFSX ->  #creationLTypes ;
-
--- Création de la liste des types qui sera vide pour PARFSX.
-#creationLTypes {
+-- Transmission de FunctionInfo.
+#transFI {
 local
 do
-  PARFS^lTypes := new ArrayList<Type>;
+  PARFS^funInfo := PARFSX^funInfo ;
+end
+}
+
+
+PARFSX ->  #passageFunInfo ;
+
+-- Passage de FunctionInfo (transformation d'attribut hérité en attribut synthétisé).
+#passageFunInfo {
+local
+do
+  PARFSX^funInfo := PARFSX^funInfoH ;
 end
 }
 
  
-PARFSX ->  virg PARF PARFSX #creationLTypes;
+PARFSX ->  virg PARF #ajoutType PARFSX #transFI ;
 
--- Création de la liste des types en ajoutant le type de PARF à la liste des paramètres restants.
-#creationLTypes {
+-- Ajout du type de PARF à FunctionInfo
+#ajoutType {
 local
-  lt : ArrayList<Type>; 
+  fi : FunctionInfo ;
+do 
+  fi := PARFSX^funInfoH;
+	fi.add(PARF^type);
+	PARFSX1^funInfoH := fi;
+end
+}
+
+
+-- Transmission de FunctionInfo.
+#transFI {
+local
 do
-  lt := PARFSX1^lTypes;
-  -- On ajoute le type de PARF en tête de liste.
-  lt.add(0,PARF^type);
-  PARFS^lTypes := lt;
+  PARFSX^funInfo := PARFSX1^funInfo ;
 end
 }
 
@@ -413,25 +447,23 @@ PARF ->  TYPE #ajout ident ;
 
 -- Ajout de ident à la TDS locale.
 -- Passage du type de TYPE à PARF.
--- Vérifications concernant idents.
+-- Vérifications concernant ident.
 #ajout {
 local 
   info : SymbolInfo;
-  infoVar : VariableInfo;
 do
-  info := PARF^tvar.lookup(ident^txt, true);
+  info := PARF^tvar.lookup(ident^txt, false);
   -- Si identc est une clef dans la TDSvar, erreur.
   if info != null then
      error(IDENT_TAKEN, ident^txt);
   else {
-     info := ENTITE^tfun.lookup(ident^txt, true);
+     info := ENTITE^tfun.lookup(ident^txt, false);
      -- De même si identc est déjà utilisé dans la TDSfun.
      if info != null then
         error(IDENT_TAKEN, ident^txt);
      -- Sinon, on ajoute cet id à la tdsvar.
      else {
-        infoVar := new VariableInfo(TYPE^type, --TODO disp --);
-        PARF^tvar.insert(ident^txt, infoVar);
+        PARF^tvar.insert(ident^txt, TYPE^type);
         PARF^type := TYPE^type;
     }
   } 
@@ -492,13 +524,13 @@ end
 }
 
 
--- types de base
+-- Types de base
 STYPE-> void #typage ;
 
 #typage {
 local
 do
-  -- TODO
+  STYPE^type := new VoidType();
 end
 }
 
@@ -521,16 +553,58 @@ do
 end
 }
 
--- nom de type (commence par une majuscule)
+-- TODO
+-- Nom de type (commence par une majuscule)
 STYPE -> identc;
--------------  
--- et struct
-STYPE -> struct aco CHAMPS acf ;
-CHAMPS -> ;
--- un nom de champ commence par une minuscule
-CHAMPS -> CHAMP CHAMPS ;
-CHAMP -> TYPE ident pv;
+-- Comment vérifier qu'il s'agit de l'identifiant d'un type ? Utiliser isCompatible ?  
 
+
+-- Struct
+STYPE -> struct aco #ch CHAMPS acf  #type ;
+
+global 
+  lc : StructFields ;
+#ch {
+do
+  lc := new StructFields();
+  CHAMPS^champs := lc;
+end
+}
+
+#type {
+do
+  STYPE^type := new StructType(lc);
+end
+}
+
+CHAMPS -> ;
+
+-- Un nom de champ commence par une minuscule
+CHAMPS -> CHAMP #ch CHAMPS ;
+#ch {
+ local
+ do
+ -- J'ai changé l'attribut pour récupérer l'identifiant
+ -- Il vaut mieux stocker directement la chaine comme attribut de CHAMP.
+    if CHAMPS^champs.exist(CHAMP^nom) then
+       error(IDENT_TAKEN, CHAMP^nom);
+    else 
+		-- Pourquoi le call ?
+       call CHAMPS^champs.insert(CHAMP^nom,CHAMP^type);
+    end
+ end
+}
+
+
+CHAMP -> TYPE #ajout ident pv;
+
+#ajout {
+  local
+  do
+    CHAMP^nom = ident^txt;
+    CHAMP^type = TYPE^type;
+  end
+}
 
 
 ----------------------------------------------------------------
@@ -549,7 +623,7 @@ end
 
 
 -- Instructions
--- Fin des instructions de la fonction, rien de particulier à faire.
+-- Fin des instructions de la fonction.
 INSTS ->   ;
 
 
