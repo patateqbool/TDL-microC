@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
 import mcs.compiler.MCSSymbolNotFound;
+import mcs.compiler.MCSException;
 import mcs.compiler.MCSSymbolAlreadyDefineException;
 
 class StructFields {
@@ -38,8 +39,8 @@ class StructFields {
 	 * @param t type of the field
 	 */
 	public void insert(String n, Type t) throws MCSException {
-		type = this.fields.put(n, t);
-		if (f != null) {
+		Type type = this.fields.put(n, t);
+		if (type != null) {
 			this.fields.put(n, type);
 			throw new MCSSymbolAlreadyDefineException();
 		}
@@ -52,12 +53,25 @@ class StructFields {
 	 * @return t type of the field
 	 */ 
 	public Type find(String n) {
-		t = this.fields.get(n);
+		Type t = this.fields.get(n);
 		if (t == null) {
 			throw new MCSSymbolNotFound();
 		}
 		return t;
 	}
+
+  /**
+   * Determines whether or not the given field exists
+   * @param field the field to check
+   * @return true if it exists
+   */
+  public boolean exists(String field) {
+    for (String f : this.fieldsnb) {
+      if (f.equals(field))
+        return true;
+    }
+    return false;
+  }
 	
 	/**
 	 * Return the number of field in the struct
