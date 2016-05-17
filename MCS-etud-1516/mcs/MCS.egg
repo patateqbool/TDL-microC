@@ -555,8 +555,28 @@ end
 
 -- TODO
 -- Nom de type (commence par une majuscule)
-STYPE -> identc;
--- Comment vérifier qu'il s'agit de l'identifiant d'un type ? Utiliser isCompatible ?  
+STYPE -> identc #testtype;
+
+local
+#testtype {
+  info : SymbolInfo;
+  tinfo : TypeInfo
+do
+  info := STYPE^tvar.lookup(identc^txt, false);
+  -- Si identc est une clef dans la TDSvar, erreur.
+  if info == null then
+     error(IDENT_UNDEFINED, identc^txt);
+  else {
+     match info
+       with TypeInfo then
+         tinfo = info;
+         STYPE^type :=  tinfo.type();
+       else
+          error(NOT_A_TYPE,identc^txt);
+       end
+  } 
+  end
+}
 
 
 -- Struct
