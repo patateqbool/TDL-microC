@@ -525,12 +525,47 @@ end
 STYPE -> identc;
 -------------  
 -- et struct
-STYPE -> struct aco CHAMPS acf ;
+STYPE -> struct aco #ch CHAMPS acf  #type ;
+
+global 
+ lc : StructFields ;
+#ch {
+do
+  lc := new StructFields();
+  CHAMPS^champs := lc;
+end
+}
+
+#type {
+ do
+   TYPE^type := new StructType(lc);
+ end
+}
+
 CHAMPS -> ;
 -- un nom de champ commence par une minuscule
-CHAMPS -> CHAMP CHAMPS ;
-CHAMP -> TYPE ident pv;
+CHAMPS -> CHAMP #ch CHAMPS ;
+#ch {
+ local
+ do
+    if CHAMPS^champs.exist(CHAMP^ident^txt) then
+       error(IDENT_TAKEN, CHAMP^ident^txt);
+    else    
+       call CHAMPS^champs.insert(CHAMP^ident^txt,CHAMP^type);
+    end
+ end
+}
 
+
+CHAMP -> TYPE #ajout ident pv;
+
+#ajout {
+  local
+  do
+    CHAMP^ident = ident;
+    CHAMP^type = TYPE^type;
+  end
+}
 
 
 ----------------------------------------------------------------
