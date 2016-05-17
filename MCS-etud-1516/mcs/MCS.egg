@@ -39,8 +39,8 @@ syn type : Type for -- A completer --
          TYPE, STYPE, PTRS, DECL, FONCTION
          ;
 
-inh typeh : Type for
-         PTRS
+inh typeH : Type for
+         PTRS, INSTS, BLOC, INST, DECL, FONCTION, SIX
          ;
 
 inh funInfoH : FunctionInfo for
@@ -232,7 +232,7 @@ do
         error(IDENT_TAKEN, ident^txt);
      -- Sinon, on fait passer les infos utiles à DECL.
      else {
-        DECL^type := TYPE^type;
+        DECL^typeH := TYPE^type;
         DECL^nom := ident^txt;
         DECL^tvar := ENTITE^tvar;
         DECL^tfun := ENTITE^tfun;
@@ -263,7 +263,7 @@ local
   tv : VariableTable ;
 do
   tv := DECL^tvar;
-  tv.insert(DECL^nom, DECL^type);
+  tv.insert(DECL^nom, DECL^typeH);
   DECL^tvarS := tv;
   DECL^tfunS := DECL^tfun ; -- La TDS fun n'est pas affectée.
 end
@@ -280,7 +280,7 @@ DECL -> #transmission FONCTION #majTDS;
 local
 do
   FONCTION^nom := DECL^nom;
-  FONCTION^type := DECL^type;
+  FONCTION^typeH := DECL^typeH;
 end
 }
 
@@ -297,7 +297,7 @@ end
 
 
 
-FONCTION -> #creationTDSfille #creationFunctionInfo paro PARFS parf #ajout #codeDecl BLOC #codeFin ;
+FONCTION -> #creationTDSfille #creationFunctionInfo paro PARFS parf #ajout #passageTRetour #codeDecl BLOC #codeFin ;
 
 -- On crée la TDSvar fille pour la passer à PARFS.
 #creationTDSfille {
@@ -312,7 +312,7 @@ end
 #creationFunctionInfo {
 local
 do
-  PARFS^funInfoH := new FunctionInfo(PARFS^type);
+  PARFS^funInfoH := new FunctionInfo(FONCTION^type);
 end
 }
 
@@ -333,6 +333,14 @@ do
 -- Passage des TDS à BLOC.
   BLOC^tvar := PARFS^tvarS;
   BLOC^tfun := tf;
+end
+}
+
+-- Passage du type retour de la fonction à BLOC.
+#passageTRetour {
+local
+do
+  BLOC^typeH := FONCTION^typeH;
 end
 }
 
@@ -480,7 +488,7 @@ TYPE -> STYPE #passage PTRS #recupType;
 #passage {
 local
 do
-  PTRS^typeh := STYPE^type;
+  PTRS^typeH := STYPE^type;
 end
 }
 
@@ -500,7 +508,7 @@ PTRS -> #passage ;
 #passage {
 local
 do
-  PTRS^type := PTRS^typeh;
+  PTRS^type := PTRS^typeH;
 end
 }
 
@@ -511,7 +519,7 @@ PTRS -> mult #point PTRS #passage ;
 #point {
 local
 do
-  PTRS1^typeh := new PointerType(PTRS^typeh);
+  PTRS1^typeH := new PointerType(PTRS^typeH);
 end
 }
 
@@ -633,11 +641,13 @@ CHAMP -> TYPE #ajout ident pv;
 BLOC ->  aco #passage INSTS acf ;
 
 -- Probablement inutile, mais passage des TDS de BLOC à INSTS.
+-- Ainsi que le type retour de la fonction.
 #passage {
 local
 do
   INSTS^tvar := BLOC^tvar;
   INSTS^tfun := BLOC^tfun;
+	INSTS^typeH := BLOC^typeH;
 end
 }
 
@@ -648,7 +658,16 @@ INSTS ->   ;
 
 
 
-INSTS ->  INST #passage INSTS  ;
+INSTS -> #typeRetour INST #passage INSTS  ;
+
+-- Passage du type retour de la fonction.
+#typeRetour {
+local
+do
+  INST^typeH := INSTS^typeH;
+	INSTS1^typeH := INSTS^typeH;
+end
+}
 
 -- Passage des TDS de INST à INSTS1.
 #passage {
@@ -714,6 +733,7 @@ end
 INST -> si paro E parf #tdsFille BLOC #transTDS SIX #passAttributs;
 
 -- Création d'une tvar fille héritant de celle de INST pour BLOC.
+-- Transmission du type retour de la fonction.
 #tdsFille {
 local
   tfille : VariableTable;
@@ -722,16 +742,19 @@ do
 	BLOC^tvar := tfille;
 	-- Useless?
 	BLOC^tfun := INST^tfun;
+	BLOC^typeH := INST^typeH;
 end
 }
 
 -- Useless?
 -- Transmission des TDS 'parentes' à SIX.
+-- Ainsi que le type retour de la fonction.
 #transTDS {
 local
 do
   SIX^tvar := INST^tvar;
 	SIX^tfun := INST^tfun;
+	SIX^typeH := INST^typeH;
 end
 }
 
@@ -739,7 +762,7 @@ end
 #passAttributs {
 local
 do
-  INST^tvarS := INST;
+  INST^tvarS := INST^tvar;
 end
 }
 
@@ -748,6 +771,7 @@ end
 SIX -> sinon #tdsFille BLOC ;
 
 -- Création d'une tvar fille héritant de celle de INST pour BLOC.
+-- Passage du type retour de la fonction.
 #tdsFille {
 local
   tfille : VariableTable;
@@ -756,6 +780,7 @@ do
 	BLOC^tvar := tfille;
 	-- Useless?
 	BLOC^tfun := SIX^tfun;
+  BLOC^typeH := SIX^typeH;
 end
 }
 
@@ -767,7 +792,8 @@ SIX -> ;
 
 -- Retour de fonction
 INST ->  retour E pv ;
--- TODO : vérifier que E est du type de la fonction.
+-- TODO : Vérifier que E est du type retour de la fonction.
+--        Le type retour de la fonction se trouve dans l'attribut typeH de INST.         
 
 
 -----------------------------------------------------------------------
