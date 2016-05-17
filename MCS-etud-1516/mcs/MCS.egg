@@ -199,8 +199,8 @@ do
      else {
         -- TODO
         -- Création de la VariableInfo à ajouter à la TDS.
-      
-        ENTITE^tvar.insert(identc^txt, infoVar);
+        -- Y aura un TypeType.
+        ENTITE^tvar.insert(identc^txt, --type );
     }
   }  
 end
@@ -642,20 +642,113 @@ end
 
 
 -- Declaration de variable locale avec ou sans init 
-INST ->  TYPE ident AFFX pv ;
+INST ->  TYPE ident #ajoutTDS AFFX pv ;
 
+-- Vérifiation que l'identifiant n'est pas déjà use localement.
+-- Ajout à la Tvar.
+#ajoutTDS {
+local
+  info : SymbolInfo;
+	tv : VariableTable;
+do
+  info := INST^tvar.lookup(ident^txt, true);
+  -- Si ident est une clef dans la TDSvar, erreur.
+  if info != null then
+     error(IDENT_TAKEN, ident^txt);
+  else {
+     info := ENTITE^tfun.lookup(ident^txt, false);
+     -- De même si identc est déjà utilisé dans la TDSfun.
+     if info != null then
+        error(IDENT_TAKEN, ident^txt);
+     -- Sinon, on ajoute cet id à la tdsvar.
+     else {
+		    tv := INST^tvar;
+				tv.insert(ident^txt, TYPE^type);
+        INST^tvarS := tv;
+    }
+  } 
 
+end
+}
 
 -- Instruction expression (affectation et appel de procedure)
 INST -> E pv ;
--- bloc d'instructions
-INST ->  BLOC  ;
--- conditionnelle
-INST ->   si paro E parf BLOC SIX ;
-SIX ->    sinon BLOC ;
+
+
+
+-- Bloc d'instructions
+INST ->  #tdsFille BLOC ;
+
+-- Création d'une tvar fille héritant de celle de INST pour BLOC.
+#tdsFille {
+local
+  tfille : VariableTable;
+do
+  tfille := new VariableTable(INST^tvar);
+	BLOC^tvar := tfille;
+end
+}
+
+
+-- Conditionnelle
+INST -> si paro E parf #tdsFille BLOC #transTDS SIX #passAttributs;
+
+-- Création d'une tvar fille héritant de celle de INST pour BLOC.
+#tdsFille {
+local
+  tfille : VariableTable;
+do
+  tfille := new VariableTable(INST^tvar);
+	BLOC^tvar := tfille;
+	-- Useless?
+	BLOC^tfun := INST^tfun;
+end
+}
+
+-- Useless?
+-- Transmission des TDS 'parentes' à SIX.
+#transTDS {
+local
+do
+  SIX^tvar := INST^tvar;
+	SIX^tfun := INST^tfun;
+end
+}
+
+-- Passage de la TDSvar en attribut synthétisé.
+#passAttributs {
+local
+do
+  INST^tvarS := INST;
+end
+}
+
+
+
+SIX -> sinon #tdsFille BLOC ;
+
+-- Création d'une tvar fille héritant de celle de INST pour BLOC.
+#tdsFille {
+local
+  tfille : VariableTable;
+do
+  tfille := new VariableTable(SIX^tvar);
+	BLOC^tvar := tfille;
+	-- Useless?
+	BLOC^tfun := SIX^tfun;
+end
+}
+
+
+
 SIX -> ;
--- retour de fonction
-INST ->  retour  E pv ;
+-- Rien à faire pour la gestion des TDS.
+
+
+-- Retour de fonction
+INST ->  retour E pv ;
+-- TODO : vérifier que E est du type de la fonction.
+
 
 -----------------------------------------------------------------------
 --------------------------- LES EXPRESSIONS ---------------------------
