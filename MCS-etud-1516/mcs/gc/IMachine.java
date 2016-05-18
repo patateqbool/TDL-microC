@@ -21,8 +21,23 @@ public interface IMachine {
 		SUB, // Substraction
 		MUL, // Multiplication
 		DIV, // Division
-		NEG  // Arithmetic inversion (that is : minus)
+		NEG, // Arithmetic inversion (that is : minus)
+		AND, // And bitwise
+		OR,  // Or bitwise
 	}
+
+	public enum RelationnalOperator {
+		EQ,  // Equal
+		NEQ, // Non equal
+		LT,  // Lesser
+		LEQ, // Strict Inferior
+		GT,  // Superior
+		GEQ, // Strict Superior
+		AND, // And 
+		OR,  // Or
+		NOT, // Not
+	}
+		
 
 	/**
 	 * Suffixe du fichier cible (.tam par exemple)

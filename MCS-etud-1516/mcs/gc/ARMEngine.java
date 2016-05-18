@@ -424,6 +424,21 @@ public class ARMEngine extends AbstractMachine {
 		// End
 		return code;
 	}
+	
+	/**
+	 * Generate an relationnal binary operation
+	 * @param r1 first register
+	 * @param r2 second register
+	 * @param rout output register
+	 * @return the generated code
+	 */
+	public String generateOperation(Operator op, Register r1, Register r2, Register rout) {
+		// TODO: wrong operation type
+		// The last part of the code never changes : xxx Rx, R<1>, R<2>
+		String code = ", " + r1 + ", " + r2 + "\n";
+		
+	
+	}
 
 	/**************************************************/
 	private Register getNextUnusedRegister() {
