@@ -19,8 +19,10 @@ inh machine : IMachine for
 --         -- fin extension MCS
          ;
 
+-- TODO : Verifier que les attributs sont bien def.
+
 inh tvar : VariableTable for  -- A completer --
-         ENTITES, ENTITE
+         ENTITES, ENTITE, F
          ;
 
 syn tvarS : VariableTable for 
@@ -38,9 +40,9 @@ syn tfunS : FunctionTable for
 syn type : Type for -- A completer --
          TYPE, STYPE, PTRS, DECL, FONCTION
          ;
-
-inh typeh : Type for
-         PTRS
+ 
+inh typeH : Type for -- A Modifier --
+         PTRS, INSTS, BLOC, INST, DECL, FONCTION, SIX
          ;
 
 inh funInfoH : FunctionInfo for
@@ -51,10 +53,31 @@ syn funInfo : FunctionInfo for
          PARFS, PARFSX
 	       ;
 
+-- Attribut servant à savoir du quantième paramètre il s'agit. 
+inh cParam : int for
+         PARFS, PARF, PARFSX
+				 ;
 
 inh nom : String for -- A completer (pas sur) --
          DECL, FONCTION
          ;
+
+syn code : String for
+         
+				 ;
+
+syn op : Operator for
+				 OPADD, OPMULT, OPUN, RX
+				 ;
+
+syn oprel : RelationalOperator for
+				 OPREL
+				 ;
+
+syn reg : Register for
+				 F, T, RX
+				 ;
+
 
 -- ces attributs permettent de recuperer les instructions du code ASM inline       
 syn code_asm : STRING for ASM;
@@ -152,15 +175,23 @@ end
 #gen {
 local
 do
-   machine.writeCode(PROGRAMME^source.getFileName(),"; no code\n");  
+   machine.writeCode(PROGRAMME^source.getFileName(), ENTITES^code);  
 end
 }
 
 
-ENTITES -> ;
+ENTITES -> #code ;
+
+-- Pas de code : initialisation du code.
+#code {
+local
+do
+  ENTITES^code := "";
+end
+}
 
 
-ENTITES -> ENTITE #transmissionTDS ENTITES ;
+ENTITES -> ENTITE #transmissionTDS ENTITES #passCode ;
 
 -- Transmission des TDS mise à jour après ENTITE à ENTITES1.
 -- (La transmission de ENTITES à ENTITE se fait, normalement, automatiquement).
@@ -169,6 +200,14 @@ local
 do
   ENTITES1^tvar := ENTITE^tvarS;
   ENTITES1^tfun := ENTITE^tfunS;
+end
+}
+
+-- Concaténation et passage du code.
+#passCode {
+local
+do
+  ENTITES^code := ENTITE^code + ENTITES1^code;
 end
 }
 
@@ -211,7 +250,7 @@ end
 --            (commence par une minuscule)             --
 ---------------------------------------------------------
 
-ENTITE -> TYPE ident #idLibre DECL #majTDS; 
+ENTITE -> TYPE ident #idLibre DECL #majTDS #passCode; 
 
 -- Vérification que ident n'est pas déjà utilisé dans une TDS.
 -- On n'ajoute pas encore la variable / fonction à la table car on ne sait pas encore la nature.
@@ -232,7 +271,7 @@ do
         error(IDENT_TAKEN, ident^txt);
      -- Sinon, on fait passer les infos utiles à DECL.
      else {
-        DECL^type := TYPE^type;
+        DECL^typeH := TYPE^type;
         DECL^nom := ident^txt;
         DECL^tvar := ENTITE^tvar;
         DECL^tfun := ENTITE^tfun;
@@ -250,29 +289,45 @@ do
 end
 }
 
-
+--Useless
+-- Passage du code généré par DECL à ENTITE.
+#passCode {
+local
+do
+  ENTITE^code := DECL^code;
+end
+}
 
 -- VARIABLE
-DECL -> pv #ajout;
+DECL -> pv #ajoutDansTDS #genCode;
 
 -- Ajout de la variable (puisqu'on sait désormais que c'en est une) à la TDSvar (de DECL) la TDSfun reste inchangée.
 -- DECL possède les attributs nécessaires à la création de la VariableInfo.
 -- Les tds à jours sont mises dans des attributs spéciaux de manière à ce que la règle de prod précèdete puisse les récupérer.
-#ajout {
+#ajoutDansTDS {
 local
   tv : VariableTable ;
 do
   tv := DECL^tvar;
-  tv.insert(DECL^nom, DECL^type);
+  tv.insert(DECL^nom, DECL^typeH);
   DECL^tvarS := tv;
   DECL^tfunS := DECL^tfun ; -- La TDS fun n'est pas affectée.
 end
 }
 
+-- Génération du code pour la déclaration de la variable.
+#genCode {
+local
+  vi : VariableInfo;
+do
+  vi := DECL^tvarS.lookup(DECL^nom);
+	DECL^code := DECL^machine.generateStoreVariable(vi);
+end
+}
 
 
 -- FONCTION
-DECL -> #transmission FONCTION #majTDS;
+DECL -> #transmission FONCTION #majTDS #passCode;
 
 -- L'ajout de la fonction dans la TDS nécessitant la connaissance des params, on ne peut pas le faire dans cette RP.
 -- On fait passer le type retour ainsi que le nom de la fonction à FONCTION pour l'ajout.
@@ -280,7 +335,7 @@ DECL -> #transmission FONCTION #majTDS;
 local
 do
   FONCTION^nom := DECL^nom;
-  FONCTION^type := DECL^type;
+  FONCTION^typeH := DECL^typeH;
 end
 }
 
@@ -295,9 +350,17 @@ do
 end
 }
 
+--Passage du code de declaration de la fonction à DECL.
+#passCode {
+local
+do
+  DECL^code := FONCTION^code;
+end
+}
 
 
-FONCTION -> #creationTDSfille #creationFunctionInfo paro PARFS parf #ajout #codeDecl BLOC #codeFin ;
+
+FONCTION -> #creationTDSfille #creationFunctionInfo #initC paro PARFS parf #ajoutEtPassFI #creationTDSPetiteFille BLOC #declFonction ;
 
 -- On crée la TDSvar fille pour la passer à PARFS.
 #creationTDSfille {
@@ -312,44 +375,48 @@ end
 #creationFunctionInfo {
 local
 do
-  PARFS^funInfoH := new FunctionInfo(PARFS^type);
+  PARFS^funInfoH := new FunctionInfo(FONCTION^type);
 end
 }
 
--- Ajout de la fonction à tfun (stocké dans tfunS).
--- On a vérifié que le nom était "libre" dans "ENTITE -> TYPE ident #idLibre DECL".
--- Le nom ainsi que le type retour sont des attributs de FONCTION.
--- La liste des paramètres un attribut de PARFS.
--- Récupération de la TDS synthétisée à partir de la liste des paramètres.
+-- Initialisation du compteur de parametres.
+#initC {
+local 
+do
+  PARFS^cParam := 0;
+end
+}
 
-#ajout {
+-- Ajout de la FunctionInfo à tfun.
+-- Passage de tfun à FONCTION et BLOC.
+-- Passage de la FunctionInfo à BLOC.
+#ajoutEtPassFI {
 local
   tf : FunctionTable;
 do
   tf := PARFS^tfun;
   tf.insert(FONCTION^nom, PARFS^funInfo);
--- Passage des TDS à Fonction.
+-- Passage de tfun à FONCTION et à BLOC.
   FONCTION^tfunS := tf;
--- Passage des TDS à BLOC.
-  BLOC^tvar := PARFS^tvarS;
   BLOC^tfun := tf;
+-- Passage de funInfo à BLOC.
+  BLOC^funInfoH := PARFS^funInfo;
 end
 }
 
--- TODO : création du label et code asm des pops liés aux arguments.
---        (cf pad)
-#codeDecl {
+-- Creation d'une TDS fille de la Tvar de PARFS et passage en tant que tvar de BLOC.
+#creationTDSPetiteFille {
 local
 do
-
+  BLOC^tvar := new VariableTable(PARFS^tvarS);
 end
 }
 
--- TODO : fin du corps de la fonction BA LR.
-#codeFin {
+-- Generation du code de la declaration de la fonction.
+#declFonction {
 local
 do
-
+  FONCTION^code := FONCTION^machine.generateFunctionDeclaration(PARFS^funInfo , BLOC^code);
 end
 }
 
@@ -375,8 +442,19 @@ end
 
 
 
-PARFS -> PARF #ajoutType PARFSX #majTvarSynt #transFI ;
+PARFS -> #increC PARF #ajoutType PARFSX #majTvarSynt #transFI ;
 -- (Normalement le passage des TDS de PARFS à PARF puis de PARF à PARFSX se fait automatiquement).
+
+-- Incrementation du compteur de parametres, et passage de l'attribut.
+#incrC {
+local
+  c : int;
+do
+  c := PARFS^cParam + 1;
+	PARF^cParam := c;
+	PARFSX^cParam := c;
+end
+}
 
 -- Création de lTypes de PARFS à partir de la liste des types de PARFSX et du type de PARF.
 #ajoutType {
@@ -419,19 +497,35 @@ end
 }
 
  
-PARFSX ->  virg PARF #ajoutType PARFSX #transFI ;
+PARFSX -> #incrC virg #passFI PARF #passFI2 PARFSX #transFI ;
 
--- Ajout du type de PARF à FunctionInfo
-#ajoutType {
+-- Incrementation du compteur de parametres, et passage de l'attribut.
+#incrC {
 local
-  fi : FunctionInfo ;
-do 
-  fi := PARFSX^funInfoH;
-	fi.add(PARF^type);
-	PARFSX1^funInfoH := fi;
+  c : int;
+do
+  c := PARFSX^cParam + 1;
+	PARF^cParam := c;
+	PARFSX1^cParam := c;
 end
 }
 
+
+-- Passage de la FunctionInfo de PARFSX à PARF.
+#passFI {
+local
+do
+  PARF^funInfoH := PARFSX^funInfoH;
+end
+}
+
+-- Passage de la FunctionInfo de PARF à PARFSX1.
+#passFI2 {
+local
+do
+  PARFSX2^funInfoH := PARF^funInfo;
+end
+}
 
 -- Transmission de FunctionInfo.
 #transFI {
@@ -443,15 +537,21 @@ end
 
 
 
-PARF ->  TYPE #ajout ident ;
+PARF ->  TYPE #ajouts ident ;
 
+-- Ajout du type du param à FunctionInfo.
 -- Ajout de ident à la TDS locale.
--- Passage du type de TYPE à PARF.
 -- Vérifications concernant ident.
-#ajout {
-local 
-  info : SymbolInfo;
+#ajouts {
+local
+  fi : FunctionInfo;
+	info : SymbolInfo;
 do
+  -- Ajout du type du param à FunctionInfo.
+  fi := PARF^funInfoH;
+	fi.add(TYPE^type);
+
+  -- Vérifications concernant ident.
   info := PARF^tvar.lookup(ident^txt, false);
   -- Si identc est une clef dans la TDSvar, erreur.
   if info != null then
@@ -461,12 +561,13 @@ do
      -- De même si identc est déjà utilisé dans la TDSfun.
      if info != null then
         error(IDENT_TAKEN, ident^txt);
-     -- Sinon, on ajoute cet id à la tdsvar.
+     -- Ajout de ident à la TDS locale.
      else {
-        PARF^tvar.insert(ident^txt, TYPE^type);
-        PARF^type := TYPE^type;
-    }
-  } 
+        PARF^tvar.insert(ident^txt, 
+				                 new VariableInfo(TYPE^type, PARF^funInfo.displacement(PARF^cParam)));
+     }
+  }
+	PARF^funInfo := fi;
 end
 }
 
@@ -480,7 +581,7 @@ TYPE -> STYPE #passage PTRS #recupType;
 #passage {
 local
 do
-  PTRS^typeh := STYPE^type;
+  PTRS^typeH := STYPE^type;
 end
 }
 
@@ -500,7 +601,7 @@ PTRS -> #passage ;
 #passage {
 local
 do
-  PTRS^type := PTRS^typeh;
+  PTRS^type := PTRS^typeH;
 end
 }
 
@@ -511,7 +612,7 @@ PTRS -> mult #point PTRS #passage ;
 #point {
 local
 do
-  PTRS1^typeh := new PointerType(PTRS^typeh);
+  PTRS1^typeH := new PointerType(PTRS^typeH);
 end
 }
 
@@ -543,8 +644,8 @@ do
 end
 }
 
-STYPE-> char #typage ;
 
+STYPE-> char #typage ;
 
 #typage {
 local
@@ -563,13 +664,13 @@ local
   tinfo : TypeInfo
 do
   info := STYPE^tvar.lookup(identc^txt, false);
-  -- Si identc est une clef dans la TDSvar, erreur.
-  if info == null then
+  -- Si identc n'est pas une clef dans la TDSvar, erreur.
+  if info = null then
      error(IDENT_UNDEFINED, identc^txt);
   else {
      match info
        with TypeInfo then
-         tinfo = info;
+         tinfo := info;
          STYPE^type :=  tinfo.type();
        else
           error(NOT_A_TYPE,identc^txt);
@@ -610,8 +711,9 @@ CHAMPS -> CHAMP #ch CHAMPS ;
        error(IDENT_TAKEN, CHAMP^nom);
     else 
 		-- Pourquoi le call ?
-       call CHAMPS^champs.insert(CHAMP^nom,CHAMP^type);
-    end
+    -- call CHAMPS^champs.insert(CHAMP^nom,CHAMP^type);
+      CHAMPS^champs.insert(CHAMP^nom,CHAMP^type);
+		end
  end
 }
 
@@ -630,25 +732,55 @@ CHAMP -> TYPE #ajout ident pv;
 ----------------------------------------------------------------
 ----------- CORPS DE FONCTION ET BLOC D'INSTRUCTIONS -----------
 ----------------------------------------------------------------
-BLOC ->  aco #passage INSTS acf ;
+BLOC ->  aco #passage INSTS acf  #flushPassCode ;
 
 -- Probablement inutile, mais passage des TDS de BLOC à INSTS.
+-- Ainsi que la FunctionInfo de la fonction.
 #passage {
 local
 do
   INSTS^tvar := BLOC^tvar;
   INSTS^tfun := BLOC^tfun;
+	INSTS^funInfoH := BLOC^funInfoH;
+end
+}
+
+-- Generation du flush de fin de bloc.
+-- Passage du code généré par les INSTS (et le flush) à BLOC.
+#flushPassCode {
+local
+  code : String;
+do
+  code := INSTS^code;
+  code := code + BLOC^machine.generateFlush(BLOC^tvar);
+  BLOC^code := code;
 end
 }
 
 
+
 -- Instructions
 -- Fin des instructions de la fonction.
-INSTS ->   ;
+INSTS -> #initCode ;
 
+-- Initialisation de l'attribut code (chaine vide).
+#initCode {
+local
+do
+  INSTS^code := "";
+end
+}
 
+INSTS -> #funInfo INST #passage INSTS #passCode ;
 
-INSTS ->  INST #passage INSTS  ;
+-- Passage du type retour de la fonction.
+#funInfo {
+local
+do
+  INST^funInfoH := INSTS^funInfoH;
+	INSTS1^funInfoH := INSTS^funInfoH;
+end
+}
 
 -- Passage des TDS de INST à INSTS1.
 #passage {
@@ -659,8 +791,16 @@ do
 end
 }
 
+-- Concaténation des codes et passage à INSTS.
+#passCode {
+local
+do
+  INSTS^code := INST^code + INSTS1^code;
+end
+}
 
 
+-- TODO : gen code.
 -- Declaration de variable locale avec ou sans init 
 INST ->  TYPE ident #ajoutTDS AFFX pv ;
 
@@ -687,17 +827,17 @@ do
         INST^tvarS := tv;
     }
   } 
-
 end
 }
 
+-- TODO : Passage tvar.
 -- Instruction expression (affectation et appel de procedure)
 INST -> E pv ;
 
 
 
 -- Bloc d'instructions
-INST ->  #tdsFille BLOC ;
+INST ->  #tdsFille #passFI BLOC #passTvar #passCode;
 
 -- Création d'une tvar fille héritant de celle de INST pour BLOC.
 #tdsFille {
@@ -709,9 +849,41 @@ do
 end
 }
 
+-- Passage de la FunctionInfo.
+#passFI {
+local
+do
+  BLOC^funInfoH := INST^funInfoH;
+end
+}
+
+-- La tvar de INST n'est pas modifiée par BLOC.
+#passTvar {
+local
+do
+  INST^tvarS := INST^tvar;
+end
+}
+
+-- Passage du code de BLOC à INST.
+#passCode {
+local
+do
+  INST^code := BLOC^code;
+end
+}
 
 -- Conditionnelle
-INST -> si paro E parf #tdsFille BLOC #transTDS SIX #passAttributs;
+INST -> si paro E parf #passFI #tdsFille BLOC #transTDS SIX #passAttributs #passCode;
+
+-- Passage de FunctionInfo.
+#passFI {
+local
+do
+  BLOC^funInfoH := INST^funInfoH;
+	SIX^funInfoH := INST^funInfoH;
+end
+}
 
 -- Création d'une tvar fille héritant de celle de INST pour BLOC.
 #tdsFille {
@@ -739,15 +911,30 @@ end
 #passAttributs {
 local
 do
-  INST^tvarS := INST;
+  INST^tvarS := INST^tvar;
 end
 }
 
+-- Concaténation et passage du code.
+#passCode {
+local
+do
+  INST^code := BLOC^code + SIX^code;
+end
+}
 
+SIX -> sinon #passFI #tdsFille BLOC #passCode;
 
-SIX -> sinon #tdsFille BLOC ;
+-- Passage de FunctionInfo
+#passFI {
+local
+do
+  BLOC^funInfoH := SIX^funInfoH;
+end
+}
 
 -- Création d'une tvar fille héritant de celle de INST pour BLOC.
+-- Passage du type retour de la fonction.
 #tdsFille {
 local
   tfille : VariableTable;
@@ -759,15 +946,54 @@ do
 end
 }
 
+-- Passage du code du BLOC à SIX.
+#passCode{
+local
+do
+  SIX^code := BLOC^code;
+end
+}
 
 
-SIX -> ;
+
+SIX -> #codeVide ;
 -- Rien à faire pour la gestion des TDS.
+-- Génération d'une chaine de caractère vide.
+#codeVide {
+local
+do
+  SIX^code := "";
+end
+}
+
 
 
 -- Retour de fonction
-INST ->  retour E pv ;
--- TODO : vérifier que E est du type de la fonction.
+-- TODO : Vérifier que E est du type retour de la fonction (INST^funInfoH.returnType() ).
+--        generateFlush PUIS generateReturn.
+INST ->  retour E pv #verifTypage #genCode ;
+
+-- Vérification que E est du type retour de la fonction.
+#verifTypage {
+local
+  typeRet : Type;
+do
+  typeRet := INST^funInfoH.returnType();
+	-- TODO : si typeRet ne correspond pas à E^type
+	--        alors erreur.
+end
+}
+
+--Génération du code de retour de la fonction et du flush.
+#genCode {
+local
+  code : String;
+do
+  code :=   INST^machine.generateFlush(INST^tvar)
+	        + INST^machine.generateFunctionReturn(INST^funInfoH, E^reg);
+	INST^code := code;
+end
+}
 
 
 -----------------------------------------------------------------------
@@ -785,32 +1011,177 @@ AFFX -> affect  A  ;
 AFFX -> ;
 -- relation
 A ->   R AX  ;
-AX -> OPREL R;
-AX ->  ;
+AX -> OPREL R ;
+AX -> ;
+
 -- operateurs relationnels
-OPREL -> inf ;
-OPREL -> sup ;
-OPREL -> infeg ;
-OPREL -> supeg ;
-OPREL -> eg ;
-OPREL -> neg ;
+OPREL -> #opr inf ;
+
+#opr {
+local
+do
+  OPREL^oprel := LT;
+end
+}
+
+OPREL -> #opr sup ;
+
+#opr {
+local
+do
+  OPREL^oprel := GT;
+end
+}
+
+OPREL -> #opr infeg ;
+
+#opr {
+local
+do
+  OPREL^oprel := LEQ;
+end
+}
+
+OPREL -> #opr supeg ;
+
+#opr {
+local
+do
+  OPREL^oprel := GEQ;
+end
+}
+
+OPREL -> #opr eg ;
+
+#opr {
+local
+do
+  OPREL^oprel := EQ;
+end
+}
+
+OPREL -> #opr neg ;
+
+#opr {
+local
+do
+  OPREL^oprel := NEQ;
+end
+}
+
 R ->  T  RX ;
 -- additions ...
-RX ->   OPADD  T RX  ;
-RX -> ;
+RX ->   OPADD T RX #actuOp ;
+
+#actuOp {
+local
+do
+  if (RX1^op != NOP) {
+	  RX1^machine.generateOperation(RX1^op,T^reg,RX1^reg,RX^reg);
+	}
+	RX^op = OPADD^op;
+end
+}
+
+RX -> #nop;
+
+#nop {
+local
+do
+  RX^op := NOP;
+end
+}
+
 -- operateurs additifs
-OPADD -> plus ;
-OPADD -> moins ;
-OPADD -> ou ;
+OPADD -> #op plus ;
+
+#op {
+local
+do
+  OPADD^op := ADD;
+end
+}
+
+OPADD -> #op moins ;
+
+#op {
+local
+do
+  OPADD^op := SUB;
+end
+}
+
+OPADD -> #op ou ;
+
+-- TODO : faire chier GUILLAUME DUPONT pour qu'il ajoute OU
+#op {
+local
+do
+  OPADD^op := MUL;
+end
+}
+
 -- multiplication, ...
 T ->  F  TX  ;
-TX ->   OPMUL  F TX  ;
-TX ->  ;
+TX ->   OPMUL  F TX  #actuOp;
+
+#actuOp {
+local
+do
+  if (TX1^op != NOP) {
+	  TX1^machine.generateOperation(TX1^op,F^reg,TX1^reg,TX^reg);
+	}
+	TX^op = OPMUL^op;
+end
+}
+
+TX ->  #nop ;
+
+#nop {
+local
+do
+  TX^op := NOP;
+end
+}
+
 -- operateurs multiplicatifs
-OPMUL -> mult ;
-OPMUL -> div ;
-OPMUL -> mod ;
-OPMUL -> et ;
+OPMUL -> #op mult ;
+#op {
+local
+do
+  OPMUL^op := MUL;
+end
+}
+
+OPMUL -> #op div ;
+
+#op {
+local
+do
+  OPMUL^op := DIV;
+end
+}
+
+OPMUL -> #op mod ;
+
+-- TODO : faire chier GUILLAUME DUPONT pour qu'il ajoute MOD
+#op {
+local
+do
+  OPMUL^op := MUL;
+end
+}
+
+OPMUL -> #op et ;
+
+-- TODO : faire chier GUILLAUME DUPONT pour qu'il ajoute ET
+#op {
+local
+do
+  OPMUL^op := MUL;
+end
+}
+
 -- expressions de base
 -- Constante entiere
 F -> entier   ;
@@ -819,11 +1190,46 @@ F -> chaine ;
 -- Constante caractere
 F -> caractere ;
 -- expression unaire
-F ->  OPUN  F  ;
+F ->  OPUN  F  #genCode;
+
+-- Génération du code pour la déclaration de la variable.
+#genCode {
+local
+do
+	F^code:= F^machine.generateOperation(OPUN^op,F1^reg,F^reg);
+end
+}
+
 -- operateurs unaires
 OPUN -> plus ;
+
+-- TODO : faire chier GUILLAUME DUPONT pour qu'il ajoute PLUS
+#op {
+local
+do
+  OPUN^op := MUL;
+end
+}
+
 OPUN -> moins ;
+
+#op {
+local
+do
+  OPUN^op := NEG;
+end
+}
+
 OPUN -> non;
+
+-- TODO : faire chier GUILLAUME DUPONT pour qu'il ajoute NON
+#op {
+local
+do
+  OPUN^op := MUL;
+end
+}
+
 -- pointeur NULL
 F -> null  ;
 -- expression parenthesee
@@ -835,15 +1241,34 @@ F ->  paro TYPE parf #cast  F ;
 local
 do
   if F1^type.isCompatible(TYPE^type) then
-	   F1^type := TYPE^type;
+	   F^type := TYPE^type;
   else {
-     error(TYPE_NOT_COMPATIBLE, F1^type^name, TYPE^type^name);	   
+	   -- Pas de méthode name() dans Type pour l'instant.
+     error(TYPE_NOT_COMPATIBLE, F1^type.name(), TYPE^type.name());	   
   } 
 end
 }
 
 F -> mult F ;
-F -> ident FX ;
+
+F -> #rechercheId ident FX ;
+
+-- Recherche de l'identifiant dans la tds.
+#rechercheId {
+local
+  info : VariableInfo;
+do
+  info := F^tvar.lookup(ident^txt);
+	if (info = null) then
+	  error(IDENT_UNDEFINED, ident^txt);
+	else {
+    -- TODO : transmission du type.
+		--        des trucs avec FX ?
+	}
+end
+}
+
+
 FX -> ;
 -- acces champ
 FX ->   pt  ident FX ;
@@ -861,7 +1286,7 @@ ESX -> virg E ESX ;
 -----------------------------------------
 ------------- INLINE ASM ----------------
 -----------------------------------------
-ENTITE ->   asm #tds ASM#gen; 
+ENTITE -> asm #tds ASM #gen; 
 #tds {
 do 
   -- A faire : Remplacer 'null' par la table courante pour que
@@ -869,6 +1294,7 @@ do
   ASM^tds_asm := null; 
 end
 }
+
 #gen {
 do
   -- On recupere le code assembleur 'inline' dans : ASM^code_asm ;

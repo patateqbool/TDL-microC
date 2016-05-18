@@ -17,7 +17,7 @@ public class ArrayType extends Type {
 	 */
 	public ArrayType(Type t, int s) {
 		super(t.size()*s);
-                type = t;
+    type = t;
 	}
 
 	/**
@@ -31,14 +31,11 @@ public class ArrayType extends Type {
 	 * isCompatible()
 	 */
 	public boolean isCompatible(Type other) {
-		return false;
+		return (other instanceof ArrayType) && (other.size() == this.size());
 	}
 
 	public Type getType() {
 		return this.type;
 	}
 
-        public Type getSize() {
-                return this.type.size()*this.size;
-        }
 }
