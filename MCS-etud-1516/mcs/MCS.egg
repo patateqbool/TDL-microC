@@ -40,7 +40,7 @@ syn tfunS : FunctionTable for
 syn type : Type for -- A completer --
          TYPE, STYPE, PTRS, DECL, FONCTION
          ;
-
+ 
 inh typeH : Type for -- A Modifier --
          PTRS, INSTS, BLOC, INST, DECL, FONCTION, SIX
          ;
@@ -413,7 +413,7 @@ end
 }
 
 -- Generation du code de la declaration de la fonction.
-#codeFin {
+#declFonction {
 local
 do
   FONCTION^code := FONCTION^machine.generateFunctionDeclaration(PARFS^funInfo , BLOC^code);
@@ -644,8 +644,8 @@ do
 end
 }
 
-STYPE-> char #typage ;
 
+STYPE-> char #typage ;
 
 #typage {
 local
@@ -800,7 +800,7 @@ end
 }
 
 
-
+-- TODO : gen code.
 -- Declaration de variable locale avec ou sans init 
 INST ->  TYPE ident #ajoutTDS AFFX pv ;
 
@@ -837,7 +837,7 @@ INST -> E pv ;
 
 
 -- Bloc d'instructions
-INST ->  #tdsFille #passFI BLOC #passTvar ;
+INST ->  #tdsFille #passFI BLOC #passTvar #passCode;
 
 -- Création d'une tvar fille héritant de celle de INST pour BLOC.
 #tdsFille {
@@ -865,8 +865,16 @@ do
 end
 }
 
+-- Passage du code de BLOC à INST.
+#passCode {
+local
+do
+  INST^code := BLOC^code;
+end
+}
+
 -- Conditionnelle
-INST -> si paro E parf #passFI #tdsFille BLOC #transTDS SIX #passAttributs;
+INST -> si paro E parf #passFI #tdsFille BLOC #transTDS SIX #passAttributs #passCode;
 
 -- Passage de FunctionInfo.
 #passFI {
@@ -907,9 +915,15 @@ do
 end
 }
 
+-- Concaténation et passage du code.
+#passCode {
+local
+do
+  INST^code := BLOC^code + SIX^code;
+end
+}
 
-
-SIX -> sinon #passFI #tdsFille BLOC ;
+SIX -> sinon #passFI #tdsFille BLOC #passCode;
 
 -- Passage de FunctionInfo
 #passFI {
@@ -932,17 +946,54 @@ do
 end
 }
 
+-- Passage du code du BLOC à SIX.
+#passCode{
+local
+do
+  SIX^code := BLOC^code;
+end
+}
 
 
-SIX -> ;
+
+SIX -> #codeVide ;
 -- Rien à faire pour la gestion des TDS.
+-- Génération d'une chaine de caractère vide.
+#codeVide {
+local
+do
+  SIX^code := "";
+end
+}
+
 
 
 -- Retour de fonction
-INST ->  retour E pv ;
 -- TODO : Vérifier que E est du type retour de la fonction (INST^funInfoH.returnType() ).
---        Le type retour de la fonction se trouve dans l'attribut typeH de INST.
 --        generateFlush PUIS generateReturn.
+INST ->  retour E pv #verifTypage #genCode ;
+
+-- Vérification que E est du type retour de la fonction.
+#verifTypage {
+local
+  typeRet : Type;
+do
+  typeRet := INST^funInfoH.returnType();
+	-- TODO : si typeRet ne correspond pas à E^type
+	--        alors erreur.
+end
+}
+
+--Génération du code de retour de la fonction et du flush.
+#genCode {
+local
+  code : String;
+do
+  code :=   INST^machine.generateFlush(INST^tvar)
+	        + INST^machine.generateFunctionReturn(INST^funInfoH, E^reg);
+	INST^code := code;
+end
+}
 
 
 -----------------------------------------------------------------------
