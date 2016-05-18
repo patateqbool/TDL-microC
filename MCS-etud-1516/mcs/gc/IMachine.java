@@ -23,6 +23,18 @@ public interface IMachine {
 		DIV, // Division
 		NEG  // Arithmetic inversion (that is : minus)
 	}
+	
+	public enum RelationnalOperator {
+		EQ,  // Equal
+		NEQ, // Non equal
+		LT,  // Lesser
+		LEQ, // Strict Inferior
+		GT,  // Superior
+		GEQ, // Strict Superior
+		AND, // And 
+		OR,  // Or
+		NOT, // Not
+	}
 
 	/**
 	 * Suffixe du fichier cible (.tam par exemple)
