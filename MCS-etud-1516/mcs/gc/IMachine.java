@@ -115,6 +115,14 @@ public interface IMachine {
   String generateFunctionDeclaration(FunctionInfo info, String code);
 
   /**
+   * Generate the code for the 'return' keyword
+   * @param info the info of the fuunction
+   * @param reg register containing the value to return
+   * @return the generated code
+   */
+  String generateFunctionReturn(FunctionInfo info, Register reg);
+
+  /**
    * Generate the code for pushing an argument
    * @param reg register in which the argument is stored
    * @return the generated code
