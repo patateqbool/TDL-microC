@@ -23,7 +23,8 @@ public interface IMachine {
 		DIV, // Division
 		NEG, // Arithmetic inversion (that is : minus)
 		AND, // Arithmetic inversion (that is : minus)
-		OR   // Arithmetic inversion (that is : minus)
+		OR,   // Arithmetic inversion (that is : minus)
+		NOP  // No OPeration (useful to control the end of an expr)
 	}
 	
 	public enum RelationalOperator {
@@ -127,6 +128,14 @@ public interface IMachine {
    * @return the generated code
    */
   String generateFunctionDeclaration(FunctionInfo info, String code);
+
+  /**
+   * Generate the code for the 'return' keyword
+   * @param info the info of the fuunction
+   * @param reg register containing the value to return
+   * @return the generated code
+   */
+  String generateFunctionReturn(FunctionInfo info, Register reg);
 
   /**
    * Generate the code for pushing an argument
