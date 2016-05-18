@@ -6,24 +6,27 @@
  */
 package mcs.symtab;
 
-import java.util.Set;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
 
 public class FunctionTable implements SymbolTable 
 {
 	// Attributes
+  private List<String> symbols;
 	private Map<String, SymbolInfo> content;
 
   // Ther is no parent ("global" and "local" function does not have any sens for now
 
   public FunctionTable() {
 		this.content = new HashMap<String, SymbolInfo>();
+    this.symbols = new ArrayList<String>();
   }
 
   public SymbolInfo lookup(String name, boolean local) {
     // local is unused
-    for (String key : this.content.keySet()) {
+    for (String key : this.symbols) {
       if (key.equals(name))
         return this.content.get(name);
     }
@@ -50,6 +53,7 @@ public class FunctionTable implements SymbolTable
     fi.setLabel(label);
     
     this.content.put(name, fi);
+    this.symbols.add(name);
     return true;
   }
 
@@ -57,8 +61,8 @@ public class FunctionTable implements SymbolTable
     return null;
   }
 
-	public Set<String> symbols() {
-		return this.content.keySet();
+	public List<String> symbols() {
+		return this.symbols;
 	}
 }
 

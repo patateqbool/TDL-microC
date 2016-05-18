@@ -6,13 +6,15 @@
  */
 package mcs.symtab;
 
-import java.util.Set;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
 
 public class VariableTable implements SymbolTable {
   // Attributes
 	private Map<String, SymbolInfo> content;
+  private List<String> symbols; // we need to store an ordered list of symbols (for pop/push eg)
   private SymbolTable parent; // Parent of this table
 	private int displacement;
 
@@ -23,6 +25,7 @@ public class VariableTable implements SymbolTable {
   public VariableTable(VariableTable p) {
     this.parent = p;
 		this.content = new HashMap<String, SymbolInfo>();
+    this.symbols = new ArrayList<String>();
 
 		if (p != null)
 			this.displacement = p.offset();
@@ -45,15 +48,15 @@ public class VariableTable implements SymbolTable {
 		return this.displacement;
 	}
 
-	public Set<String> symbols() {
-		return this.content.keySet();
+	public List<String> symbols() {
+		return this.symbols;
 	}
 
   /**
    * Look up into the table
    */
   public SymbolInfo lookup(String name, boolean local) {
-    for (String key : this.content.keySet()) {
+    for (String key : this.symbols) {
       if (key.equals(name))
         return this.content.get(name);
     }
@@ -72,6 +75,7 @@ public class VariableTable implements SymbolTable {
     if (this.content.containsKey(name))
       return false;
     this.content.put(name, vi);
+    this.symbols.add(name);
 
     int ts = vi.type().size();
     this.displacement += (ts % 4 == 0 ? ts : ts + (4 - (ts % 4)));

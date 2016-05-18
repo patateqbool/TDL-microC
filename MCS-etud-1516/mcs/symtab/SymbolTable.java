@@ -35,7 +35,7 @@ public interface SymbolTable {
 	 * Get the list of symbol in this table
 	 * @return a SET of symbols
 	 */
-	Set<String> symbols();
+	List<String> symbols();
 }
 
 
