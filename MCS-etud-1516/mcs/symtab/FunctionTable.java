@@ -37,8 +37,19 @@ public class FunctionTable implements SymbolTable
      */
     if (this.content.containsKey(name))
       return false;
+
+    if (!(info instanceof FunctionInfo))
+      return false;
+
+    FunctionInfo fi = (FunctionInfo)info;
+    String label = "_" + name + "@" + fi.returnType();
+
+    for (Type t : fi.parameters())
+      label += "$" + t;
+
+    fi.setLabel(label);
     
-    this.content.put(name, info);
+    this.content.put(name, fi);
     return true;
   }
 
