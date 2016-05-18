@@ -334,6 +334,24 @@ public class ARMEngine extends AbstractMachine {
    * @return the generated code
    */
   public String generateFunctionPushArgument(Register reg) {
+    String code =
+      ARMEngine.Prefix + "PUSH\t" + reg + "\n";
+    reg.setStatus(Register.Status.Used);
+    return code;
+  }
+
+
+  /**
+   * Generate the code for the call to a function
+   * @param info info of the function
+   * @return the generated code
+   */
+  public String generateFunctionCall(FunctionInfo info) {
+    String code =
+      ARMEngine.Prefix + "BA\t" + info.label() + "\n";
+    // TODO: result of the function is on the stack
+    // (addr = SP)
+    return code;
   }
 
   /// Calculus
