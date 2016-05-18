@@ -21,10 +21,13 @@ public interface IMachine {
 		SUB, // Substraction
 		MUL, // Multiplication
 		DIV, // Division
-		NEG  // Arithmetic inversion (that is : minus)
+		NEG, // Arithmetic inversion (that is : minus)
+		AND, // Arithmetic inversion (that is : minus)
+		OR,   // Arithmetic inversion (that is : minus)
+		NOP  // No OPeration (useful to control the end of an expr)
 	}
 	
-	public enum RelationnalOperator {
+	public enum RelationalOperator {
 		EQ,  // Equal
 		NEQ, // Non equal
 		LT,  // Lesser

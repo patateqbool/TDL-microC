@@ -22,7 +22,7 @@ inh machine : IMachine for
 -- TODO : Verifier que les attributs sont bien def.
 
 inh tvar : VariableTable for  -- A completer --
-         ENTITES, ENTITE
+         ENTITES, ENTITE, F
          ;
 
 syn tvarS : VariableTable for 
@@ -65,6 +65,19 @@ inh nom : String for -- A completer (pas sur) --
 syn code : String for
          
 				 ;
+
+syn op : Operator for
+				 OPADD, OPMULT, OPUN, RX
+				 ;
+
+syn oprel : RelationalOperator for
+				 OPREL
+				 ;
+
+syn reg : Register for
+				 F, T, RX
+				 ;
+
 
 -- ces attributs permettent de recuperer les instructions du code ASM inline       
 syn code_asm : STRING for ASM;
@@ -1001,29 +1014,154 @@ A ->   R AX  ;
 AX -> OPREL R;
 AX ->  ;
 -- operateurs relationnels
-OPREL -> inf ;
-OPREL -> sup ;
-OPREL -> infeg ;
-OPREL -> supeg ;
-OPREL -> eg ;
-OPREL -> neg ;
+OPREL -> #opr inf ;
+
+#opr {
+local
+do
+  OPREL^oprel := LT;
+end
+}
+
+OPREL -> #opr sup ;
+
+#opr {
+local
+do
+  OPREL^oprel := GT;
+end
+}
+
+OPREL -> #opr infeg ;
+
+#opr {
+local
+do
+  OPREL^oprel := LEQ;
+end
+}
+
+OPREL -> #opr supeg ;
+
+#opr {
+local
+do
+  OPREL^oprel := GEQ;
+end
+}
+
+OPREL -> #opr eg ;
+
+#opr {
+local
+do
+  OPREL^oprel := EQ;
+end
+}
+
+OPREL -> #opr neg ;
+
+#opr {
+local
+do
+  OPREL^oprel := NEQ;
+end
+}
+
 R ->  T  RX ;
 -- additions ...
-RX ->   OPADD  T RX  ;
-RX -> ;
+RX ->   OPADD T RX #actuOp ;
+
+#actuOp {
+local
+do
+  if (RX^op != NOP) {
+	  RX^machine.generateOperation(RX^op,T^reg,RX1^reg,RX^reg);
+	}
+	RX^op = OPADD^op;
+end
+}
+
+RX -> #nop;
+
+#nop {
+local
+do
+  RX^op := NOP;
+end
+}
+
 -- operateurs additifs
-OPADD -> plus ;
-OPADD -> moins ;
-OPADD -> ou ;
+OPADD -> #op plus ;
+
+#op {
+local
+do
+  OPADD^op := ADD;
+end
+}
+
+OPADD -> #op moins ;
+
+#op {
+local
+do
+  OPADD^op := SUB;
+end
+}
+
+OPADD -> #op ou ;
+
+-- TODO : faire chier GUILLAUME DUPONT pour qu'il ajoute OU
+#op {
+local
+do
+  OPADD^op := MUL;
+end
+}
+
 -- multiplication, ...
 T ->  F  TX  ;
 TX ->   OPMUL  F TX  ;
 TX ->  ;
 -- operateurs multiplicatifs
-OPMUL -> mult ;
-OPMUL -> div ;
-OPMUL -> mod ;
-OPMUL -> et ;
+OPMUL -> #op mult ;
+#op {
+local
+do
+  OPMUL^op := MUL;
+end
+}
+
+OPMUL -> #op div ;
+
+#op {
+local
+do
+  OPMUL^op := DIV;
+end
+}
+
+OPMUL -> #op mod ;
+
+-- TODO : faire chier GUILLAUME DUPONT pour qu'il ajoute MOD
+#op {
+local
+do
+  OPMUL^op := MUL;
+end
+}
+
+OPMUL -> #op et ;
+
+-- TODO : faire chier GUILLAUME DUPONT pour qu'il ajoute ET
+#op {
+local
+do
+  OPMUL^op := MUL;
+end
+}
+
 -- expressions de base
 -- Constante entiere
 F -> entier   ;
@@ -1032,11 +1170,46 @@ F -> chaine ;
 -- Constante caractere
 F -> caractere ;
 -- expression unaire
-F ->  OPUN  F  ;
+F ->  OPUN  F  #genCode;
+
+-- Génération du code pour la déclaration de la variable.
+#genCode {
+local
+do
+	F^code:= F^machine.generateOperation(OPUN^op,F1^reg,F^reg);
+end
+}
+
 -- operateurs unaires
 OPUN -> plus ;
+
+-- TODO : faire chier GUILLAUME DUPONT pour qu'il ajoute PLUS
+#op {
+local
+do
+  OPUN^op := MUL;
+end
+}
+
 OPUN -> moins ;
+
+#op {
+local
+do
+  OPUN^op := NEG;
+end
+}
+
 OPUN -> non;
+
+-- TODO : faire chier GUILLAUME DUPONT pour qu'il ajoute NON
+#op {
+local
+do
+  OPUN^op := MUL;
+end
+}
+
 -- pointeur NULL
 F -> null  ;
 -- expression parenthesee

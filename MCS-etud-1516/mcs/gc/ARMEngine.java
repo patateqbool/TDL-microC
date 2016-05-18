@@ -382,6 +382,12 @@ public class ARMEngine extends AbstractMachine {
 			case DIV:
 				opcode = "SDIV";
 				break;
+			case AND:
+				opcode = "AND"; 
+				break;
+			case OR:
+				opcode = "OR"; 
+				break;
 		}
 
 		// Source register are no longer used
@@ -450,12 +456,82 @@ public class ARMEngine extends AbstractMachine {
 	 * @param rout output register
 	 * @return the generated code
 	 */
-	public String generateOperation(Operator op, Register r1, Register r2, Register rout) {
-		// TODO: wrong operation type
-		// The last part of the code never changes : xxx Rx, R<1>, R<2>
-		String code = ", " + r1 + ", " + r2 + "\n";
+	public String generateOperation(RelationalOperator op, Register r1, Register r2, Register rout) {
+		Register r = getNextUnusedRegister();
+		String code = ARMEngine.Prefix + "MOV\t" + r + "#0x0"; 
+		switch (op) {
+			/* AND is a specification of EQ */
+			case EQ:
+				code += ARMPrefix.Engine + "CMP\t" + r1 + ", " + r2 + "\n";
+				code += ARMPrefix.Engine + "MOVEQ\t" + r + "1" + "\n";
+				break;	
+			case NEQ:
+				code += ARMPrefix.Engine + "CMP\t" + r1 + ", " + r2 + "\n";
+				code += ARMPrefix.Engine + "MOVEQ\t" + r + "1" + "\n";
+				break;	
+			case LT:
+				code += ARMPrefix.Engine + "CMP\t" + r1 + ", " + r2 + "\n";
+				code += ARMPrefix.Engine + "MOVEQ\t" + r + "1" + "\n";
+				break;	
+			case LEQ:
+				code += ARMPrefix.Engine + "CMP\t" + r1 + ", " + r2 + "\n";
+				code += ARMPrefix.Engine + "MOVEQ\t" + r + "1" + "\n";
+				break;	
+			case GT:
+				code += ARMPrefix.Engine + "CMP\t" + r1 + ", " + r2 + "\n";
+				code += ARMPrefix.Engine + "MOVEQ\t" + r + "1" + "\n";
+				break;	
+			case GEQ:
+				code += ARMPrefix.Engine + "CMP\t" + r1 + ", " + r2 + "\n";
+				code += ARMPrefix.Engine + "MOVEQ\t" + r + "1" + "\n";
+				break;	
+			case AND:
+				code += ARMPrefix.Engine + "ANDS\t" + r1 + ", " + r2 + "\n";
+				code += ARMPrefix.Engine + "MOVEQ\t" + r + "1" + "\n";
+				break;	
+			case OR:
+				code += ARMPrefix.Engine + "ORRS\t" + r1 + ", " + r2 + "\n";
+				code += ARMPrefix.Engine + "MOVEQ\t" + r + "1" + "\n";
+				break;
+		}
+		// Information about register
+		r1.setStatus(Register.Status.Used);
+		r2.setStatus(Register.Status.Used);
 		
-	
+		// Manage register
+		r.setStatus(Register.Status.Loaded);
+		rout.copy(r);
+		
+		heapbase += 3;
+		
+		return code;
+	}
+
+	/**
+	 * Generate an relationnal binary operation
+	 * @param rin input register 
+	 * @param rout output register
+	 * @return the generated code
+	 */
+	public String generateOperation(RelationnalOperator op, Register rin, Register rout) {
+		String code = ARMPrefix.Engine + "MOV\t" + r + "#0x0";
+		switch (op) {
+			case NOT:
+				code += ARMPrefix.Engine + "CMP\t" + r1 + ", 0\n";
+				code += ARMPrefix.Engine + "MOVNE\t" + r + "1" + "\n";
+				break;
+		}
+		
+		// Information about register
+		r1.setStatus(Register.Status.Used);
+		
+		// Manage register
+		r.setStatus(Register.Status.Loaded);
+		rout.copy(r);
+		
+		heapbase += 3;
+		
+		return code;
 	}
 
 	/**************************************************/
