@@ -103,31 +103,36 @@ public class ARMEngine extends AbstractMachine {
 	/**
 	 * Generate the code for loading a constant itneger into a register.
 	 * Note: register management is done by the machine.
-	 * @param value value of the constant to load
+	 * @param info info of the constant to load
 	 * @param output register where the value is put, for later referencing
 	 * @return the generated code
 	 */
-	public String generateLoadInteger(int value, Register output) {
-		/*
-		 * The main problem is that the MOV instruction (which put a value into a register)
-		 * can only work on halfwords (16-bit data).
-		 * The trick is to use MOV and MOVT; the latter set the 16 MSB of the register to
-		 * the value specified.
-		 * Of course, we do that only if needed.
-		 */
-		// Retrieve a valid register for putting the result
-		Register reg = getNextUnusedRegister();
+	public String generateLoadConstant(ConstantInfo info, Register output) {
+    Type t = info.type();
+    String code = "";
+    Register reg = getNextUnusedRegister();
 
-		// Generate code
-		String code = ARMEngine.Prefix + "MOV\t" + reg + ", #0x" + Integer.toHexString(value & 0x0000FFFF) + "\n";
+    if (t instanceof IntegerType) {
+      Integer value = (Integer)info.value();
+		   /*
+		    * The main problem is that the MOV instruction (which put a value into a register)
+		    * can only work on halfwords (16-bit data).
+		    * The trick is to use MOV and MOVT; the latter set the 16 MSB of the register to
+		    * the value specified.
+		    * Of course, we do that only if needed.
+		    */
+		  // Generate code
+		  code = ARMEngine.Prefix + "MOV\t" + reg + ", #0x" + Integer.toHexString(value & 0x0000FFFF) + "\n";
 
-		if (value > 65535) {
-			// If needed, we must set the top part of the value
-			code = code + ARMEngine.Prefix + "MOVT\t" + reg + ", #0x" + Integer.toHexString(value >> 16) + "\n";
-			heapbase++; // > this generate an additionnal instruction
-		}
+		  if (value > 65535) {
+			  // If needed, we must set the top part of the value
+			  code = code + ARMEngine.Prefix + "MOVT\t" + reg + ", #0x" + Integer.toHexString(value >> 16) + "\n";
+			  heapbase++; // > this generate an additionnal instruction
+		  }
+    }
 
 		// Manage registers
+    info.assignRegister(reg);
 		reg.setStatus(Register.Status.Loaded);
 		output.copy(reg);
 
@@ -180,6 +185,13 @@ public class ARMEngine extends AbstractMachine {
 	public String generateStoreVariable(VariableInfo info) {
 		String code = ARMEngine.Prefix;
 		Type t = info.type();
+
+    if (info.register() == null) {
+      info.assignRegister(getNextUnusedRegister());
+    }
+
+    // The only precondition for the code below is to have an initialized
+    // register object
 
 		/*if (t instanceof IntegerType || t instanceof PointerType) {
 			code = code + "STR\t" + info.register() + ", [SP, " + info.displacement() + "]\n";
@@ -238,7 +250,7 @@ public class ARMEngine extends AbstractMachine {
 	public String generateFlush(SymbolTable symtab) {
 		Register reg = getNextUnusedRegister();
 
-		String code = generateLoadInteger(0, reg);
+		String code = generateLoadConstant(new ConstantInfo(new IntegerType(), 0), reg);
 		
 		for (String key : symtab.symbols()) {
 			VariableInfo vi = (VariableInfo)symtab.lookup(key, true);
@@ -284,27 +296,19 @@ public class ARMEngine extends AbstractMachine {
   /**
    * Generate the code for the beginning of declaring a function
    * @param info the info of the function
+   * @param code code generated for the content of the function
    * @return the generated code
    */
-  public String generateFunctionDeclarationBegin(FunctionInfo info) {
+  public String generateFunctionDeclaration(FunctionInfo info, String blockcode) {
+    Register reg = getNextUnusedRegister();
+    
     String code =
       info.label() + ":\n" +
       ARMEngine.Prefix + "; Push link register, stack base and stack pointer\n" +
       ARMEngine.Prefix + "PUSH\t" + lr + "\n" +
       ARMEngine.Prefix + "PUSH\t" + sb + "\n" + 
-      ARMEngine.Prefix + "PUSH\t" + sp + "\n";
-    return code;
-  }
-
-  /**
-   * Generate the code for the end of the function declaration
-   * @param info info of the function
-   * @return the generated code
-   */
-  public String generateFunctionDeclarationEnd(FunctionInfo info) {
-    Register reg = getNextUnusedRegister();
-
-    String code =
+      ARMEngine.Prefix + "PUSH\t" + sp + "\n" +
+      blockcode +
       ARMEngine.Prefix + "; Pop registers and branch to precedent LR (= return)\n" +
       ARMEngine.Prefix + "POP\t" + sp + "\n" +
       ARMEngine.Prefix + "POP\t" + sb + "\n" +
@@ -319,8 +323,19 @@ public class ARMEngine extends AbstractMachine {
 
     code +=
       ARMEngine.Prefix + "BA\t" + lr + "\n\n";
+
+    
+    return code;
   }
-	
+
+  /**
+   * Generate the code for pushing an argument
+   * @param reg register in which the argument is stored
+   * @return the generated code
+   */
+  public String generateFunctionPushArgument(Register reg) {
+  }
+
   /// Calculus
 	/**
 	 * Generate an arithmetic binary operation
@@ -408,6 +423,21 @@ public class ARMEngine extends AbstractMachine {
 
 		// End
 		return code;
+	}
+	
+	/**
+	 * Generate an relationnal binary operation
+	 * @param r1 first register
+	 * @param r2 second register
+	 * @param rout output register
+	 * @return the generated code
+	 */
+	public String generateOperation(Operator op, Register r1, Register r2, Register rout) {
+		// TODO: wrong operation type
+		// The last part of the code never changes : xxx Rx, R<1>, R<2>
+		String code = ", " + r1 + ", " + r2 + "\n";
+		
+	
 	}
 
 	/**************************************************/

@@ -4,6 +4,7 @@ import mcs.compiler.MCSException;
 import mcs.symtab.VariableInfo;
 import mcs.symtab.FunctionInfo;
 import mcs.symtab.SymbolTable;
+import mcs.symtab.ConstantInfo;
 
 /**
  * Cette interface décrit une machine cible. A compléter, selon votre modèle
@@ -20,8 +21,23 @@ public interface IMachine {
 		SUB, // Substraction
 		MUL, // Multiplication
 		DIV, // Division
-		NEG  // Arithmetic inversion (that is : minus)
+		NEG, // Arithmetic inversion (that is : minus)
+		AND, // And bitwise
+		OR,  // Or bitwise
 	}
+
+	public enum RelationnalOperator {
+		EQ,  // Equal
+		NEQ, // Non equal
+		LT,  // Lesser
+		LEQ, // Strict Inferior
+		GT,  // Superior
+		GEQ, // Strict Superior
+		AND, // And 
+		OR,  // Or
+		NOT, // Not
+	}
+		
 
 	/**
 	 * Suffixe du fichier cible (.tam par exemple)
@@ -58,11 +74,11 @@ public interface IMachine {
 	/**
 	 * Generate the code for loading a constant itneger into a register.
 	 * Note: register management is done by the machine.
-	 * @param value value of the constant to load
+	 * @param info info of the constant to load
 	 * @param output register where the value is put, for later referencing
 	 * @return the generated code
 	 */
-	String generateLoadInteger(int value, Register output);
+	String generateLoadConstant(ConstantInfo info, Register output);
 
   /**
    * Generate the code for loading data directly from memory
@@ -108,23 +124,17 @@ public interface IMachine {
   /**
    * Generate the code for the beginning of declaring a function
    * @param info the info of the function
+   * @param code code generated for the content of the function
    * @return the generated code
    */
-  String generateFunctionDeclarationBegin(FunctionInfo info);
-
-  /**
-   * Generate the code for the end of the function declaration
-   * @param info info of the function
-   * @return the generated code
-   */
-  String generateFunctionDeclarationEnd(FunctionInfo info);
+  String generateFunctionDeclaration(FunctionInfo info, String code);
 
   /**
    * Generate the code for pushing an argument
    * @param reg register in which the argument is stored
    * @return the generated code
    */
-  //String generateFunctionPushArgument();
+  String generateFunctionPushArgument(Register reg);
 
   /**
    * Generate the code for the call to a function
