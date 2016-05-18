@@ -960,8 +960,9 @@ AFFX -> affect  A  ;
 AFFX -> ;
 -- relation
 A ->   R AX  ;
-AX -> OPREL R;
-AX ->  ;
+AX -> OPREL R ;
+AX -> ;
+
 -- operateurs relationnels
 OPREL -> #opr inf ;
 
@@ -1024,8 +1025,8 @@ RX ->   OPADD T RX #actuOp ;
 #actuOp {
 local
 do
-  if (RX^op != NOP) {
-	  RX^machine.generateOperation(RX^op,T^reg,RX1^reg,RX^reg);
+  if (RX1^op != NOP) {
+	  RX1^machine.generateOperation(RX1^op,T^reg,RX1^reg,RX^reg);
 	}
 	RX^op = OPADD^op;
 end
@@ -1071,8 +1072,27 @@ end
 
 -- multiplication, ...
 T ->  F  TX  ;
-TX ->   OPMUL  F TX  ;
-TX ->  ;
+TX ->   OPMUL  F TX  #actuOp;
+
+#actuOp {
+local
+do
+  if (TX1^op != NOP) {
+	  TX1^machine.generateOperation(TX1^op,F^reg,TX1^reg,TX^reg);
+	}
+	TX^op = OPMUL^op;
+end
+}
+
+TX ->  #nop ;
+
+#nop {
+local
+do
+  TX^op := NOP;
+end
+}
+
 -- operateurs multiplicatifs
 OPMUL -> #op mult ;
 #op {
