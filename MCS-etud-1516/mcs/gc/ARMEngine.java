@@ -8,6 +8,7 @@ package mcs.gc;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.ListIterator;
 import mcs.symtab.*;
 import mcs.compiler.MCSException;
 
@@ -249,16 +250,15 @@ public class ARMEngine extends AbstractMachine {
 	 */
 	public String generateFlush(SymbolTable symtab) {
 		Register reg = getNextUnusedRegister();
+    String code = "";
+    ListIterator iter = symtab.symbols().listIterator(symtab.symbols().size());
 
-		String code = generateLoadConstant(new ConstantInfo(new IntegerType(), 0), reg);
-		
-		for (String key : symtab.symbols()) {
-			VariableInfo vi = (VariableInfo)symtab.lookup(key, true);
+		while (iter.hasPrevious()) {
+			VariableInfo vi = symtab.lookup(iter.previous(), true);
 			//code += ARMEngine.Prefix + "LDR\t" + reg + ", [SP, " + vi.displacement() + "]\n";
-      generateFlushVariable(vi);
+      code += generateFlushVariable(vi);
 		}
 
-		reg.setStatus(Register.Status.Used);
 		return code;
 	}
 
@@ -300,16 +300,31 @@ public class ARMEngine extends AbstractMachine {
    * @return the generated code
    */
   public String generateFunctionDeclaration(FunctionInfo info, String blockcode) {
-    Register reg = getNextUnusedRegister();
-    
     String code =
       info.label() + ":\n" +
       ARMEngine.Prefix + "; Push link register, stack base and stack pointer\n" +
       ARMEngine.Prefix + "PUSH\t" + lr + "\n" +
       ARMEngine.Prefix + "PUSH\t" + sb + "\n" + 
       ARMEngine.Prefix + "PUSH\t" + sp + "\n" +
-      blockcode +
-      ARMEngine.Prefix + "; Pop registers and branch to precedent LR (= return)\n" +
+      blockcode;
+
+    code +=
+      ARMEngine.Prefix + "; Default return. It is not wise to reach this point\n" +
+      generateFunctionReturn(info, new ConstantInfo());
+
+    return code;
+  }
+
+
+  /**
+   * Generate the code for the 'return' keyword
+   * @param info the info of the fuunction
+   * @param vinfo info of the value to return (register must be set)
+   * @return the generated code
+   */
+  public String generateFunctionReturn(FunctionInfo info, VariableInfo vinfo) {
+    String code =
+      ARMEngine.Prefix + "; Pop registers \n" +
       ARMEngine.Prefix + "POP\t" + sp + "\n" +
       ARMEngine.Prefix + "POP\t" + sb + "\n" +
       ARMEngine.Prefix + "POP\t" + lr + "\n";
@@ -317,15 +332,18 @@ public class ARMEngine extends AbstractMachine {
     code +=
       ARMEngine.Prefix + "; Pop arguments \n";
 
-    for (Type t : info.parameters()) {
-      code += ARMEngine.Prefix + "POP\t" + reg + "\n";
+    // As we push arguments in one order, we need to pop them in the
+    // other
+    ListIterator iter = info.parameters().listIterator(info.parameters().size());
+    while (iter.hasPrevious()) {
+      code += generateFlushVariable(iter.previous());
     }
+
+    if (!(info.returnType() instanceof VoidType))
+      code += generateStoreVariable(vinfo);
 
     code +=
       ARMEngine.Prefix + "BA\t" + lr + "\n\n";
-
-    
-    return code;
   }
 
   /**
@@ -348,7 +366,7 @@ public class ARMEngine extends AbstractMachine {
    */
   public String generateFunctionCall(FunctionInfo info) {
     String code =
-      ARMEngine.Prefix + "BA\t" + info.label() + "\n";
+      ARMEngine.Prefix + "BL\t" + info.label() + "\n";
     // TODO: result of the function is on the stack
     // (addr = SP)
     return code;
@@ -459,6 +477,10 @@ public class ARMEngine extends AbstractMachine {
 	}
 
 	/**************************************************/
+  /**
+   * Get the next unused register in the register database
+   * @return the register
+   */
 	private Register getNextUnusedRegister() {
 		// TODO: register use policy
 		for (int i = 0; i < registers.size(); i++) {

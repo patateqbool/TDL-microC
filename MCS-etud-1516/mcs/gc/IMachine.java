@@ -128,11 +128,11 @@ public interface IMachine {
 
   /**
    * Generate the code for the 'return' keyword
-   * @param info the info of the fuunction
-   * @param reg register containing the value to return
+   * @param info the info of the function
+   * @param vinfo the info of the value to return
    * @return the generated code
    */
-  String generateFunctionReturn(FunctionInfo info, Register reg);
+  String generateFunctionReturn(FunctionInfo info, VariableInfo vinfo);
 
   /**
    * Generate the code for pushing an argument
