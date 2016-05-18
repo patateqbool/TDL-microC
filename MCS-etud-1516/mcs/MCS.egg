@@ -22,7 +22,7 @@ inh machine : IMachine for
 -- TODO : Verifier que les attributs sont bien def.
 
 inh tvar : VariableTable for  -- A completer --
-         ENTITES, ENTITE
+         ENTITES, ENTITE, F
          ;
 
 syn tvarS : VariableTable for 
@@ -67,11 +67,15 @@ syn code : String for
 				 ;
 
 syn op : Operator for
-				 OPADD, OPMULT, OPUN
+				 OPADD, OPMULT, OPUN, RX
 				 ;
 
 syn oprel : RelationalOperator for
 				 OPREL
+				 ;
+
+syn reg : Register for
+				 F, T, RX
 				 ;
 
 
@@ -1015,8 +1019,27 @@ end
 
 R ->  T  RX ;
 -- additions ...
-RX ->   OPADD  T RX  ;
-RX -> ;
+RX ->   OPADD T RX #actuOp ;
+
+#actuOp {
+local
+do
+  if (RX^op != NOP) {
+	  RX^machine.generateOperation(RX^op,T^reg,RX1^reg,RX^reg);
+	}
+	RX^op = OPADD^op;
+end
+}
+
+RX -> #nop;
+
+#nop {
+local
+do
+  RX^op := NOP;
+end
+}
+
 -- operateurs additifs
 OPADD -> #op plus ;
 
@@ -1096,7 +1119,16 @@ F -> chaine ;
 -- Constante caractere
 F -> caractere ;
 -- expression unaire
-F ->  OPUN  F  ;
+F ->  OPUN  F  #genCode;
+
+-- Génération du code pour la déclaration de la variable.
+#genCode {
+local
+do
+	F^code:= F^machine.generateOperation(OPUN^op,F1^reg,F^reg);
+end
+}
+
 -- operateurs unaires
 OPUN -> plus ;
 
