@@ -66,6 +66,15 @@ syn code : String for
          
 				 ;
 
+syn op : Operator for
+				 OPADD, OPMULT, OPUN
+				 ;
+
+syn oprel : RelationalOperator for
+				 OPREL
+				 ;
+
+
 -- ces attributs permettent de recuperer les instructions du code ASM inline       
 syn code_asm : STRING for ASM;
 -- la TDS courante
@@ -950,29 +959,135 @@ A ->   R AX  ;
 AX -> OPREL R;
 AX ->  ;
 -- operateurs relationnels
-OPREL -> inf ;
-OPREL -> sup ;
-OPREL -> infeg ;
-OPREL -> supeg ;
-OPREL -> eg ;
-OPREL -> neg ;
+OPREL -> #opr inf ;
+
+#opr {
+local
+do
+  OPREL^oprel := LT;
+end
+}
+
+OPREL -> #opr sup ;
+
+#opr {
+local
+do
+  OPREL^oprel := GT;
+end
+}
+
+OPREL -> #opr infeg ;
+
+#opr {
+local
+do
+  OPREL^oprel := LEQ;
+end
+}
+
+OPREL -> #opr supeg ;
+
+#opr {
+local
+do
+  OPREL^oprel := GEQ;
+end
+}
+
+OPREL -> #opr eg ;
+
+#opr {
+local
+do
+  OPREL^oprel := EQ;
+end
+}
+
+OPREL -> #opr neg ;
+
+#opr {
+local
+do
+  OPREL^oprel := NEQ;
+end
+}
+
 R ->  T  RX ;
 -- additions ...
 RX ->   OPADD  T RX  ;
 RX -> ;
 -- operateurs additifs
-OPADD -> plus ;
-OPADD -> moins ;
-OPADD -> ou ;
+OPADD -> #op plus ;
+
+#op {
+local
+do
+  OPADD^op := ADD;
+end
+}
+
+OPADD -> #op moins ;
+
+#op {
+local
+do
+  OPADD^op := SUB;
+end
+}
+
+OPADD -> #op ou ;
+
+-- TODO : faire chier GUILLAUME DUPONT pour qu'il ajoute OU
+#op {
+local
+do
+  OPADD^op := MUL;
+end
+}
+
 -- multiplication, ...
 T ->  F  TX  ;
 TX ->   OPMUL  F TX  ;
 TX ->  ;
 -- operateurs multiplicatifs
-OPMUL -> mult ;
-OPMUL -> div ;
-OPMUL -> mod ;
-OPMUL -> et ;
+OPMUL -> #op mult ;
+#op {
+local
+do
+  OPMUL^op := MUL;
+end
+}
+
+OPMUL -> #op div ;
+
+#op {
+local
+do
+  OPMUL^op := DIV;
+end
+}
+
+OPMUL -> #op mod ;
+
+-- TODO : faire chier GUILLAUME DUPONT pour qu'il ajoute MOD
+#op {
+local
+do
+  OPMUL^op := MUL;
+end
+}
+
+OPMUL -> #op et ;
+
+-- TODO : faire chier GUILLAUME DUPONT pour qu'il ajoute ET
+#op {
+local
+do
+  OPMUL^op := MUL;
+end
+}
+
 -- expressions de base
 -- Constante entiere
 F -> entier   ;
@@ -984,8 +1099,34 @@ F -> caractere ;
 F ->  OPUN  F  ;
 -- operateurs unaires
 OPUN -> plus ;
+
+-- TODO : faire chier GUILLAUME DUPONT pour qu'il ajoute PLUS
+#op {
+local
+do
+  OPUN^op := MUL;
+end
+}
+
 OPUN -> moins ;
+
+#op {
+local
+do
+  OPUN^op := NEG;
+end
+}
+
 OPUN -> non;
+
+-- TODO : faire chier GUILLAUME DUPONT pour qu'il ajoute NON
+#op {
+local
+do
+  OPUN^op := MUL;
+end
+}
+
 -- pointeur NULL
 F -> null  ;
 -- expression parenthesee
