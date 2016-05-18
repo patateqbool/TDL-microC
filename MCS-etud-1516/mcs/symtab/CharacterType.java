@@ -25,7 +25,7 @@ public class CharacterType extends Type {
 	 * isCompatible()
 	 */
 	public boolean isCompatible(Type other) {
-		return (other instanceof IntegerType);
+		return (other instanceof CharacterType) || (other instanceof IntegerType);
 	}
 }
 

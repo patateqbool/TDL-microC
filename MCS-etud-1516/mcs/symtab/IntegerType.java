@@ -25,7 +25,7 @@ public class IntegerType extends Type {
 	 * Detect if this type is compatible
 	 */
 	public boolean isCompatible(Type other) {
-		return false;
+		return (other instanceof IntegerType);
 	}
 }
 

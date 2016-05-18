@@ -24,8 +24,8 @@ public class VoidType extends Type {
   /**
    * Detect if this type is compatible
    */
-  public boolean isCompatible() {
-    return false;
+  public boolean isCompatible(Type other) {
+    return (other instanceof VoidType);
   }
 }
 
