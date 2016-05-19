@@ -21,7 +21,9 @@ public interface IMachine {
 		SUB, // Substraction
 		MUL, // Multiplication
 		DIV, // Division
-		NEG  // Arithmetic inversion (that is : minus)
+		NEG, // Arithmetic inversion (that is : minus)
+		AND, // And bitwise
+		OR   // Or bitwise
 	}
 	
 	public enum RelationnalOperator {
