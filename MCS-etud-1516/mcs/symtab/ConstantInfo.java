@@ -6,6 +6,9 @@
  */
 package mcs.symtab;
 
+import java.util.List;
+import java.util.ArrayList;
+
 public class ConstantInfo extends VariableInfo {
   // Attributes
   private Object value;
@@ -43,6 +46,29 @@ public class ConstantInfo extends VariableInfo {
   public String toString() {
     return "Cst: " + this.type() + " := " + this.value;
   }
+
+
+	/**
+	 * A bunch of static function for creating constant from anything
+	 */
+	static public ConstantInfo fromInt(int v) {
+		return new ConstantInfo(new IntegerType(), new Integer(v));
+	}
+
+	static public ConstantInfo fromChar(char v) {
+		return new ConstantInfo(new CharacterType(), new Character(v));
+	}
+
+	static public ConstantInfo fromArray(List<Object> obj, Type arraytype) {
+		return new ConstantInfo(new ArrayType(arraytype, obj.size()), obj);
+	}
+
+	static public ConstantInfo fromString(String str) {
+		List<Object> lc = new ArrayList<Object>();
+		for (int i = 0; i < str.length(); i++)
+			lc.add(str.charAt(i));
+		return new ConstantInfo(new StringType(lc.size()), lc);
+	}
 }
 
 
