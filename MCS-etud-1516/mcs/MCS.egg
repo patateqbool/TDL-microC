@@ -1010,8 +1010,24 @@ E ->   A  AFFX ;
 AFFX -> affect  A  ;
 AFFX -> ;
 -- relation
-A ->   R AX  ;
-AX -> OPREL R ;
+A ->   R AX  #oper ;
+
+#oper {
+local
+do
+	  A^machine.generateOperation(AX^op,R^reg,AX^reg,A^reg);
+end
+}
+
+AX -> OPREL R #actuOp ;
+
+#actuOp {
+local
+do
+	AX^oprel = OPREL^oprel;
+end
+}
+
 AX -> ;
 
 -- operateurs relationnels
@@ -1069,7 +1085,18 @@ do
 end
 }
 
-R ->  T  RX ;
+R ->  T  RX #oper ;
+
+#oper {
+local
+do
+  if (RX^op != NOP) {
+	  RX^machine.generateOperation(RX^op,T^reg,RX^reg,R^reg);
+	}
+
+end
+}
+
 -- additions ...
 RX ->   OPADD T RX #actuOp ;
 
@@ -1113,16 +1140,26 @@ end
 
 OPADD -> #op ou ;
 
--- TODO : faire chier GUILLAUME DUPONT pour qu'il ajoute OU
 #op {
 local
 do
-  OPADD^op := MUL;
+  OPADD^op := OR;
 end
 }
 
 -- multiplication, ...
-T ->  F  TX  ;
+T ->  F  TX #oper ;
+
+#oper {
+local
+do
+  if (TX^op != NOP) {
+	  TX^machine.generateOperation(TX^op,F^reg,TX^reg,T^reg);
+	}
+
+end
+}
+
 TX ->   OPMUL  F TX  #actuOp;
 
 #actuOp {
@@ -1164,21 +1201,19 @@ end
 
 OPMUL -> #op mod ;
 
--- TODO : faire chier GUILLAUME DUPONT pour qu'il ajoute MOD
 #op {
 local
 do
-  OPMUL^op := MUL;
+  OPMUL^op := MOD;
 end
 }
 
 OPMUL -> #op et ;
 
--- TODO : faire chier GUILLAUME DUPONT pour qu'il ajoute ET
 #op {
 local
 do
-  OPMUL^op := MUL;
+  OPMUL^op := AND;
 end
 }
 
@@ -1203,11 +1238,10 @@ end
 -- operateurs unaires
 OPUN -> plus ;
 
--- TODO : faire chier GUILLAUME DUPONT pour qu'il ajoute PLUS
 #op {
 local
 do
-  OPUN^op := MUL;
+  OPUN^op := PLS;
 end
 }
 
@@ -1222,11 +1256,10 @@ end
 
 OPUN -> non;
 
--- TODO : faire chier GUILLAUME DUPONT pour qu'il ajoute NON
 #op {
 local
 do
-  OPUN^op := MUL;
+  OPUN^op := NOT;
 end
 }
 
