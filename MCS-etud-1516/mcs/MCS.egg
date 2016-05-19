@@ -1140,11 +1140,10 @@ end
 
 OPADD -> #op ou ;
 
--- TODO : faire chier GUILLAUME DUPONT pour qu'il ajoute OU
 #op {
 local
 do
-  OPADD^op := MUL;
+  OPADD^op := OR;
 end
 }
 
@@ -1202,21 +1201,19 @@ end
 
 OPMUL -> #op mod ;
 
--- TODO : faire chier GUILLAUME DUPONT pour qu'il ajoute MOD
 #op {
 local
 do
-  OPMUL^op := MUL;
+  OPMUL^op := MOD;
 end
 }
 
 OPMUL -> #op et ;
 
--- TODO : faire chier GUILLAUME DUPONT pour qu'il ajoute ET
 #op {
 local
 do
-  OPMUL^op := MUL;
+  OPMUL^op := AND;
 end
 }
 
@@ -1241,11 +1238,10 @@ end
 -- operateurs unaires
 OPUN -> plus ;
 
--- TODO : faire chier GUILLAUME DUPONT pour qu'il ajoute PLUS
 #op {
 local
 do
-  OPUN^op := MUL;
+  OPUN^op := PLS;
 end
 }
 
@@ -1260,11 +1256,10 @@ end
 
 OPUN -> non;
 
--- TODO : faire chier GUILLAUME DUPONT pour qu'il ajoute NON
 #op {
 local
 do
-  OPUN^op := MUL;
+  OPUN^op := NOT;
 end
 }
 
