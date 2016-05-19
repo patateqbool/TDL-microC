@@ -448,47 +448,54 @@ public class ARMEngine extends AbstractMachine {
 	public String generateOperation(Operator op, Register r1, Register r2, Register rout) {
 		// TODO: wrong operation type
 		// The last part of the code never changes : xxx Rx, R<1>, R<2>
-		String code = ", " + r1 + ", " + r2 + "\n";
 
-		// Find the operation code
-		String opcode = "";
-		switch (op) {
-			case ADD:
-				opcode = "ADD";
-				break;
-			case SUB:
-				opcode = "SUB";
-				break;
-			case MUL:
-				opcode = "MUL";
-				break;
-			case DIV:
-				opcode = "SDIV";
-				break;
-			case AND:
-				opcode = "AND"; 
-				break;
-			case OR:
-				opcode = "ORR"; 
-				break;
-		}
+                 String code = "";
+ 
+                 // Get the next register
+                 Register r = getNextUnusedRegister();
+ 
+                 switch (op) {
+                         case ADD:
+                                code += ARMEngine.Prefix + "ADD\t" + r + ", " + r1 + ", " + r2 + "\n";
+				heapbase++;
+                                break;
+                         case SUB:
+                                code += ARMEngine.Prefix + "SUB\t" + r + ", " + r1 + ", " + r2 + "\n";
+				heapbase++;
+                                break;
+                         case MUL:
+                                code += ARMEngine.Prefix + "MUL\t" + r + ", " + r1 + ", " + r2 + "\n";
+				heapbase++;
+                                break;
+                         case DIV:
+                                code += ARMEngine.Prefix + "SIV\t" + r + ", " + r1 + ", " + r2 + "\n";
+				heapbase++;
+                                break;
+                         case AND:
+                                code += ARMEngine.Prefix + "AND\t" + r + ", " + r1 + ", " + r2 + "\n";
+				heapbase++;
+                                break;
+                         case OR:
+                                code += ARMEngine.Prefix + "ORR\t" + r + ", " + r1 + ", " + r2 + "\n";
+				heapbase++;
+                                break;
+                         case MOD:
+                                // Do this : q = a/b, b*q, a-bq = r
+                                code += ARMEngine.Prefix + "SDIV\t" + r + ", " + r1 + ", " + r2 + "\n";
+                                code += ARMEngine.Prefix + "MUL\t" + r + ", " + r2 + ", " + r + "\n";
+                                code += ARMEngine.Prefix + "SUB\t" + r + ", " + r1 + ", " + r + "\n";
+				heapbase += 3;
+                                break;
+                 }
 
 		// Source register are no longer used
 		r1.setStatus(Register.Status.Used);
 		r2.setStatus(Register.Status.Used);
 	
-		// Get the next register
-		Register r = getNextUnusedRegister();
-
-		// Generate code
-		code = ARMEngine.Prefix + opcode + "\t" + r + code;
 
 		// Manage register
 		r.setStatus(Register.Status.Loaded);
 		rout.copy(r);
-
-		// Modify heapbase
-		heapbase++;
 
 		// End
 		return code;
@@ -509,6 +516,9 @@ public class ARMEngine extends AbstractMachine {
 		switch (op) {
 			case NEG:
 				opcode = "RSB";
+				break;
+			case NOT:
+				opcode = "MVN";
 				break;
 		}
 

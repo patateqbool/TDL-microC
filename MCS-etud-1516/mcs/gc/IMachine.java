@@ -23,12 +23,12 @@ public interface IMachine {
 		MUL, // Multiplication
 		DIV, // Division
 		NEG, // Arithmetic inversion (that is : minus)
-    NOP,  // Syntaxic stuff only
+    		NOP,  // Syntaxic stuff only
 		AND, // And bitwise
-		OR,   // Or bitwise
-    MOD,
-    PLS,
-    NOT
+		OR, // Or bitwise
+    		MOD, // Modulo operator
+    		PLS, // Unary plus
+    		NOT // Not operator
 	}
 	
 	public enum RelationnalOperator {
