@@ -45,7 +45,7 @@ public class ArrayType extends Type {
 	 */
 	public int idDisplacement(int id) {
 		int typesize = this.type.size();
-		int alignedtypesize = (typesize % 4 == 0 ? typesize : typesize + (4 - (typesize % 4)));
+		int alignedtypesize = 4 + (typesize % 4 == 0 ? typesize : typesize + (4 - (typesize % 4))); // The first "cell" contains the size on 4 bytes
 		return id*alignedtypesize;
 	}
 
