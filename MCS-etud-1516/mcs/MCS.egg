@@ -1006,10 +1006,10 @@ end
 -- F = expression figurant dans une expression multiplicative (FACTEUR)
 -----------------------------------------------------------------------
 E ->   A  AFFX ;
--- affectation
+-- Affectation
 AFFX -> affect  A  ;
 AFFX -> ;
--- relation
+-- Relation
 A ->   R AX  ;
 AX -> OPREL R ;
 AX -> ;
@@ -1182,14 +1182,93 @@ do
 end
 }
 
--- expressions de base
+
+---------------------------------------
+--------- Expressions de base ---------
+---------------------------------------
+
 -- Constante entiere
-F -> entier   ;
+F -> entier #typeEtGenCode ;
+
+-- Set de l'attribut de type de F pour indiquer qu'il s'agit d'un entier.
+-- Génération du code pour load la valeur de l'entier dans la mémoire.
+#typeEtGenCode {
+local
+  t : IntegerType;
+  r : Registre;
+	n : int;
+do
+  -- Creation du type et du registre.
+  t := new IntegerType();
+  r := new Registre();
+	-- Récup de l'entier et conversion au bon format.
+	n := Integer.parseInt(entier^txt);
+	-- Set de l'attribut type.
+	F^type := t;
+	-- Génération du code, et set de l'attribut le contenant.
+  F^code := F^machine.generateLoadConstant(new ConstantInfo(t, n), r); 
+	-- Set de l'attribut registre de F, c'est le registre contenant l'entier.
+	F^reg := r;
+end
+}
+
+
 -- Constante chaine
-F -> chaine ;
+F -> chaine #typeEtGenCode ;
+
+-- Set de l'attribut type et reg de F.
+-- Génération de code pour load la chaine.
+#typeEtGenCode {
+local
+  l : int;
+  t : StringType;
+	r : Register;
+	s : String;
+do
+  -- Récup de la chaine.
+  s := chaine^txt;
+  l := s.length();
+	-- Suppression des " au début et à la fin de celle-ci.
+	s := s.substring(1,l-1);
+	l := l-2;
+	-- Initialisation du type, en précisant la taille.
+	t := new StringType(l);
+  -- Création du registre.
+	r := new Registre();
+	-- Génération du code et set des attributs de F.
+	F^code := F^machine.generateLoadConstant(new ConstantInfo(t, s), r);
+	F^reg =: r;
+	F^type := t;
+
+end
+}
+
+
 -- Constante caractere
-F -> caractere ;
--- expression unaire
+F -> caractere #typeEtGenCode ;
+
+-- Set de l'attribut type et reg de F.
+-- Génération de code pour load le caractere.
+#typeEtGenCode {
+local
+  c : CharacterType;
+	r : Register;
+	s : String;
+do
+  -- Récup du caractère.
+	c := caractere^txt.charAt(1);
+	-- Init du type et du reg.
+	t := new CharacterType();
+	reg := new Register();
+	-- Gen du code et set des attributs de F.
+	F^code := F^machine.generateLoadConstant(new ConstantInfo(t, c), r);
+	F^reg := r;
+	F^type := t;
+end
+}
+
+
+-- Expression unaire
 F ->  OPUN  F  #genCode;
 
 -- Génération du code pour la déclaration de la variable.
