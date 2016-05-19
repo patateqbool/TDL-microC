@@ -404,7 +404,7 @@ public class ARMEngine extends AbstractMachine {
 				opcode = "AND"; 
 				break;
 			case OR:
-				opcode = "OR"; 
+				opcode = "ORR"; 
 				break;
 		}
 
