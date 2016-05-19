@@ -23,6 +23,13 @@ public class ConstantInfo extends VariableInfo {
     this.value = v;
   }
 
+	/**
+	 * Default constructor (constructing a default value)
+	 */
+	public ConstantInfo(Type t) {
+		this(t, t.getDefault());
+	}
+
   /**
    * The method displacement() should NEVER be called
    */
