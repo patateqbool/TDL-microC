@@ -27,6 +27,13 @@ public class IntegerType extends Type {
 	public boolean isCompatible(Type other) {
 		return (other instanceof IntegerType);
 	}
+
+	/**
+	 * Default
+	 */
+	public Object getDefault() {
+		return new Integer(0);
+	}
 }
 
 

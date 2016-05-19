@@ -38,4 +38,7 @@ public class ArrayType extends Type {
 		return this.type;
 	}
 
+	public Object getDefault() {
+		return null;
+	}
 }

@@ -41,6 +41,12 @@ public abstract class Type {
    * @return true if other is compatible with this.
    */
   abstract boolean isCompatible(Type other);
+
+	/**
+	 * A default value
+	 * @return the default value
+	 */
+	abstract Object getDefault();
 }
 
 

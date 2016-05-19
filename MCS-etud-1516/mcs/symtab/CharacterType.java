@@ -27,6 +27,13 @@ public class CharacterType extends Type {
 	public boolean isCompatible(Type other) {
 		return (other instanceof CharacterType) || (other instanceof IntegerType);
 	}
+
+	/**
+	 * Default
+	 */
+	public Object getDefault() {
+		return new Character((char)0);
+	}
 }
 
 

@@ -27,6 +27,13 @@ public class VoidType extends Type {
   public boolean isCompatible(Type other) {
     return (other instanceof VoidType);
   }
+
+	/**
+	 * Default
+	 */
+	public Object getDefault() {
+		return null;
+	}
 }
 
 

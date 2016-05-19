@@ -10,6 +10,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
+import java.util.ArrayList;
 
 public class StructType extends Type {
 
@@ -70,6 +71,19 @@ public class StructType extends Type {
 					this.fields.find(field),
 					basedisp + this.fields.sumSizes(field)
 				);
+	}
+
+	/**
+	 * Default
+	 * As a default value for a structure, we just "instanciate" every field
+	 * to its default value regarding of its type;
+	 */
+	public Object getDefault() {
+		List<Object> res = new ArrayList<Object>();
+		for (Type t : this.fields.types()) {
+			res.add(t.getDefault());
+		}
+		return res;
 	}
 }
 	
