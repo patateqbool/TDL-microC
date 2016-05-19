@@ -86,7 +86,8 @@ public class ARMEngine extends AbstractMachine {
 		} else if (t instanceof CharacterType) {
 			code += "LDRSB\t" + reg + ", [SB, " + (-info.displacement()) + "]\n";
 		} else if (t instanceof StructType) {
-			// we shouldn't load a whole struct in register, isn'it ?
+      // Struct are stored as pointers
+      code += "LDR\t" + reg + ", [SB, " + (-info.displacement()) + "]\n";
 		}
 
 		// Manage register
@@ -113,7 +114,7 @@ public class ARMEngine extends AbstractMachine {
     String code = "";
     Register reg = getNextUnusedRegister();
 
-    if (t instanceof IntegerType) {
+    if (t instanceof IntegerType || t instanceof PointerType || t instanceof StructType) {
       Integer value = (Integer)info.value();
 		   /*
 		    * The main problem is that the MOV instruction (which put a value into a register)
@@ -130,6 +131,8 @@ public class ARMEngine extends AbstractMachine {
 			  code = code + ARMEngine.Prefix + "MOVT\t" + reg + ", #0x" + Integer.toHexString(value >> 16) + "\n";
 			  heapbase++; // > this generate an additionnal instruction
 		  }
+    } else {
+      // dafuq ?
     }
 
 		// Manage registers
@@ -184,7 +187,7 @@ public class ARMEngine extends AbstractMachine {
 	 * @return the generated code
 	 */
 	public String generateStoreVariable(VariableInfo info) {
-		String code = ARMEngine.Prefix;
+		String code = "";
 		Type t = info.type();
 
     if (info.register() == null) {
@@ -209,17 +212,79 @@ public class ARMEngine extends AbstractMachine {
 			VariableInfo vinfo;
 			for (String f : st.fields()) {
 				vinfo = st.getInfo(f, info.displacement());
-				code += generateLoadVariable(vinfo, reg);
-				code += generateStoreVariable(vinfo);
+        
 			}
-		} else {
-      code += "PUSH\t" + info.register() + "\n";
-    }
+      code +=
+        ARMEngine.Prefix + "MOV\t" + info.register() + ", " + ht + "\n";
+		}
+    
+    code += ARMEngine.Prefix + "PUSH\t" + info.register() + "\n";
 
 		info.freeRegister();
 		return code;
 	}
 
+  /**
+   * Generate the code for allocating a block in the heap
+   * @param type type to allocate
+   * @param raddr register containing the address of the block
+   * @param rsize register containing the size of the block (array only)
+   * @return the generated code
+   */
+  public String generateAllocate(Type type, Register raddr, Register rsize) {
+    Register reg = getNextUnusedRegister();
+
+    String code = ARMEngine.Prefix + "MOV\t" + reg + ", " + ht + " ; Store current address\n";
+    
+    if (type instanceof StructType) {
+      StructType ts = (StructType)type;
+      Register r = new Register();
+      for (Type t : ts.fieldsTypes()) {
+        code += generateAllocate(t, r, null);
+      }
+    } else if (type instanceof ArrayType) {
+      ArrayType t = (ArrayType)type;
+      Register rs = getNextUnusedRegister();
+      code +=
+        ARMEngine.Prefix + "UMUL\t" + rs + ", " + rsize + ", #" + t.getType().size() + "\n" +
+        ARMEngine.Prefix + "ST\t" + rs + ", [" + ht + "]\n" +
+        ARMEngine.Prefix + "ADD\t" + ht + ", " + ht + ", #4\n" + 
+        ARMEngine.Prefix + "ADD\t" + ht + ", " + ht + ", " + rs + "\n";
+      rsize.setStatus(Register.Status.Used);
+    } else {
+      Register rs = new Register();
+      code +=
+        generateLoadConstant(new ConstantInfo(new IntegerType(), type.size()), rs);
+      code +=
+        ARMEngine.Prefix + "ADD\t" + ht + ", " + ht + ", " + rs + "\n";
+    }
+
+    reg.setStatus(Register.Status.Loaded);
+    raddr.copy(reg);
+
+    return code;
+  }
+
+  /**
+   * Generate the code for storing a value into the heap
+   * @param rdata register containing the data
+   * @param raddr register containing the address in which to put the data
+   * @return the generated code
+   */
+  public String generateStoreHeap(Register rdata, Register raddr) {
+    String code = "";
+
+    Type t = info.type();
+
+    if (t instanceof StructType) {
+    } else {
+      code +=
+        ARMEngine.Prefix + "STR\t" + rdata + ", [" + raddr + "]\n";
+    }
+
+    return code;
+  }
+  
   /**
    * Generate the code for flushing the stack top variable
    * @param info the info of the variable

@@ -5,6 +5,7 @@ import mcs.symtab.VariableInfo;
 import mcs.symtab.FunctionInfo;
 import mcs.symtab.SymbolTable;
 import mcs.symtab.ConstantInfo;
+import mcs.symtab.Type;
 
 /**
  * Cette interface décrit une machine cible. A compléter, selon votre modèle
@@ -21,7 +22,8 @@ public interface IMachine {
 		SUB, // Substraction
 		MUL, // Multiplication
 		DIV, // Division
-		NEG  // Arithmetic inversion (that is : minus)
+		NEG, // Arithmetic inversion (that is : minus)
+    NOP  // Syntaxic stuff only
 	}
 	
 	public enum RelationnalOperator {
@@ -87,11 +89,28 @@ public interface IMachine {
   String generateLoadFromMemory(Register raddr, int size, Register rout);
 
 	/**
-	 * Generate the code for storing a value into memory
+	 * Generate the code for storing a value into memory (the stack)
 	 * @param info variable info
 	 * @return the generated code
 	 */
 	String generateStoreVariable(VariableInfo info);
+
+  /**
+   * Generate the code for allocating a block in the heap
+   * @param type type to allocate
+   * @param raddr register containing the address of the block
+   * @param rsize register containing the size of the block (array only)
+   * @return the generated code
+   */
+  String generateAllocate(Type type, Register addr, Register rsize);
+
+  /**
+   * Generate the code for storing a value into the heap
+   * @param rdata register containing the data
+   * @param raddr register containing the address in which to put the data
+   * @return the generated code
+   */
+  String generateStoreHeap(Register rdata, Register raddr);
 
   /**
    * Generate the code for flushing the stack top variable
