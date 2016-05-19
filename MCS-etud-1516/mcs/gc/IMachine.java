@@ -94,6 +94,16 @@ public interface IMachine {
 	String generateLoadWithDisp(Register raddr, int disp, Register rout);
 
 	/**
+	 * Generate the code for loading a specific array index
+	 * @param vinfo the info of the array (and thus its type)
+	 * @param raddr register containing the base address of the data
+	 * @param rid the register containing the id to access
+	 * @param rout register containing the new address
+	 * @return the generated code
+	 */
+	String generateLoadArrayIndex(VariableInfo vinfo, Register raddr, Register rid, Register rout);
+
+	/**
    * Generate the code for loading data directly from memory
    * @param raddr register containing the address
    * @param size size of the data to retrieve
