@@ -31,7 +31,7 @@ public interface IMachine {
     		NOT // Not operator
 	}
 	
-	public enum RelationnalOperator {
+	public enum RelationalOperator {
 		EQ,  // Equal
 		NEQ, // Non equal
 		LT,  // Lesser
@@ -84,7 +84,16 @@ public interface IMachine {
 	 */
 	String generateLoadConstant(ConstantInfo info, Register output);
 
-  /**
+	/**
+	 * Generate the code for loading data with displacement (eg: struct)
+	 * @param raddr register containing the base address of the data
+	 * @param disp displacement of the data
+	 * @param rout register containing the new address
+	 * @return the generated code
+	 */
+	String generateLoadWithDisp(Register raddr, int disp, Register rout);
+
+	/**
    * Generate the code for loading data directly from memory
    * @param raddr register containing the address
    * @param size size of the data to retrieve
@@ -119,10 +128,10 @@ public interface IMachine {
 
   /**
    * Generate the code for flushing the stack top variable
-   * @param info the info of the variable
+   * @param type type of the variable
    * @return the generated code
    */
-  String generateFlushVariable(VariableInfo info);
+  String generateFlushVariable(Type type);
 
 	/**
 	 * Generate the code for flushing every variable of a symbol table
@@ -131,14 +140,6 @@ public interface IMachine {
 	 * @return the generated code
 	 */
 	String generateFlush(SymbolTable symtab);
-
-  /**
-   * Generate the code for memory allocation in the heap
-   * @param rsize register containing the size to allocate
-   * @param rout register in which the address will be
-   * @return the generated code
-   */
-  String generateMemoryAllocation(Register rsize, Register rout);
 
   /// Functions related
   
@@ -190,5 +191,20 @@ public interface IMachine {
 	 */
 	String generateOperation(Operator op, Register rin, Register rout);
 
+	/**
+	 * Generate a relational binary operation
+	 * @param r1 first register
+	 * @param r2 second register
+	 * @param rout output register
+	 * @return the generated code
+	 */
+	String generateOperation(RelationalOperator op, Register r1, Register r2, Register rout);
 
+	/**
+	 * Generate a relational unary operation
+	 * @param rin source register
+	 * @param rout destination register
+	 * @return the generated code
+	 */
+	String generateOperation(RelationalOperator op, Register rin, Register rout);
 }
