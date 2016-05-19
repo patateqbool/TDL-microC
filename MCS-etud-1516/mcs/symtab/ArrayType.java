@@ -38,6 +38,17 @@ public class ArrayType extends Type {
 		return this.type;
 	}
 
+	/**
+	 * Get the displacement of the index id
+	 * @param id id of the case
+	 * @return general displacement
+	 */
+	public int idDisplacement(int id) {
+		int typesize = this.type.size();
+		int alignedtypesize = (typesize % 4 == 0 ? typesize : typesize + (4 - (typesize % 4)));
+		return id*alignedtypesize;
+	}
+
 	public Object getDefault() {
 		return null;
 	}

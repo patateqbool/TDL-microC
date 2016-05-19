@@ -66,11 +66,20 @@ public class StructType extends Type {
 	 * @param basedisp base displacement of the structure, such as struct.first_field as a basedisp displacement
 	 * @return a VariableInfo of the field
 	 */
-	public VariableInfo getInfo(String field, int basedisp) {
+	/*public VariableInfo getInfo(String field, int basedisp) {
 		return new VariableInfo(
 					this.fields.find(field),
 					basedisp + this.fields.sumSizes(field)
 				);
+	}*/
+
+	/**
+	 * Get the displacement from a field
+	 * @param field field to get the displacement from
+	 * @return the corresponding displacement
+	 */
+	public int fieldDisplacement(String field) {
+		return this.fields.sumSizes(field);
 	}
 
 	/**
