@@ -520,6 +520,8 @@ public class ARMEngine extends AbstractMachine {
 			case NOT:
 				opcode = "MVN";
 				break;
+			case PLS:
+				break;
 		}
 
 		// Source register are no longer used
