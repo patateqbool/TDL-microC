@@ -78,6 +78,10 @@ syn reg : Register for
 				 F, T, RX
 				 ;
 
+syn estVar : boolean for
+         -- Des trucs dans les expressions. --
+				 ;
+
 
 -- ces attributs permettent de recuperer les instructions du code ASM inline       
 syn code_asm : STRING for ASM;
@@ -1005,12 +1009,46 @@ end
 -- T = expression figurant dans une expression additive (TERME)
 -- F = expression figurant dans une expression multiplicative (FACTEUR)
 -----------------------------------------------------------------------
-E ->   A  AFFX ;
+
+E -> A AFFX #estVar ;
+
+-- Attribut estVar de E : E représente une variable si
+-- AFFX est vide ce qui sera représenté par son attribut estVar
+-- et si E est une variable.
+#estVar {
+local
+do
+  E^estVar := (A^estVar) && (AFFX^estVar);
+end
+}
+
+
 -- Affectation
-AFFX -> affect  A  ;
-AFFX -> ;
--- relation
-A ->   R AX  #oper ;
+AFFX -> affect A #estVar ;
+
+-- On met l'attribut est Var de AFFX à faux car la règle 
+-- appelante ne pourra pas être une variable suit à cette RP.
+#estVar {
+local
+do
+  AFFX^estVar := false;
+end
+}
+
+
+AFFX -> #estVar ;
+
+-- On met estVar à true car cette RP n'empeche pas la representation d'une var.
+#estVar {
+local
+do
+  AFFX^estVar := true ;
+end
+}
+
+
+-- Relation
+A -> R AX #oper #estVar ;
 
 #oper {
 local
@@ -1019,7 +1057,16 @@ do
 end
 }
 
-AX -> OPREL R #actuOp ;
+-- A représente une variable si AX ne l'empêche pas et R représente une variable.
+#estVar {
+local
+do
+  A^estVar := (R^estVar)&&(AX^estVar);
+end
+}
+
+
+AX -> OPREL R #actuOp #estVar;
 
 #actuOp {
 local
@@ -1028,9 +1075,25 @@ do
 end
 }
 
-AX -> ;
+-- La RP appelante ne represente pas une variable.
+#estVar {
+local
+do
+  AX^estVar := false;
+end
+}
 
--- operateurs relationnels
+
+AX -> #estVar ;
+
+#estVar {
+local
+do
+  AX^estVar := true;
+end
+}
+
+-- Operateurs relationnels
 OPREL -> #opr inf ;
 
 #opr {
@@ -1039,6 +1102,7 @@ do
   OPREL^oprel := LT;
 end
 }
+
 
 OPREL -> #opr sup ;
 
@@ -1049,6 +1113,7 @@ do
 end
 }
 
+
 OPREL -> #opr infeg ;
 
 #opr {
@@ -1057,6 +1122,7 @@ do
   OPREL^oprel := LEQ;
 end
 }
+
 
 OPREL -> #opr supeg ;
 
@@ -1067,6 +1133,7 @@ do
 end
 }
 
+
 OPREL -> #opr eg ;
 
 #opr {
@@ -1075,6 +1142,7 @@ do
   OPREL^oprel := EQ;
 end
 }
+
 
 OPREL -> #opr neg ;
 
@@ -1085,7 +1153,8 @@ do
 end
 }
 
-R ->  T  RX #oper ;
+
+R ->  T  RX #oper #estVar ;
 
 #oper {
 local
@@ -1097,8 +1166,16 @@ do
 end
 }
 
--- additions ...
-RX ->   OPADD T RX #actuOp ;
+-- R est variable si T l'est et RX ne l'empeche pas.
+#estVar {
+local
+do
+  R^estVar := (T^estVar)&&(RX^estVar);
+end
+}
+
+-- Additions ...
+RX -> OPADD T RX #actuOp #estVar ;
 
 #actuOp {
 local
@@ -1110,7 +1187,16 @@ do
 end
 }
 
-RX -> #nop;
+-- Si cette RP apparait dans l'expression, alors il ne s'agit pas d'une variable.
+#estVar {
+local
+do
+  RX^estVar := false;
+end
+}
+
+
+RX -> #nop #estVar;
 
 #nop {
 local
@@ -1119,7 +1205,16 @@ do
 end
 }
 
--- operateurs additifs
+-- N'empeche pas la représentation d'une variable.
+#estVar {
+local
+do
+  RX^estVar := true;
+end
+}
+
+
+-- Operateurs additifs
 OPADD -> #op plus ;
 
 #op {
@@ -1128,6 +1223,7 @@ do
   OPADD^op := ADD;
 end
 }
+
 
 OPADD -> #op moins ;
 
@@ -1138,6 +1234,7 @@ do
 end
 }
 
+
 OPADD -> #op ou ;
 
 #op {
@@ -1147,8 +1244,9 @@ do
 end
 }
 
--- multiplication, ...
-T ->  F  TX #oper ;
+
+-- Multiplication, ...
+T ->  F  TX #oper #estVar ;
 
 #oper {
 local
@@ -1160,7 +1258,16 @@ do
 end
 }
 
-TX ->   OPMUL  F TX  #actuOp;
+-- T est une variable si F l'est et TX ne l'empeche pas.
+#estVar {
+local
+do
+  T^estVar := (F^estVar)&&(TX^estVar);
+end
+}
+
+
+TX -> OPMUL F TX #actuOp #estVar;
 
 #actuOp {
 local
@@ -1172,7 +1279,16 @@ do
 end
 }
 
-TX ->  #nop ;
+--Cette RP empeche l'expression d'etre une variable.
+#estVar {
+local
+do
+  TX^estVar := false;
+end
+}
+
+
+TX -> #nop #estVar ;
 
 #nop {
 local
@@ -1181,7 +1297,16 @@ do
 end
 }
 
--- operateurs multiplicatifs
+-- N'empeche pas l'espression de rpz une var.
+#estVar {
+local
+do
+  TX^estVar := true;
+end
+}
+
+
+-- Operateurs multiplicatifs
 OPMUL -> #op mult ;
 #op {
 local
@@ -1189,6 +1314,7 @@ do
   OPMUL^op := MUL;
 end
 }
+
 
 OPMUL -> #op div ;
 
@@ -1199,6 +1325,7 @@ do
 end
 }
 
+
 OPMUL -> #op mod ;
 
 #op {
@@ -1207,6 +1334,7 @@ do
   OPMUL^op := MOD;
 end
 }
+-----LEET-----
 
 OPMUL -> #op et ;
 
@@ -1223,7 +1351,7 @@ end
 ---------------------------------------
 
 -- Constante entiere
-F -> entier #typeEtGenCode ;
+F -> entier #typeEtGenCode #estVar ;
 
 -- Set de l'attribut de type de F pour indiquer qu'il s'agit d'un entier.
 -- Génération du code pour load la valeur de l'entier dans la mémoire.
@@ -1247,9 +1375,17 @@ do
 end
 }
 
+-- Une expression de base ne peut representer une variable.
+#estVar {
+local
+do
+  F^estVar := false;
+end
+}
+
 
 -- Constante chaine
-F -> chaine #typeEtGenCode ;
+F -> chaine #typeEtGenCode #estVar ;
 
 -- Set de l'attribut type et reg de F.
 -- Génération de code pour load la chaine.
@@ -1271,16 +1407,24 @@ do
   -- Création du registre.
 	r := new Registre();
 	-- Génération du code et set des attributs de F.
-	F^code := F^machine.generateLoadConstant(new ConstantInfo(t, s), r);
+	F^code := F^machine.generateLoadConstant(ConstantInfo.fromString(s), r);
 	F^reg =: r;
 	F^type := t;
 
 end
 }
 
+-- Une expression de base ne peut representer une variable.
+#estVar {
+local
+do
+  F^estVar := false;
+end
+}
+
 
 -- Constante caractere
-F -> caractere #typeEtGenCode ;
+F -> caractere #typeEtGenCode #estVar ;
 
 -- Set de l'attribut type et reg de F.
 -- Génération de code pour load le caractere.
@@ -1302,9 +1446,17 @@ do
 end
 }
 
+-- Une expression de base ne peut representer une variable.
+#estVar {
+local
+do
+  F^estVar := false;
+end
+}
+
 
 -- Expression unaire
-F ->  OPUN  F  #genCode;
+F ->  OPUN  F  #genCode #estVar;
 
 -- Génération du code pour la déclaration de la variable.
 #genCode {
@@ -1314,7 +1466,16 @@ do
 end
 }
 
--- operateurs unaires
+-- Une variable ne peut contenir d'opérateur unaire.
+#estVar {
+local
+do
+  F^estVar := false;
+end
+}
+
+
+-- Operateurs unaires
 OPUN -> plus ;
 
 #op {
@@ -1342,12 +1503,42 @@ do
 end
 }
 
--- pointeur NULL
-F -> null  ;
--- expression parenthesee
-F ->  paro E parf FX ;
 
-F ->  paro TYPE parf #cast  F ;
+-- Pointeur NULL
+F -> null #estVar;
+
+--Le pointeur null ne représente pas une variable.
+#estVar {
+local
+do
+ F^estVar := false;
+end
+}
+
+-- Expression parenthesee
+F ->  paro E parf FX #estVar;
+
+-- F est une variable si E l'est et FX ne l'empeche pas.
+#estVar {
+local
+do
+  F^estVar := (E^estVar)&&(FX^estVar);
+end
+}
+
+
+-- Cast
+-- TODO : quid de "l'appelant"
+F ->  paro TYPE parf #cast F #estVar;
+
+-- (int)a ne représente pas une variable : 
+-- le cast empeche une expression d'etre une variable.
+#estVar {
+local
+do
+  F^estVar := false;
+end
+}
 
 #cast {
 local
@@ -1361,34 +1552,123 @@ do
 end
 }
 
-F -> mult F ;
+-- Dereferencement.
+--TODO : F^type.
+F -> mult F #estVar;
 
-F -> #rechercheId ident FX ;
+-- F représente une variable si F1 en représente une, et que celle ci est un pointeur.
+#estVar {
+local
+do
+  F^estVar := (F1^estVar)&&(F1^type --TODO : vérifier qu'il s'agit d'un pointeur.
+	                                  --       cf TP "match with"        
+end
+}
 
--- Recherche de l'identifiant dans la tds.
-#rechercheId {
+
+F -> ident FX #estVarEtPassType ;
+
+-- F est une variable si ident représente une variable (recherche dans tvar).
+-- Et si FX ne l'empeche pas.
+-- Passage du type, celui ci dépend de FX et de s'il s'agit d'une variable ou d'une fonction.
+#estVarEtPassType {
 local
   info : VariableInfo;
 do
   info := F^tvar.lookup(ident^txt);
 	if (info = null) then
-	  error(IDENT_UNDEFINED, ident^txt);
+	  -- Si l'ident n'est pas dans la tvar, F n'est pas une variable.
+	  F^estVar := false;
+		info := F^tfun(lookup(ident^txt);
+		if (info = null) then 
+		  error(IDENT_UNDEFINED, ident^txt);
+		else 
+		  -- TODO : ident représente une fonction.
 	else {
-    -- TODO : transmission du type.
-		--        des trucs avec FX ?
+	  -- ident représente une variable.
+		F^estVar := true;
+		-- TODO : faire passer le type en fonction de FX.    
 	}
 end
 }
 
 
-FX -> ;
--- acces champ
-FX ->   pt  ident FX ;
--- acces champ pointeur
-FX ->   arrow  ident FX ;
--- appel de sous-programme
-FX ->   paro ES parf FX;
--- arguments appel de sous-programme
+FX -> #estVar ;
+
+-- N'empeche pas l'expression d'être une variable.
+#estVar {
+local
+do
+  FX^estVar := true;
+end
+}
+
+
+-- Acces champ
+FX -> pt ident FX #estVar #TODO;
+
+-- Si FX1 ne l'empeche pas, FX peut représenter une variable.
+-- (si le struct dont le champ est accedé est bien une variable, mais la verification ne se fait pas ici). 
+#estVar {
+local
+do
+  FX^estVar := FX1^estVar;
+end
+}
+
+-- TODO
+-- Verification que le champ existe.
+-- Faire remonter l'info que "l'appelant" doit être un struct.
+-- Faire passer le type en fonction de FX.
+#TODO {
+local
+do
+
+end
+}
+
+
+-- Acces champ pointeur
+FX -> arrow ident FX #estVar #TODO;
+
+-- Si FX1 ne l'empeche pas, FX peut représenter une variable.
+-- (si le struct dont le champ est accedé est bien une variable, mais la verification ne se fait pas ici). 
+#estVar {
+local
+do
+  FX^estVar := FX1^estVar;
+end
+}
+
+-- TODO
+-- Verification que le champ existe.
+-- Faire remonter l'info que "l'appelant" doit être un POINTEUR sur struct.
+-- Faire passer le type en fonction de FX.
+#TODO {
+local
+do
+
+end
+}
+
+
+-- Appel de sous-programme
+FX ->   paro ES parf FX #estVar #TODO;
+
+-- Une liste d'arguments, même vide ne peut représenter une variable.
+#estVar {
+local
+do
+  FX^estVar := false;
+end
+}
+
+-- TODO
+-- L'appelant fonction ?
+-- FX ?
+
+
+-- Arguments appel de sous-programme
 ES -> ;
 ES -> E ESX  ;
 ESX ->  ;
