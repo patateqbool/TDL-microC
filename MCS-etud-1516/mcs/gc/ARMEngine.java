@@ -63,213 +63,250 @@ public class ARMEngine extends AbstractMachine {
 	/**********************************************************
 	 * Generation function
 	 **********************************************************/
+  /////////////////////// MEMORY INSTRUCTIONS ///////////////////////
+  
+  ///////////// LOAD /////////////
+ 
+  /**
+   * Generate the code for loading a variable into a register
+   * @param info info of the variable to load
+   * @param rout (out) register in which the value will be
+   * @return the generated code
+   */
+  public String generateLoadValue(VariableInfo info, Register rout) {
+    String code = "";
 
-	/// Load an store
-	/**
-	 * Generate the code for loading a variable into a register, allowing for (e.g.) doing some operations.
-	 * Note: register management is done by the machine.
-	 * @param info info of the variable to load
-	 * @param output register where the value is put, for later referencing
-	 * @return the generated code
-	 */
-	public String generateLoadVariable(VariableInfo info, Register output) {
-		// Retrieve a valid register for putting the result
-		Register reg = getNextUnusedRegister();
+    if (info instanceof ConstantInfo)
+      code += generateLoadConstant((ConstantInfo)info, rout);
+    else {
+      code += generateLoadFromStack(info.displacement(), rout);
+    }
 
-		// Generate code
-		String code = ARMEngine.Prefix;
+    return code;
+  }
 
-		Type t = info.type();
+  /**
+   * Generate the code for loading a variable into a register, with an optionnal field name (for structs)
+   * @param info info of the variable to load
+   * @param disp (integer) displacement to consider (for structs)
+   * @param rout (out) register in which the value will be
+   * @return the generated code
+   */
+  public String generateLoadValue(VariableInfo info, int disp, Register rout) {
+    String code = "", addr = "";
+    Register r = getNextUnusedRegister();
+    Register raddr = new Register();
 
-		if (t instanceof IntegerType || t instanceof PointerType) {
-			code += "LDR\t" + reg + ", [SB, " + (-info.displacement()) + "]\n";
-		} else if (t instanceof CharacterType) {
-			code += "LDRSB\t" + reg + ", [SB, " + (-info.displacement()) + "]\n";
-		} else if (t instanceof StructType) {
-			// Struct are stored as pointers
-			code += "LDR\t" + reg + ", [SB, " + (-info.displacement()) + "]\n";
-		}
+    if (info.type() instanceof StructType) {
+      code += generateLoadFromStack(info.displacement(), raddr);
 
-		// Manage register
-		reg.setStatus(Register.Status.Loaded);
-		output.copy(reg);
-		info.assignRegister(reg);
+      if (disp < 65536) {
+        addr = "[" + raddr + ", #" + disp + "]";
+      } else {
+        Register rdisp = new Register();
+        code += generateLoadConstant(new ConstantInfo(new IntegerType(), disp), rdisp);
+        addr = "[" + raddr + ", " + rdisp + "]";
+        rdisp.setStatus(Register.Status.Used);
+      }
 
-		// Modify heap base (added 1 instruction)
-		heapbase++;
+      raddr.setStatus(Register.Status.Used);
+    } else {
+      // we shouldn't be using this function, don't we ?
+      return "";
+    }
 
-		// End
-		return code;
-	}
+    code +=
+      ARMEngine.Prefix + "LDR\t" + r + ", " + addr + "\n";
 
-	/**
-	 * Generate the code for loading a constant into a register.
-	 * Note: register management is done by the machine.
+    r.setStatus(Register.Status.Loaded);
+    rout.copy(r);
+
+    return code;
+  }
+
+  /**
+   * Generate the code for loading a variable into a register, with an optionnal displacement register (for arrays)
+   * @param info info of the variable to load
+   * @param rdisp (register) displacement to consider
+   * @param rout (out) register in which the value will be
+   * @return the generated code
+   */
+  public String generateLoadValue(VariableInfo info, Register rdisp, Register rout) {
+    Register raddr = new Register();
+    Register r = getNextUnusedRegister();
+    String code = "", addr = "";
+    Type t = info.type();
+
+    if (t instanceof StructType || t instanceof ArrayType) {
+      code += generateLoadFromStack(info.displacement(), raddr);
+      addr = "[" + raddr + ", " + rdisp + "]";
+    } else {
+      // not supposed to be called, isn't it ?
+      return "";
+    }
+
+    code +=
+      ARMEngine.Prefix + "LDR\t" + r + ", " + addr + "\n";
+
+    raddr.setStatus(Register.Status.Used);
+    rdisp.setStatus(Register.Status.Used);
+    r.setStatus(Register.Status.Loaded);
+    rout.copy(r);
+
+    return code;
+  }
+
+  /**
+   * Generate the code for loading a value from the stack to a register
+   * @param disp displacement of the variable to load
+   * @param rout (out) register in which the value will be
+   * @return the generated code
+   */
+  public String generateLoadFromStack(int disp, Register rout) {
+    Register r = getNextUnusedRegister();
+    String code = "", snd = "";
+
+    if (disp < 65536) {
+      snd = "#" + Integer.toString(-disp);
+    } else {
+      Register rval = new Register();
+      code += generateLoadConstant(new ConstantInfo(new IntegerType(), -disp), rval);
+      snd = rval.toString();
+      rval.setStatus(Register.Status.Used);
+    }
+    code +=
+      ARMEngine.Prefix + "LDR\t" + r + ", [" + sb + ", " + snd + "]\n";
+
+    r.setStatus(Register.Status.Loaded);
+    rout.copy(r);
+    return code;
+  }
+
+  /**
+	 * Generate the code for loading a constant itneger into a register.
 	 * @param info info of the constant to load
-	 * @param output register where the value is put, for later referencing
+	 * @param rout register where the value is put, for later referencing
 	 * @return the generated code
 	 */
-	public String generateLoadConstant(ConstantInfo info, Register output) {
-		Type t = info.type();
-		String code = "";
-		Register reg = getNextUnusedRegister();
+	public String generateLoadConstant(ConstantInfo info, Register rout) {
+    // TODO
+  }
 
-		if (t instanceof IntegerType || t instanceof PointerType || t instanceof StructType) {
-			Integer value = (Integer)info.value();
-			/*
-			 * The main problem is that the MOV instruction (which put a value into a register)
-			 * can only work on halfwords (16-bit data).
-			 * The trick is to use MOV and MOVT; the latter set the 16 MSB of the register to
-			 * the value specified.
-			 * Of course, we do that only if needed.
-			 */
-			// Generate code
-			code = ARMEngine.Prefix + "MOV\t" + reg + ", #0x" + Integer.toHexString(value & 0x0000FFFF) + "\n";
+  /**
+   * Generate the code for loading a variable from the heap into a register
+   * @param raddr register containing the address
+   * @param disp optionnal displacement (integer) for struct
+   * @param rout register where the value is put
+   * @return the generated code
+   */
+  public String generateLoadFromHeap(Register raddr, int disp, Register rout) {
+    Register r = new Register();
+    String code = "";
 
-			if (value > 65535) {
-				// If needed, we must set the top part of the value
-				code = code + ARMEngine.Prefix + "MOVT\t" + reg + ", #0x" + Integer.toHexString(value >> 16) + "\n";
-				heapbase++; // > this generate an additionnal instruction
-			}
-		} else {
-			// dafuq ?
-		}
+    if (disp < 65536) {
+      r = getNextUnusedRegister();
+      code += ARMEngine.Prefix + "LDR\t" + r + ", [" + raddr + ", #" + disp + "]\n";
+      r.setStatus(Register.Status.Loaded);
+      raddr.setStatus(Register.Status.Used);
+      rout.copy(r);
+    } else {
+      code += generateLoadConstant(new ConstantInfo(new IntegerType(), disp), r);
+      code += generateLoadFromHeap(raddr, r, rout);
+    }
 
-		// Manage registers
-		info.assignRegister(reg);
-		reg.setStatus(Register.Status.Loaded);
-		output.copy(reg);
+    return code;
+  }
 
-		// Modify heap base
-		heapbase++;
+  /**
+   * Generate the code for loading a variable from the heap into a register, with an optionnal register displacement
+   * @param raddr register containing the address
+   * @param rdisp (register) optionnal displacement in a register (for arrays)
+   * @param rout register where the value is put
+   * @return the generated code
+   */
+  public String generateLoadFromHeap(Register raddr, Register rdisp, Register rout) {
+    String code = "";
+    Register r = getNextUnusedRegister();
 
-		// End
-		return code;
-	}
+    code += ARMEngine.Prefix + "LDR\t" + r + ", [" + raddr + ", " + rdisp + "]\n";
 
-	/**
-	 * Generate the code for loading data with displacement (eg: struct)
-	 * @param raddr register containing the base address of the data
-	 * @param disp displacement of the data
-	 * @param rout register containing the new address
-	 * @return the generated code
-	 */
-	public String generateLoadWithDisp(Register raddr, int disp, Register rout) {
-		Register r = getNextUnusedRegister();
-		String code =
-			ARMEngine.Prefix + "ADD\t" + r + ", " + raddr + ", #" + disp + "\n";
-		raddr.setStatus(Register.Status.Used);
-		r.setStatus(Register.Status.Loaded);
-		rout.copy(r);
-		heapbase++;
-		return code;
-	}
+    raddr.setStatus(Register.Status.Used);
+    rdisp.setStatus(Register.Status.Used);
+    r.setStatus(Register.Status.Loaded);
+    rout.copy(r);
 
-	/**
-	 * Generate the code for loading a specific array index
-	 * @param vinfo the info of the array (and thus its type)
-	 * @param raddr register containing the base address of the data
-	 * @param rid the register containing the id to access
-	 * @param rout register containing the new address
-	 * @return the generated code
-	 */
-	public String generateLoadArrayIndex(VariableInfo vinfo, Register raddr, Register rid, Register rout) {
-		Register r = getNextUnusedRegister();
-		Register rsize = new Register();
-		String code = "";
-		code +=
-			generateLoadConstant(ConstantInfo.fromInt(vinfo.type().size()), rsize);
-		code +=
-			ARMEngine.Prefix + "MLS\t" + r + ", " + rsize + ", " + rid + ", " + raddr + "\n" +
-			ARMEngine.Prefix + "ADD\t" + r + ", " + r + ", " + ", #4\n";
-		heapbase += 2;
-		return code;
-	}
+    return code;
+  }
 
+  ///////////// STORE ////////////
 
-	/**
-	 * Generate the code for loading data directly from memory
-	 * @param raddr register containing the address
-	 * @param size size of the data to retrieve
-	 * @param rout register that will contain the data
-	 * @return the generated code
-	 */
-	public String generateLoadFromMemory(Register raddr, int size, Register rout){
-		String code = ARMEngine.Prefix + "LDR";
-		Register reg = getNextUnusedRegister();
+  /**
+   * Generate the code for 'updating' the value of a variable
+   * @param info info of the variable to store
+   * @param rin value to put in the variabe
+   * @return the generated code
+   */
+  public String generateStoreVariable(VariableInfo vinfo, Register rin);
 
-		if (size == 1)
-			code += "SB"; // We load a signed byte
-		/*else
-		//probably an error
-		*/
+  /**
+   * Generate the code for 'updating' the value of a variable
+   * @param info info of the variable to store
+   * @param disp (integer) displacement to consider
+   * @param rin value to put in the variabe
+   * @return the generated code
+   */
+  public String generateStoreVariable(VariableInfo vinfo, int disp, Register rin);
 
-		// Generate code
-		code += "\t" + reg + ", [" + raddr + "]\n";
+  /**
+   * Generate the code for 'updating' the value of a variable
+   * @param info info of the variable to store
+   * @param rdisp (register) displacement to consider
+   * @param rin value to put in the variabe
+   * @return the generated code
+   */
+  public String generateStoreVariable(VariableInfo vinfo, Register rdisp, Register rin);
 
-		// Update register status
-		reg.setStatus(Register.Status.Loaded);
-		raddr.setStatus(Register.Status.Used);
+  /**
+   * Generate the code for storing a variable into the heap
+   * @param raddr register containing the address
+   * @param disp (integer) optionnal displacement for structs
+   * @param rin register containing the value to be stored
+   * @return the generated code
+   */
+  public String generateStoreInHeap(Register raddr, int disp, Register rin);
 
-		// Copy register in output
-		rout.copy(reg);
+  /**
+   * Generate the code for storing a variable into the heap, with optionnal register displacement
+   * @param raddr register containing the address
+   * @param rdisp (register) optionnal displacement for arrays
+   * @param rin register containing the value to be stored
+   * @return the generated code
+   */
+  public String generateStoreInHeap(Register raddr, Register rdisp, Register rin);
 
-		// Modify heap base
-		heapbase++;
+  /**
+   * Generate the code for allocating a variable in the stack
+   * @param type type to allocate
+   * @return the generated code
+   */
+  public String generateAllocateInStack(Type type) {
+    String code = "";
 
-		// End
-		return code;
-	}
+    if (type instanceof StructType) {
+      Register raddr = new Register();
+      code += generateAllocate(type, raddr, null);
+      code += ARMEngine.Prefix + "PUSH\t" + raddr + "\n";
+    } else if (type instanceof ArrayType) {
+    } else {
+    }
 
-	/**
-	 * Generate the code for storing a value into memory
-	 * @param info variable info; it MUST have a register assigned to work
-	 * @return the generated code
-	 */
-	public String generateStoreVariable(VariableInfo info) {
-		String code = "";
-		Type t = info.type();
-
-		if (info.register() == null) {
-			info.assignRegister(getNextUnusedRegister());
-		}
-
-		// The only precondition for the code below is to have an initialized
-		// register object
-		if (t instanceof StructType) {
-			// TODO: struct affectation is special
-			// We generate a load variable for every field of the struct
-			/*StructType st = (StructType)t;
-			Register reg = new Register();
-			VariableInfo vinfo;
-			for (String f : st.fields()) {
-				vinfo = st.getInfo(f, info.displacement());
-
-			}
-			code +=
-				ARMEngine.Prefix + "MOV\t" + info.register() + ", " + ht + "\n";*/
-
-			Register rsize = new Register();
-			Register raddr = new Register();
-
-			code +=
-				generateLoadConstant(ConstantInfo.fromInt(t.size()), rsize);
-			code +=
-				generateAllocate(t, raddr, rsize);
-			info.assignRegister(raddr);
-		}
-
-		code += ARMEngine.Prefix + "PUSH\t" + info.register() + "\n";
-
-		info.freeRegister();
-		heapbase++;
-		return code;
-	}
-
-	/**
+    return code;
+  }
+	
+  /**
 	 * Generate the code for allocating a block in the heap
 	 * @param type type to allocate
-	 * @param raddr register containing the address of the block
+	 * @param raddr (out) register containing the address of the block
 	 * @param rsize register containing the size of the block (array only)
 	 * @return the generated code
 	 */
@@ -303,21 +340,6 @@ public class ARMEngine extends AbstractMachine {
 
 		reg.setStatus(Register.Status.Loaded);
 		raddr.copy(reg);
-
-		return code;
-	}
-
-	/**
-	 * Generate the code for storing a value into the heap
-	 * @param rdata register containing the data
-	 * @param raddr register containing the address in which to put the data
-	 * @return the generated code
-	 */
-	public String generateStoreHeap(Register rdata, Register raddr) {
-		String code = "";
-
-		code +=
-			ARMEngine.Prefix + "STR\t" + rdata + ", [" + raddr + "]\n";
 
 		return code;
 	}

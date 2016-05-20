@@ -65,76 +65,132 @@ public interface IMachine {
 	 * Generation function
 	 **********************************************************/
 
-	/// Load and store
-	/**
-	 * Generate the code for loading a variable into a register, allowing for (e.g.) doing some operations.
-	 * Note: register management is done by the machine.
-	 * @param info info of the variable to load
-	 * @param output register where the value is put, for later referencing
-	 * @return the generated code
-	 */
-	String generateLoadVariable(VariableInfo info, Register output);
-
-	/**
-	 * Generate the code for loading a constant itneger into a register.
-	 * Note: register management is done by the machine.
-	 * @param info info of the constant to load
-	 * @param output register where the value is put, for later referencing
-	 * @return the generated code
-	 */
-	String generateLoadConstant(ConstantInfo info, Register output);
-
-	/**
-	 * Generate the code for loading data with displacement (eg: struct)
-	 * @param raddr register containing the base address of the data
-	 * @param disp displacement of the data
-	 * @param rout register containing the new address
-	 * @return the generated code
-	 */
-	String generateLoadWithDisp(Register raddr, int disp, Register rout);
-
-	/**
-	 * Generate the code for loading a specific array index
-	 * @param vinfo the info of the array (and thus its type)
-	 * @param raddr register containing the base address of the data
-	 * @param rid the register containing the id to access
-	 * @param rout register containing the new address
-	 * @return the generated code
-	 */
-	String generateLoadArrayIndex(VariableInfo vinfo, Register raddr, Register rid, Register rout);
-
-	/**
-   * Generate the code for loading data directly from memory
-   * @param raddr register containing the address
-   * @param size size of the data to retrieve
-   * @param rout register that will contain the data
+	/////////////////////// MEMORY INSTRUCTIONS ///////////////////////
+  
+  ///////////// LOAD /////////////
+ 
+  /**
+   * Generate the code for loading a variable into a register
+   * @param info info of the variable to load
+   * @param rout (out) register in which the value will be
    * @return the generated code
    */
-  String generateLoadFromMemory(Register raddr, int size, Register rout);
+  String generateLoadValue(VariableInfo info, Register rout);
 
-	/**
-	 * Generate the code for storing a value into memory (the stack)
-	 * @param info variable info
+  /**
+   * Generate the code for loading a variable into a register, with an optionnal field name (for structs)
+   * @param info info of the variable to load
+   * @param disp (integer) displacement to consider (for structs)
+   * @param rout (out) register in which the value will be
+   * @return the generated code
+   */
+  String generateLoadValue(VariableInfo info, int disp, Register rout);
+
+  /**
+   * Generate the code for loading a variable into a register, with an optionnal displacement register (for arrays)
+   * @param info info of the variable to load
+   * @param rdisp (register) displacement to consider
+   * @param rout (out) register in which the value will be
+   * @return the generated code
+   */
+  String generateLoadValue(VariableInfo info, Register rdisp, Register rout);
+
+  /**
+   * Generate the code for loading a value from the stack to a register
+   * @param disp displacement of the variable to load
+   * @param rout (out) register in which the value will be
+   * @return the generated code
+   */
+  String generateLoadFromStack(int disp, Register rout);
+
+  /**
+	 * Generate the code for loading a constant itneger into a register.
+	 * @param info info of the constant to load
+	 * @param rout register where the value is put, for later referencing
 	 * @return the generated code
 	 */
-	String generateStoreVariable(VariableInfo info);
+	String generateLoadConstant(ConstantInfo info, Register rout);
+
+  /**
+   * Generate the code for loading a variable from the heap into a register
+   * @param raddr register containing the address
+   * @param disp optionnal displacement (integer) for struct
+   * @param rout register where the value is put
+   * @return the generated code
+   */
+  String generateLoadFromHeap(Register raddr, int disp, Register rout);
+
+  /**
+   * Generate the code for loading a variable from the heap into a register, with an optionnal register displacement
+   * @param raddr register containing the address
+   * @param rdisp (register) optionnal displacement in a register (for arrays)
+   * @param rout register where the value is put
+   * @return the generated code
+   */
+  String generateLoadFromHeap(Register raddr, Register rdisp, Register rout);
+
+  ///////////// STORE ////////////
+
+  /**
+   * Generate the code for 'updating' the value of a variable
+   * @param info info of the variable to store
+   * @param rin value to put in the variabe
+   * @return the generated code
+   */
+  String generateStoreVariable(VariableInfo vinfo, Register rin);
+
+  /**
+   * Generate the code for 'updating' the value of a variable
+   * @param info info of the variable to store
+   * @param disp (integer) displacement to consider
+   * @param rin value to put in the variabe
+   * @return the generated code
+   */
+  String generateStoreVariable(VariableInfo vinfo, int disp, Register rin);
+
+  /**
+   * Generate the code for 'updating' the value of a variable
+   * @param info info of the variable to store
+   * @param rdisp (register) displacement to consider
+   * @param rin value to put in the variabe
+   * @return the generated code
+   */
+  String generateStoreVariable(VariableInfo vinfo, Register rdisp, Register rin);
+
+  /**
+   * Generate the code for storing a variable into the heap
+   * @param raddr register containing the address
+   * @param disp (integer) optionnal displacement for structs
+   * @param rin register containing the value to be stored
+   * @return the generated code
+   */
+  String generateStoreInHeap(Register raddr, int disp, Register rin);
+
+  /**
+   * Generate the code for storing a variable into the heap, with optionnal register displacement
+   * @param raddr register containing the address
+   * @param rdisp (register) optionnal displacement for arrays
+   * @param rin register containing the value to be stored
+   * @return the generated code
+   */
+  String generateStoreInHeap(Register raddr, Register rdisp, Register rin);
+  
+  /////// MEMORY MANAGEMENT ///////
+  /**
+   * Generate the code for allocating a variable in the stack
+   * @param type type to allocate
+   * @return the generated code
+   */
+  String generateAllocateInStack(Type type);
 
   /**
    * Generate the code for allocating a block in the heap
    * @param type type to allocate
-   * @param raddr register containing the address of the block
+   * @param raddr (out) register containing the address of the block
    * @param rsize register containing the size of the block (array only)
    * @return the generated code
    */
   String generateAllocate(Type type, Register addr, Register rsize);
-
-  /**
-   * Generate the code for storing a value into the heap
-   * @param rdata register containing the data
-   * @param raddr register containing the address in which to put the data
-   * @return the generated code
-   */
-  String generateStoreHeap(Register rdata, Register raddr);
 
   /**
    * Generate the code for flushing the stack top variable
@@ -151,8 +207,8 @@ public interface IMachine {
 	 */
 	String generateFlush(SymbolTable symtab);
 
-  /// Functions related
-  
+  /////////////////////// FUNCTION MANAGEMENT ///////////////////////
+
   /**
    * Generate the code for the beginning of declaring a function
    * @param info the info of the function
@@ -183,7 +239,8 @@ public interface IMachine {
    */
   String generateFunctionCall(FunctionInfo info);
 
-	/// Calculus
+	//////////////////////////// CALCULUS /////////////////////////////
+
 	/**
 	 * Generate an arithmetic binary operation
 	 * @param r1 first register
