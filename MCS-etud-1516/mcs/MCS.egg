@@ -82,6 +82,9 @@ syn estVar : boolean for
          -- Des trucs dans les expressions. --
 				 ;
 
+inh affPossible : boolean for
+                                 AFFX
+                                 ;
 
 -- ces attributs permettent de recuperer les instructions du code ASM inline       
 syn code_asm : STRING for ASM;
@@ -1010,7 +1013,17 @@ end
 -- F = expression figurant dans une expression multiplicative (FACTEUR)
 -----------------------------------------------------------------------
 
-E -> A AFFX #estVar ;
+E -> A #affPossible AFFX #estVar ;
+
+-- Maj d'un attribut pour AFFX signalant si A est, ou non, une variable.
+-- Maj de l'attribut typeH de AFFX afin de tester que les types correspondent.
+#affPossible {
+local
+do
+  AFFX^affPossible := A^estVar;
+  AFFX^typeH := A^type;
+end
+}
 
 -- Attribut estVar de E : E représente une variable si
 -- AFFX est vide ce qui sera représenté par son attribut estVar
@@ -1024,9 +1037,23 @@ end
 
 
 -- Affectation
-AFFX -> affect A #estVar ;
+AFFX -> affect A #affValide #estVar ;
 
--- On met l'attribut est Var de AFFX à faux car la règle 
+-- Vérifie que l'affectation est valide :
+--   - la partie à gauche du = doit être une variable
+--   - le type de la variable doit être le même que celui de A.
+#affValide {
+local
+do
+  if !(AFFX^affPossible) then
+    error(LEFT_PART_NOT_VARIABLE --, AFFX^txt);	
+  else
+    if -- teste sur les types : isCompatible ou égalité ?
+     error(TYPE_NOT_COMPATIBLE, AFFX^typeH.name(), A^type.name());     
+end
+}
+
+-- On met l'attribut estVar de AFFX à faux car la règle 
 -- appelante ne pourra pas être une variable suit à cette RP.
 #estVar {
 local
