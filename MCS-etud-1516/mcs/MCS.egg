@@ -1013,7 +1013,7 @@ end
 -- F = expression figurant dans une expression multiplicative (FACTEUR)
 -----------------------------------------------------------------------
 
-E -> A #affPossible AFFX #estVar ;
+E -> #needVi A #affPossible AFFX #estVarEtVi ;
 
 -- Maj d'un attribut pour AFFX signalant si A est, ou non, une variable.
 -- Maj de l'attribut typeH de AFFX afin de tester que les types correspondent.
@@ -1028,10 +1028,16 @@ end
 -- Attribut estVar de E : E représente une variable si
 -- AFFX est vide ce qui sera représenté par son attribut estVar
 -- et si E est une variable.
-#estVar {
+#estVarEtVi {
 local
 do
-  E^estVar := (A^estVar) && (AFFX^estVar);
+  if (A^estVar) && (AFFX^estVar) then {
+	  E^estVar := true ;
+		E^vi := A^vi ;
+  } else {
+	  E^estVar := false ;
+		E^vi := null ;
+	}
 end
 }
 
