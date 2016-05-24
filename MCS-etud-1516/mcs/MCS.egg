@@ -328,7 +328,7 @@ local
   vi : VariableInfo;
 do
   vi := DECL^tvarS.lookup(DECL^nom);
-	DECL^code := DECL^machine.generateStoreVariable(vi);
+	DECL^code := DECL^machine.generateAllocateInStack(DECL^typeH);
 end
 }
 
