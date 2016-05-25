@@ -189,7 +189,30 @@ public class ARMEngine extends AbstractMachine {
 	 * @return the generated code
 	 */
 	public String generateLoadConstant(ConstantInfo info, Register rout) {
-    // TODO
+    String code = "";
+    Register r = getNextUnusedRegister();
+    Type t = info.type();
+
+    if (t instanceof IntegerType || t instanceof CharacterType || t instanceof PointerType) {
+      Integer val = (Integer)info.value();
+
+      code +=
+        ARMEngine.Prefix + "MOV\t" + r + ", #" + (val & 0x0000FFFF) + "\n";
+
+      if (val >= 65536) {
+        code +=
+          ARMEngine.Prefix + "MOVT\t" + r + ", #" + (val >> 16) + "\n";
+      }
+    } else if (t instanceof StructType) {
+      // TODO
+    } else if (t instanceof ArrayType) {
+      // TODO
+    }
+
+    r.setStatus(Register.Status.Loaded);
+    rout.copy(r);
+
+    return code;
   }
 
   /**
@@ -241,30 +264,73 @@ public class ARMEngine extends AbstractMachine {
   ///////////// STORE ////////////
 
   /**
-   * Generate the code for 'updating' the value of a variable
+   * Generate the code for 'updating' the value of a variable in the stack
    * @param info info of the variable to store
    * @param rin value to put in the variabe
    * @return the generated code
    */
-  public String generateStoreVariable(VariableInfo vinfo, Register rin);
+  public String generateStoreVariable(VariableInfo vinfo, Register rin) {
+    Type t = vinfo.type();
+    String code = "";
+
+    if (t instanceof IntegerType || t instanceof CharacterType || t instanceof PointerType) {
+      code +=
+        ARMEngine.Prefix + "STR\t" + rin + ", [SB, " + Integer.toString(-vinfo.displacement()) + "]\n";
+    } else if (t instanceof StructType) {
+      // Shouldn't be called like that
+    } else if (t instanceof ArrayType) {
+      // Shouldn't be called like that
+    }
+
+    rin.setStatus(Register.Status.Used);
+    return code;
+  }
 
   /**
-   * Generate the code for 'updating' the value of a variable
+   * Generate the code for 'updating' the value of a variable in the stack, with an additionnal displacement
    * @param info info of the variable to store
    * @param disp (integer) displacement to consider
    * @param rin value to put in the variabe
    * @return the generated code
    */
-  public String generateStoreVariable(VariableInfo vinfo, int disp, Register rin);
+  public String generateStoreVariable(VariableInfo vinfo, int disp, Register rin) {
+    String code = "", addr = "";
+    Type t = vinfo.type();
+
+    if (t instanceof StructType) {
+      Register raddr = new Register();
+      code +=
+        generateLoadFromStack(vinfo.displacement(), raddr) +
+        generateStoreInHeap(raddr, disp, rin);
+    } else {
+      // Shouldn't be called ?
+    }
+
+    return code;
+  }
 
   /**
-   * Generate the code for 'updating' the value of a variable
+   * Generate the code for 'updating' the value of a variable in the stack
    * @param info info of the variable to store
    * @param rdisp (register) displacement to consider
    * @param rin value to put in the variabe
    * @return the generated code
    */
-  public String generateStoreVariable(VariableInfo vinfo, Register rdisp, Register rin);
+  public String generateStoreVariable(VariableInfo vinfo, Register rdisp, Register rin) {
+    String code = "";
+    Type t = vinfo.type();
+
+    if (t instanceof StructType) {
+      Register raddr = new Register();
+      code +=
+        generateLoadFromStack(vinfo.displacement(), raddr) +
+        generateStoreInHeap(raddr, rdisp, rin);
+    } else {
+      // Shouldn't be called ?
+    }
+
+    return code;
+  }
 
   /**
    * Generate the code for storing a variable into the heap
@@ -273,7 +339,27 @@ public class ARMEngine extends AbstractMachine {
    * @param rin register containing the value to be stored
    * @return the generated code
    */
-  public String generateStoreInHeap(Register raddr, int disp, Register rin);
+  public String generateStoreInHeap(Register raddr, int disp, Register rin) {
+    String code = "", addr = raddr + ", ";
+
+    raddr.setStatus(Register.Status.Used);
+
+    if (disp < 65536) {
+      addr += "#" + disp;
+    } else {
+      Register r = new Register();
+      code +=
+        generateLoadConstant(new ConstantInfo(new IntegerType(), disp), r);
+      addr += r;
+      r.setStatus(Register.Status.Used);
+    }
+    
+    code += 
+      ARMEngine.Prefix + "STR\t" + rin + ", [" + addr + "]\n";
+
+    rin.setStatus(Register.Status.Used);
+    return code;
+  }
 
   /**
    * Generate the code for storing a variable into the heap, with optionnal register displacement
@@ -282,7 +368,14 @@ public class ARMEngine extends AbstractMachine {
    * @param rin register containing the value to be stored
    * @return the generated code
    */
-  public String generateStoreInHeap(Register raddr, Register rdisp, Register rin);
+  public String generateStoreInHeap(Register raddr, Register rdisp, Register rin) {
+    String code =
+      ARMEngine.Prefix + "STR\t" + rin + ", [" + raddr + ", " + rdisp + "]\n";
+    raddr.setStatus(Register.Status.Used);
+    rdisp.setStatus(Register.Status.Used);
+    rin.setStatus(Register.Status.Used);
+    return code;
+  }
 
   /**
    * Generate the code for allocating a variable in the stack
@@ -437,7 +530,7 @@ public class ARMEngine extends AbstractMachine {
 		}
 
 		if (!(info.returnType() instanceof VoidType))
-			code += generateStoreVariable(vinfo);
+			code += generateStoreVariable(vinfo, vinfo.register());
 
 		code +=
 			ARMEngine.Prefix + "BX\t" + lr + "\n\n";
