@@ -16,7 +16,7 @@ public class PointerType extends Type {
 	 */
 	public PointerType(Type t) {
 		super(4);
-                type = t;
+    type = t;
 	}
 
 	/**
@@ -39,4 +39,8 @@ public class PointerType extends Type {
 	public Type getType() {
 		return this.type;
 	}
+
+  public Object getDefault() {
+    return null;
+  }
 }
