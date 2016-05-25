@@ -807,9 +807,8 @@ end
 }
 
 
--- TODO : gen code.
 -- Declaration de variable locale avec ou sans init 
-INST ->  TYPE ident #ajoutTDS AFFX pv ;
+INST ->  TYPE ident #ajoutTDS AFFX pv #genCode;
 
 -- Vérifiation que l'identifiant n'est pas déjà use localement.
 -- Ajout à la Tvar.
@@ -834,6 +833,24 @@ do
         INST^tvarS := tv;
     }
   } 
+end
+}
+
+-- Génération du code
+-- On vérifie si on a TYPE ident := X; ou TYPE ident;
+#genCode {
+local
+  reg : Register;
+	varinf : VariableInfo;
+do
+	if AFFX^estVar then
+		 -- Pas d'affectation a droite, juste une decl locale
+      INST^code := INST^machine.generateAllocateInStack(TYPE^type); 
+    else {
+		 -- On a une affectation (au moins)
+			varinf := INST^tvar.lookup(ident^txt, false);		 
+      INST^code := INST^machine.generateAllocateInStack(TYPE^type) +INST^machine.generateLoadValue(AFFX^vi,reg) + INST^machine.generateStoreValue(varinf,reg);
+    }
 end
 }
 
