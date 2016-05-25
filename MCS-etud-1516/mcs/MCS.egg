@@ -555,7 +555,8 @@ local
 	info : SymbolInfo;
 do
   -- Ajout du type du param à FunctionInfo.
-  fi := PARF^funInfoH;
+  fi := PARF^funInfoH;		listeChamps := typeStruct.fields();
+
 	fi.add(TYPE^type);
 
   -- Vérifications concernant ident.
