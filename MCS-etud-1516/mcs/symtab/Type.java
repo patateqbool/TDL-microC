@@ -40,7 +40,16 @@ public abstract class Type {
    * @param other the other type to be compared with
    * @return true if other is compatible with this.
    */
-  abstract boolean isCompatible(Type other);
+  abstract public boolean isCompatible(Type other);
+
+  /**
+   * Detect if this type is equal to the other
+   * @param other the other type to be compared with
+   * @return true if other is equal to this
+   */
+  public boolean isEqualTo(Type other) {
+    return (other.getClass().equals(this.getClass()));
+  }
 
 	/**
 	 * A default value
