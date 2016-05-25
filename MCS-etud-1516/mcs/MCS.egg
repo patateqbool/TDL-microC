@@ -1043,7 +1043,7 @@ end
 
 
 -- Affectation
-AFFX -> affect A #affValide #estVar ;
+AFFX -> affect A #affValide #estVarEtVi ;
 
 -- Vérifie que l'affectation est valide :
 --   - la partie à gauche du = doit être une variable
@@ -1061,21 +1061,26 @@ end
 
 -- On met l'attribut estVar de AFFX à faux car la règle 
 -- appelante ne pourra pas être une variable suit à cette RP.
-#estVar {
+-- L'attribut vi de AFFX prend celui de A, de cette manière,
+-- on pourra faire l'affectation.
+#estVarEtVi {
 local
 do
   AFFX^estVar := false;
+  AFFX^vi := A^vi;
 end
 }
 
 
-AFFX -> #estVar ;
+AFFX -> #estVarEtVi ;
 
 -- On met estVar à true car cette RP n'empeche pas la representation d'une var.
-#estVar {
+-- Pas de vi à mettre dans AFFX.
+#estVarEtVi {
 local
 do
   AFFX^estVar := true ;
+	AFFX^vi := null ;
 end
 }
 
@@ -1086,15 +1091,17 @@ A -> R AX #oper #estVar ;
 #oper {
 local
 do
+    -- TODO : Il faut vérifier que AX ne produit pas pas qqchose.
 	  A^machine.generateOperation(AX^op,R^reg,AX^reg,A^reg);
 end
 }
 
 -- A représente une variable si AX ne l'empêche pas et R représente une variable.
-#estVar {
+#estVarEtVi {
 local
 do
   A^estVar := (R^estVar)&&(AX^estVar);
+
 end
 }
 
