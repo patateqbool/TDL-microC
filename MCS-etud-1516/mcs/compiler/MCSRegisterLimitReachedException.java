@@ -6,7 +6,7 @@
  */
 package mcs.compiler;
 
-class MCSRegisterLimitReachedException extends MCSException {
+public class MCSRegisterLimitReachedException extends MCSException {
   private static final long serialVersionUID = 1l;
   public MCSRegisterLimitReachedException() {
     super("No more free register to use !");
