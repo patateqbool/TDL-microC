@@ -7,6 +7,7 @@
 package mcs.compiler;
 
 public class MCSSymbolAlreadyDefinedException extends MCSException {
+  private static final long serialVersionUID = 1l;
 	public MCSSymbolAlreadyDefinedException(String symbol) {
 		super("Symbol '" + symbol + "' has already been defined");
 	}
