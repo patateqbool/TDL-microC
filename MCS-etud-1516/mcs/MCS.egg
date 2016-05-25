@@ -1045,6 +1045,7 @@ end
 -- Attribut estVar de E : E représente une variable si
 -- AFFX est vide ce qui sera représenté par son attribut estVar
 -- et si E est une variable.
+-- Si l'expression représente une variable, on met la vi correspondant dans l'attribut vi.
 #estVarEtVi {
 local
 do
@@ -1060,10 +1061,10 @@ end
 
 
 -- Affectation
-AFFX -> affect A #affValide #estVarEtVi ;
+AFFX -> affect A #affValide #estVar ;
 
 -- Vérifie que l'affectation est valide :
---   - la partie à gauche du = doit être une variable
+--   - la partie à gauche du = doit être une variable,
 --   - le type de la variable doit être le même que celui de A.
 #affValide {
 local
@@ -1078,32 +1079,27 @@ end
 
 -- On met l'attribut estVar de AFFX à faux car la règle 
 -- appelante ne pourra pas être une variable suit à cette RP.
--- L'attribut vi de AFFX prend celui de A, de cette manière,
--- on pourra faire l'affectation.
-#estVarEtVi {
+#estVar {
 local
 do
   AFFX^estVar := false;
-  AFFX^vi := A^vi;
 end
 }
 
 
-AFFX -> #estVarEtVi ;
+AFFX -> #estVar ;
 
 -- On met estVar à true car cette RP n'empeche pas la representation d'une var.
--- Pas de vi à mettre dans AFFX.
-#estVarEtVi {
+#estVar {
 local
 do
   AFFX^estVar := true ;
-	AFFX^vi := null ;
 end
 }
 
 
 -- Relation
-A -> R AX #oper #estVar ;
+A -> R AX #oper #estVarEtVi ;
 
 #oper {
 local
@@ -1113,17 +1109,24 @@ do
 end
 }
 
--- A représente une variable si AX ne l'empêche pas et R représente une variable.
+-- A représente une variable si AX ne l'empêche pas 
+-- et R représente une variable, on fait alors passer
+-- la vi de R à A. Sinon, vi est à null pour R.
 #estVarEtVi {
 local
 do
-  A^estVar := (R^estVar)&&(AX^estVar);
-
+  if (R^estVar)&&(AX^estVar) then {
+    A^estVar := true;
+    A^vi := R^vi;
+	}else{
+	  A^estVar := false;
+    A^vi := null;
+	}
 end
 }
 
 
-AX -> OPREL R #actuOp #estVar;
+AX -> OPREL R #actuOp #estVarEtVi;
 
 #actuOp {
 local
@@ -1133,7 +1136,7 @@ end
 }
 
 -- La RP appelante ne represente pas une variable.
-#estVar {
+#estVarEtVi {
 local
 do
   AX^estVar := false;
@@ -1141,8 +1144,9 @@ end
 }
 
 
-AX -> #estVar ;
+AX -> #estVarEtVi ;
 
+-- La RP n'empeche pas d'etre une variable.
 #estVar {
 local
 do
@@ -1211,7 +1215,7 @@ end
 }
 
 
-R ->  T  RX #oper #estVar ;
+R ->  T  RX #oper #estVarEtVi ;
 
 #oper {
 local
@@ -1223,11 +1227,19 @@ do
 end
 }
 
--- R est variable si T l'est et RX ne l'empeche pas.
-#estVar {
+-- R est variable si T l'est et RX ne l'empeche pas,
+-- dans ce cas, on lui donne la vi de R. Dans le cas
+-- contraire, l'attribut vi de R est à null.
+#estVarEtVi {
 local
 do
-  R^estVar := (T^estVar)&&(RX^estVar);
+  if ((T^estVar)&&(RX^estVar)) then {
+	  R^estVar := true;
+		R^vi := T^vi;
+	}else{
+	  R^estVar := false;
+		R^vi := null;
+	}
 end
 }
 
@@ -1303,7 +1315,7 @@ end
 
 
 -- Multiplication, ...
-T ->  F  TX #oper #estVar ;
+T ->  F  TX #oper #estVarEtVi ;
 
 #oper {
 local
@@ -1316,10 +1328,18 @@ end
 }
 
 -- T est une variable si F l'est et TX ne l'empeche pas.
-#estVar {
+-- Dans ce cas, vi de T est celui de F.
+-- Sinon, vi est à null.
+#estVarEtVi {
 local
 do
-  T^estVar := (F^estVar)&&(TX^estVar);
+  if ((F^estVar)&&(TX^estVar)) then {
+	  T^estVar := true;
+		T^vi := F^vi;
+	}else{
+	  T^estVar := false;
+		T^vi := null;
+	}
 end
 }
 
@@ -1408,7 +1428,7 @@ end
 ---------------------------------------
 
 -- Constante entiere
-F -> entier #typeEtGenCode #estVar ;
+F -> entier #typeEtGenCode #estVarEtVi ;
 
 -- Set de l'attribut de type de F pour indiquer qu'il s'agit d'un entier.
 -- Génération du code pour load la valeur de l'entier dans la mémoire.
@@ -1433,16 +1453,18 @@ end
 }
 
 -- Une expression de base ne peut representer une variable.
-#estVar {
+-- Donc pas de vi.
+#estVarEtVi {
 local
 do
   F^estVar := false;
+	F^vi := null;
 end
 }
 
 
 -- Constante chaine
-F -> chaine #typeEtGenCode #estVar ;
+F -> chaine #typeEtGenCode #estVarEtVi ;
 
 -- Set de l'attribut type et reg de F.
 -- Génération de code pour load la chaine.
@@ -1472,16 +1494,18 @@ end
 }
 
 -- Une expression de base ne peut representer une variable.
-#estVar {
+-- Donc pas de vi.
+#estVarEtVi {
 local
 do
   F^estVar := false;
+  F^vi := null;
 end
 }
 
 
 -- Constante caractere
-F -> caractere #typeEtGenCode #estVar ;
+F -> caractere #typeEtGenCode #estVarEtVi ;
 
 -- Set de l'attribut type et reg de F.
 -- Génération de code pour load le caractere.
@@ -1504,16 +1528,18 @@ end
 }
 
 -- Une expression de base ne peut representer une variable.
-#estVar {
+-- Donc pas de vi.
+#estVarEtVi {
 local
 do
   F^estVar := false;
+  F^vi := null;
 end
 }
 
 
 -- Expression unaire
-F ->  OPUN  F  #genCode #estVar;
+F ->  OPUN  F  #genCode #estVarEtVi;
 
 -- Génération du code pour la déclaration de la variable.
 #genCode {
@@ -1524,10 +1550,12 @@ end
 }
 
 -- Une variable ne peut contenir d'opérateur unaire.
-#estVar {
+-- Donc pas de vi.
+#estVarEtVi {
 local
 do
   F^estVar := false;
+  F^vi := null;
 end
 }
 
@@ -1562,38 +1590,50 @@ end
 
 
 -- Pointeur NULL
-F -> null #estVar;
+F -> null #estVarEtVi;
 
---Le pointeur null ne représente pas une variable.
-#estVar {
+-- Le pointeur null ne représente pas une variable.
+-- Donc pas de vi.
+#estVarEtVi {
 local
 do
- F^estVar := false;
+  F^estVar := false;
+  F^vi := null;
 end
 }
 
 -- Expression parenthesee
-F ->  paro E parf FX #estVar;
+F ->  paro E parf FX #estVarEtVi;
 
 -- F est une variable si E l'est et FX ne l'empeche pas.
-#estVar {
+-- Dans ce cas, vi de F prend celui de E. Dans le cas
+-- contraire, il est null.
+#estVarEtVi {
 local
 do
-  F^estVar := (E^estVar)&&(FX^estVar);
+  if ((E^estVar)&&(FX^estVar)) then {
+	  F^estVar := true;
+		F^vi := E^vi;
+	}else{
+	  F^estVar := false;
+		F^vi := null;
+	}
 end
 }
 
 
 -- Cast
 -- TODO : quid de "l'appelant"
-F ->  paro TYPE parf #cast F #estVar;
+F ->  paro TYPE parf #cast F #estVarEtVi;
 
 -- (int)a ne représente pas une variable : 
 -- le cast empeche une expression d'etre une variable.
-#estVar {
+-- Donc pas de vi.
+#estVarEtVi {
 local
 do
   F^estVar := false;
+	F^vi := null;
 end
 }
 
@@ -1610,10 +1650,10 @@ end
 }
 
 -- Dereferencement.
---TODO : F^type.
-F -> mult F #estVar;
+-- TODO : F^type.
+F -> mult F #estVarEtVi;
 
--- F représente une variable si F1 en représente une, et que celle ci est un pointeur.
+-- F représente une variable si F1 en représente une, et que celle-ci est un pointeur.
 #estVar {
 local
 do
@@ -1622,35 +1662,100 @@ do
 end
 }
 
+-- LA REGLE OU C'EST REPARTI EN VRILLE. --
 
-F -> ident FX #estVarEtPassType ;
+F -> ident #estStructOuFun FX #estVarEtPassType ; 
+global
+  info : SymbolInfo;
+  varInfo : VariableInfo;
+  funInfo : FunctionInfo;
+	estStruct : boolean;
+	estVar : boolean;
+	estFun : boolean;
 
+-- On regarde si ident représente un struct ou une fonction.
+#estStructOuFun {
+local
+  pileDepl : Stack<Integer> ;
+	type : Type;
+do
+  
+  --Initialisations.
+  pileDepl := new Stack();
+	estStruct := false;
+	estVar := false;
+	estFun := false;
+	type := null;
+
+	-- Recherche dans la TVar.
+  info := F^tvar.lookup(ident^txt);
+  if (info = null) then {
+	  -- ident n'est pas dans la TVar, F n'est pas une variable.
+		estVar := false;
+		-- On regarde dans la TFun s'il s'agit de l'identifiant d'une fonction.
+		info := F^tfun(lookup(ident^txt);
+    if (info = null){
+		  -- On n'a pas trouvé le symbole dans les TDS : erreur.
+			error(IDENT_UNDEFINED, ident^txt);
+    } else {
+		  -- L'id est celui d'une fonction.
+			-- On passe estFun à vrai.
+			estFun := true;
+			funInfo := (FunctionInfo)info;
+			type := funInfo.returnType();
+    }
+  } else {
+	  -- ident représente une variable.
+		estVar := true;
+		-- On peut passer le type.
+		varInfo := (VariableInfo)info;
+		type := varInfo.type();
+		-- Deux cas possibles : 
+		--   - il s'agit d'un struct ce qui permet certains choix pour FX.
+		--   - il s'agit d'une variable conventionnelle, FX doit être vide.
+
+	-- TODO : match with pour savoir si info est un struct ou non.
+	-- {
+	-- Si info est struct : 
+	-- On met l'attribut estStruct de FX à true.
+	-- On empile le déplacement dans l'attribut pileDepl de FX.
+	    estStruct := true ;
+	    pileDepl.push(info.displacement);
+	-- }
+	-- Si ident est une variable non-struct, rien à faire :
+	-- estStruct est déjà à faux, estVar à vrai, la pile est initialisée...
+
+	-- On passe les attributs qui serviront à FX.
+	FX^estStruct := estStruct;
+	FX^pileDepl := pileDepl;
+	FX^estFun := estFun;
+	FX^typeH := type.
+end
+}
+
+
+-- TODO : Réécrire tout ça :D
 -- F est une variable si ident représente une variable (recherche dans tvar).
 -- Et si FX ne l'empeche pas.
 -- Passage du type, celui ci dépend de FX et de s'il s'agit d'une variable ou d'une fonction.
 #estVarEtPassType {
 local
-  info : VariableInfo;
 do
-  info := F^tvar.lookup(ident^txt);
-	if (info = null) then
-	  -- Si l'ident n'est pas dans la tvar, F n'est pas une variable.
-	  F^estVar := false;
-		info := F^tfun(lookup(ident^txt);
-		if (info = null) then 
-		  error(IDENT_UNDEFINED, ident^txt);
-		else 
-		  -- TODO : ident représente une fonction.
-	else {
-	  -- ident représente une variable.
-		F^estVar := true;
-		-- TODO : faire passer le type en fonction de FX.    
-	}
+
 end
 }
 
 
-FX -> #estVar ;
+FX -> #verifFonction #estVar #passStack #passType ;
+
+-- Vérifie qu'on n'attendait pas une liste d'argument pour un appel de fonction.
+#verifFonction {
+local
+do
+  if FX^estFun then
+	  error(FUNCTION_CALL_WITHOUT_PARS);
+end
+}
 
 -- N'empeche pas l'expression d'être une variable.
 #estVar {
@@ -1660,12 +1765,55 @@ do
 end
 }
 
+-- On fait remonter la pile de deplacements.
+#passStack {
+local
+do
+  FX^pileDeplS := FX^pileDepl;
+end
+}
+
+-- On fait remonter le type.
+#passType {
+local
+do
+  FX^type := FX^typeH
+end
+}
+
 
 -- Acces champ
-FX -> pt ident FX #estVar #TODO;
+FX -> pt ident #rechChamp FX #estVar;
+
+-- Recherche du champ. 
+#rechChamp {
+local
+  typeStruct : StructType; 
+	type : Type;
+do
+  -- On vérifie que ce qui est à gauche de cet appel est bien un struct.
+  if !(FX^estStruct) then 
+	  error(NOT_STRUCT);
+	else {
+	  -- On vérifie que le champ existe et on y accède.
+    typeStruct := (StructType)FX^typeH;
+		if (typeStruct.fields().instanceOf(ident^txt) = -1) then {
+		  -- Si le instanceOf renvoie -1, c'est que l'identifiant n'apparait pas dans les champs : erreur.
+		  error(CHAMP_INEXISTANT, ident^txt);
+		} else {
+
+		-- PAUSE ICI,
+		-- C'EST LA QU'IL FAUT QUE JE REPRENDE.
+		-- ICI, LA, ICI
+		-- ICI
+		-- ICI.
+   		type := typeStruct.find(ident^txt);
+
+    
+end
+}
 
 -- Si FX1 ne l'empeche pas, FX peut représenter une variable.
--- (si le struct dont le champ est accedé est bien une variable, mais la verification ne se fait pas ici). 
 #estVar {
 local
 do
@@ -1675,7 +1823,6 @@ end
 
 -- TODO
 -- Verification que le champ existe.
--- Faire remonter l'info que "l'appelant" doit être un struct.
 -- Faire passer le type en fonction de FX.
 #TODO {
 local
