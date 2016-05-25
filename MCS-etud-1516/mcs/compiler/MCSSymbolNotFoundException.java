@@ -7,7 +7,8 @@
 package mcs.compiler;
 
 public class MCSSymbolNotFound extends MCSException {
-	public MCSException() {
-		super('');
+  private static final long serialVersionUID = 1l;
+	public MCSSymbolNotFound(String sym) {
+		super("Symbol '" + sym + "' not found.");
 	}
 }

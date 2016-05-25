@@ -843,14 +843,15 @@ local
   reg : Register;
 	varinf : VariableInfo;
 do
-	if AFFX^estVar then
-		 -- Pas d'affectation a droite, juste une decl locale
-      INST^code := INST^machine.generateAllocateInStack(TYPE^type); 
-    else {
-		 -- On a une affectation (au moins)
-			varinf := INST^tvar.lookup(ident^txt, false);		 
-      INST^code := INST^machine.generateAllocateInStack(TYPE^type) +INST^machine.generateLoadValue(AFFX^vi,reg) + INST^machine.generateStoreValue(varinf,reg);
-    }
+	if AFFX^estVar then {
+		-- Pas d'affectation a droite, juste une decl locale
+    INST^code := INST^machine.generateAllocateInStack(TYPE^type); 
+	}
+  else {
+		-- On a une affectation (au moins)
+		varinf := INST^tvar.lookup(ident^txt, false);		 
+    INST^code := INST^machine.generateAllocateInStack(TYPE^type) +INST^machine.generateStoreValue(varinf,AFFX^reg);
+  }
 end
 }
 
@@ -993,8 +994,7 @@ end
 
 
 -- Retour de fonction
--- TODO : Vérifier que E est du type retour de la fonction (INST^funInfoH.returnType() ).
---        generateFlush PUIS generateReturn.
+
 INST ->  retour E pv #verifTypage #genCode ;
 
 -- Vérification que E est du type retour de la fonction.
@@ -1003,8 +1003,10 @@ local
   typeRet : Type;
 do
   typeRet := INST^funInfoH.returnType();
-	-- TODO : si typeRet ne correspond pas à E^type
-	--        alors erreur.
+	-- Si typeRet ne correspond pas à E^type
+	-- alors erreur.
+	if not typeRet.isEqual(E^type) then
+     error(TYPE_NOT_COMPATIBLE, typeRet.name(), E^type.name());     
 end
 }
 
@@ -1104,8 +1106,12 @@ A -> R AX #oper #estVarEtVi ;
 #oper {
 local
 do
-    -- TODO : Il faut vérifier que AX ne produit pas pas qqchose.
-	  A^machine.generateOperation(AX^op,R^reg,AX^reg,A^reg);
+  if AX^estVar then {
+	  A^code := R^code;
+	} 
+	else {
+		A^code := AX^code + R^code + A^machine.generateOperation(AX^op,R^reg,AX^reg,A^reg);
+	}
 end
 }
 
@@ -1221,7 +1227,7 @@ R ->  T  RX #oper #estVarEtVi ;
 local
 do
   if (RX^op != NOP) {
-	  RX^machine.generateOperation(RX^op,T^reg,RX^reg,R^reg);
+	  R^code := RX^code + T^code + RX^machine.generateOperation(RX^op,T^reg,RX^reg,R^reg);
 	}
 
 end
@@ -1250,7 +1256,9 @@ RX -> OPADD T RX #actuOp #estVar ;
 local
 do
   if (RX1^op != NOP) {
-	  RX1^machine.generateOperation(RX1^op,T^reg,RX1^reg,RX^reg);
+	  RX^code := RX1^code + T^code + RX1^machine.generateOperation(RX1^op,T^reg,RX1^reg,RX^reg);
+	} else {
+	  RX^code := RX1^code + T^code;
 	}
 	RX^op = OPADD^op;
 end
@@ -1321,7 +1329,9 @@ T ->  F  TX #oper #estVarEtVi ;
 local
 do
   if (TX^op != NOP) {
-	  TX^machine.generateOperation(TX^op,F^reg,TX^reg,T^reg);
+	  T^code := TX^code + F^code + TX^machine.generateOperation(TX^op,F^reg,TX^reg,T^reg);
+	} else {
+	  T^code := TX^code + F^code;
 	}
 
 end
@@ -1350,7 +1360,9 @@ TX -> OPMUL F TX #actuOp #estVar;
 local
 do
   if (TX1^op != NOP) {
-	  TX1^machine.generateOperation(TX1^op,F^reg,TX1^reg,TX^reg);
+	  TX^code := TX1^code + F^code + TX1^machine.generateOperation(TX1^op,F^reg,TX1^reg,TX^reg);
+	} else {
+	  TX^code := TX1^code + F^code;
 	}
 	TX^op = OPMUL^op;
 end
@@ -1411,7 +1423,6 @@ do
   OPMUL^op := MOD;
 end
 }
------LEET-----
 
 OPMUL -> #op et ;
 
@@ -1545,7 +1556,7 @@ F ->  OPUN  F  #genCode #estVarEtVi;
 #genCode {
 local
 do
-	F^code:= F^machine.generateOperation(OPUN^op,F1^reg,F^reg);
+	F^code:= F1^code + F^machine.generateOperation(OPUN^op,F1^reg,F^reg);
 end
 }
 
