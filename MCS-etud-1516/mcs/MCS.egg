@@ -2,6 +2,9 @@
 -- Grammaires de MC  et MCS                       --
 ----------------------------------------------------
 
+-- TODO : cParam utilité ? (Mémoire de fou)
+--        lors de déclarations, on doit aussi vérifier dans talias.
+
 --options
 option auto = true;
 option version = 0.0.1;
@@ -182,7 +185,7 @@ local
 do
   ENTITES^tvar := new VariableTable();
   ENTITES^tfun := new FunctionTable();
-	ENTITES^talias := new AliasTable();
+  ENTITES^talias := new AliasTable();
 end
 }
 -- Ecrit le code dans un fichier
@@ -330,7 +333,7 @@ end
 #genCode {
 local
 do
-	DECL^code := DECL^machine.generateAllocateInStack(DECL^typeH);
+  DECL^code := DECL^machine.generateAllocateInStack(DECL^typeH);
 end
 }
 
@@ -384,7 +387,7 @@ end
 #creationFunctionInfo {
 local
 do
-  PARFS^funInfoH := new FunctionInfo(FONCTION^type);
+  PARFS^funInfoH := new FunctionInfo(FONCTION^typeH);
 end
 }
 
@@ -402,14 +405,16 @@ end
 #ajoutEtPassFI {
 local
   tf : FunctionTable;
+  fi : funInfo;
 do
   tf := PARFS^tfun;
-  tf.insert(FONCTION^nom, PARFS^funInfo);
+  fi := PARFS^funInfo;
+  tf.insert(FONCTION^nom, fi);
 -- Passage de tfun à FONCTION et à BLOC.
   FONCTION^tfunS := tf;
   BLOC^tfun := tf;
 -- Passage de funInfo à BLOC.
-  BLOC^funInfoH := PARFS^funInfo;
+  BLOC^funInfoH := fi;
 end
 }
 
@@ -450,7 +455,6 @@ end
 }
 
 
-
 PARFS -> #increC PARF #ajoutType PARFSX #majTvarSynt #transFI ;
 -- (Normalement le passage des TDS de PARFS à PARF puis de PARF à PARFSX se fait automatiquement).
 
@@ -460,8 +464,8 @@ local
   c : int;
 do
   c := PARFS^cParam + 1;
-	PARF^cParam := c;
-	PARFSX^cParam := c;
+  PARF^cParam := c;
+  PARFSX^cParam := c;
 end
 }
 
@@ -506,7 +510,7 @@ end
 }
 
  
-PARFSX -> #incrC virg #passFI PARF #passFI2 PARFSX #transFI ;
+PARFSX -> #incrC virg PARF #majFI PARFSX #transFI ;
 
 -- Incrementation du compteur de parametres, et passage de l'attribut.
 #incrC {
@@ -514,25 +518,19 @@ local
   c : int;
 do
   c := PARFSX^cParam + 1;
-	PARF^cParam := c;
-	PARFSX1^cParam := c;
+  PARF^cParam := c;
+  PARFSX1^cParam := c;
 end
 }
 
-
--- Passage de la FunctionInfo de PARFSX à PARF.
-#passFI {
+-- Ajout du paramètre de PARF au functionInfo et passage à PARFSX1.
+#majFI {
 local
+  fi : functionInfo;
 do
-  PARF^funInfoH := PARFSX^funInfoH;
-end
-}
-
--- Passage de la FunctionInfo de PARF à PARFSX1.
-#passFI2 {
-local
-do
-  PARFSX2^funInfoH := PARF^funInfo;
+  fi := PARFSX^funInfoH;
+  fi.add(PARF^type);
+  PARFSX1^funInfoH := fi;
 end
 }
 
@@ -545,22 +543,15 @@ end
 }
 
 
-
 PARF ->  TYPE #ajouts ident ;
 
--- Ajout du type du param à FunctionInfo.
 -- Ajout de ident à la TDS locale.
 -- Vérifications concernant ident.
+-- TODO : verifier dans talias.
+-- Passage du type.
 #ajouts {
 local
-  fi : FunctionInfo;
-	info : SymbolInfo;
 do
-  -- Ajout du type du param à FunctionInfo.
-  fi := PARF^funInfoH;		listeChamps := typeStruct.fields();
-
-	fi.add(TYPE^type);
-
   -- Vérifications concernant ident.
   info := PARF^tvar.lookup(ident^txt, false);
   -- Si identc est une clef dans la TDSvar, erreur.
@@ -573,11 +564,10 @@ do
       error(IDENT_TAKEN, ident^txt);
     else
       -- Ajout de ident à la TDS locale.
-      PARF^tvar.insert(ident^txt, 
-			                 new VariableInfo(TYPE^type, PARF^funInfo.displacement(PARF^cParam)));
+      PARF^tvar.insert(ident^txt, new VariableInfo(TYPE^type, PARF^funInfo.displacement(PARF^cParam)));
     end
   end
-	PARF^funInfo := fi;
+  PARF^type := TYPE^type;
 end
 }
 
@@ -743,7 +733,7 @@ local
 do
   INSTS^tvar := BLOC^tvar;
   INSTS^tfun := BLOC^tfun;
-	INSTS^funInfoH := BLOC^funInfoH;
+  INSTS^funInfoH := BLOC^funInfoH;
 end
 }
 
@@ -864,7 +854,7 @@ local
   tfille : VariableTable;
 do
   tfille := new VariableTable(INST^tvar);
-	BLOC^tvar := tfille;
+  BLOC^tvar := tfille;
 end
 }
 
@@ -910,9 +900,9 @@ local
   tfille : VariableTable;
 do
   tfille := new VariableTable(INST^tvar);
-	BLOC^tvar := tfille;
-	-- Useless?
-	BLOC^tfun := INST^tfun;
+  BLOC^tvar := tfille;
+  -- Useless?
+  BLOC^tfun := INST^tfun;
 end
 }
 
@@ -922,7 +912,7 @@ end
 local
 do
   SIX^tvar := INST^tvar;
-	SIX^tfun := INST^tfun;
+  SIX^tfun := INST^tfun;
 end
 }
 
@@ -959,9 +949,9 @@ local
   tfille : VariableTable;
 do
   tfille := new VariableTable(SIX^tvar);
-	BLOC^tvar := tfille;
-	-- Useless?
-	BLOC^tfun := SIX^tfun;
+  BLOC^tvar := tfille;
+  -- Useless?
+  BLOC^tfun := SIX^tfun;
 end
 }
 
@@ -987,8 +977,7 @@ end
 
 
 
--- Retour de fonction
-
+-- Retour de fonction.
 INST ->  retour E pv #verifTypage #genCode ;
 
 -- Vérification que E est du type retour de la fonction.
@@ -997,11 +986,11 @@ local
   typeRet : Type;
 do
   typeRet := INST^funInfoH.returnType();
-	-- Si typeRet ne correspond pas à E^type
-	-- alors erreur.
-	if not typeRet.isEqual(E^type) then
-     error(TYPE_NOT_COMPATIBLE, typeRet.name(), E^type.name());  
-	end
+  -- Si typeRet ne correspond pas à E^type
+  -- alors erreur.
+  if not typeRet.isEqual(E^type) then
+    error(TYPE_NOT_COMPATIBLE, typeRet.name(), E^type.name());  
+  end
 end
 }
 
