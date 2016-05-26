@@ -30,6 +30,11 @@ syn tvarS : VariableTable for
          PARFS, DECL, ENTITE
          ; -- Utilisée pour récupérer la TDS màj avec les paramètres de la fonction.
 
+inh talias : AliasTable for  -- A completer --
+         ENTITES, ENTITE, TYPE
+         ; --Table des alias contenant les types propres au programme.
+
+
 inh tfun : FunctionTable for -- A completer --
          ENTITES, ENTITE
 	 ;
@@ -177,6 +182,7 @@ local
 do
   ENTITES^tvar := new VariableTable();
   ENTITES^tfun := new FunctionTable();
+	ENTITES^talias := new AliasTable();
 end
 }
 -- Ecrit le code dans un fichier
@@ -244,10 +250,7 @@ do
         error(IDENT_TAKEN, identc^txt);
      -- Sinon, on peut ajouter le nouveau type à la TDS.
     else
-        -- TODO
-        -- Création de la VariableInfo à ajouter à la TDS.
-        -- Y aura un TypeType.
-        ENTITE^tvar.insert(identc^txt, --type );
+        ENTITE^talias.insert(identc^txt, TYPE^type );
     end
   end  
 end
@@ -663,27 +666,19 @@ do
 end
 }
 
--- TODO
 -- Nom de type (commence par une majuscule)
 STYPE -> identc #testType;
 
 local
 #testType {
-  info : SymbolInfo;
-  tinfo : TypeInfo
+  typeRech : Type;
 do
-  info := STYPE^tvar.lookup(identc^txt, false);
+  typeRech := STYPE^talias.lookup(identc^txt);
   -- Si identc n'est pas une clef dans la TDSvar, erreur.
-  if info = null then
+  if typeRech = null then
      error(IDENT_UNDEFINED, identc^txt);
   else
-    match info
-      with TypeInfo then
-        tinfo := info;
-        STYPE^type :=  tinfo.type();
-      else
-        error(NOT_A_TYPE,identc^txt);
-      end
+     STYPE^type :=  typeRech;
   end
 end
 }
