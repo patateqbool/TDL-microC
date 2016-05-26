@@ -8,12 +8,14 @@ package mcs.symtab;
 
 import java.util.List;
 import java.util.ArrayList;
+import mcs.gc.Register;
 
 public class FunctionInfo implements SymbolInfo {
   // Attributes
   private Type retType; // Return type
   private List<Type> parameters; // Parameters
   private String label;
+	private Register reg;
 
   /**
    * Create a function symbol from a return type and a list of parameters
@@ -84,6 +86,17 @@ public class FunctionInfo implements SymbolInfo {
 
     return disp;
   }
+
+	/**
+	 * Manipulate the register of the function
+	 */
+	public Register register() {
+		return this.reg;
+	}
+
+	public void assignRegister(Register r) {
+		this.reg = r;
+	}
 
   /**
    * toString()
