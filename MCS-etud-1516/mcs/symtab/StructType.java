@@ -6,6 +6,7 @@
  */
 package mcs.symtab;
 
+import mcs.compiler.MCSException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.HashMap;
@@ -60,18 +61,12 @@ public class StructType extends Type {
     return this.fields.types();
   }
 
-	/**
-	 * Get the info of the requested field
-	 * @param field field to retrieve
-	 * @param basedisp base displacement of the structure, such as struct.first_field as a basedisp displacement
-	 * @return a VariableInfo of the field
-	 */
-	/*public VariableInfo getInfo(String field, int basedisp) {
-		return new VariableInfo(
-					this.fields.find(field),
-					basedisp + this.fields.sumSizes(field)
-				);
-	}*/
+  /**
+   * Get the type of the requested field
+   */
+  public Type find(String n) throws MCSException {
+    return this.fields.find(n);
+  }
 
 	/**
 	 * Get the displacement from a field

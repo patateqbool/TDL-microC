@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.ListIterator;
 import mcs.symtab.*;
-import mcs.compiler.MCSException;
+import mcs.compiler.*;
 
 public class ARMEngine extends AbstractMachine {
 	/**
@@ -73,7 +73,7 @@ public class ARMEngine extends AbstractMachine {
    * @param rout (out) register in which the value will be
    * @return the generated code
    */
-  public String generateLoadValue(VariableInfo info, Register rout) {
+  public String generateLoadValue(VariableInfo info, Register rout) throws MCSException  {
     String code = "";
 
     if (info instanceof ConstantInfo)
@@ -92,7 +92,7 @@ public class ARMEngine extends AbstractMachine {
    * @param rout (out) register in which the value will be
    * @return the generated code
    */
-  public String generateLoadValue(VariableInfo info, int disp, Register rout) {
+  public String generateLoadValue(VariableInfo info, int disp, Register rout) throws MCSException  {
     String code = "", addr = "";
     Register r = getNextUnusedRegister();
     Register raddr = new Register();
@@ -131,7 +131,7 @@ public class ARMEngine extends AbstractMachine {
    * @param rout (out) register in which the value will be
    * @return the generated code
    */
-  public String generateLoadValue(VariableInfo info, Register rdisp, Register rout) {
+  public String generateLoadValue(VariableInfo info, Register rdisp, Register rout) throws MCSException  {
     Register raddr = new Register();
     Register r = getNextUnusedRegister();
     String code = "", addr = "";
@@ -162,7 +162,7 @@ public class ARMEngine extends AbstractMachine {
    * @param rout (out) register in which the value will be
    * @return the generated code
    */
-  public String generateLoadFromStack(int disp, Register rout) {
+  public String generateLoadFromStack(int disp, Register rout) throws MCSException  {
     Register r = getNextUnusedRegister();
     String code = "", snd = "";
 
@@ -188,8 +188,31 @@ public class ARMEngine extends AbstractMachine {
 	 * @param rout register where the value is put, for later referencing
 	 * @return the generated code
 	 */
-	public String generateLoadConstant(ConstantInfo info, Register rout) {
-    // TODO
+	public String generateLoadConstant(ConstantInfo info, Register rout) throws MCSException  {
+    String code = "";
+    Register r = getNextUnusedRegister();
+    Type t = info.type();
+
+    if (t instanceof IntegerType || t instanceof CharacterType || t instanceof PointerType) {
+      Integer val = (Integer)info.value();
+
+      code +=
+        ARMEngine.Prefix + "MOV\t" + r + ", #" + (val & 0x0000FFFF) + "\n";
+
+      if (val >= 65536) {
+        code +=
+          ARMEngine.Prefix + "MOVT\t" + r + ", #" + (val >> 16) + "\n";
+      }
+    } else if (t instanceof StructType) {
+      // TODO
+    } else if (t instanceof ArrayType) {
+      // TODO
+    }
+
+    r.setStatus(Register.Status.Loaded);
+    rout.copy(r);
+
+    return code;
   }
 
   /**
@@ -199,7 +222,7 @@ public class ARMEngine extends AbstractMachine {
    * @param rout register where the value is put
    * @return the generated code
    */
-  public String generateLoadFromHeap(Register raddr, int disp, Register rout) {
+  public String generateLoadFromHeap(Register raddr, int disp, Register rout) throws MCSException  {
     Register r = new Register();
     String code = "";
 
@@ -224,7 +247,7 @@ public class ARMEngine extends AbstractMachine {
    * @param rout register where the value is put
    * @return the generated code
    */
-  public String generateLoadFromHeap(Register raddr, Register rdisp, Register rout) {
+  public String generateLoadFromHeap(Register raddr, Register rdisp, Register rout) throws MCSException  {
     String code = "";
     Register r = getNextUnusedRegister();
 
@@ -241,30 +264,73 @@ public class ARMEngine extends AbstractMachine {
   ///////////// STORE ////////////
 
   /**
-   * Generate the code for 'updating' the value of a variable
+   * Generate the code for 'updating' the value of a variable in the stack
    * @param info info of the variable to store
    * @param rin value to put in the variabe
    * @return the generated code
    */
-  public String generateStoreVariable(VariableInfo vinfo, Register rin);
+  public String generateStoreVariable(VariableInfo vinfo, Register rin) throws MCSException  {
+    Type t = vinfo.type();
+    String code = "";
+
+    if (t instanceof IntegerType || t instanceof CharacterType || t instanceof PointerType) {
+      code +=
+        ARMEngine.Prefix + "STR\t" + rin + ", [SB, " + Integer.toString(-vinfo.displacement()) + "]\n";
+    } else if (t instanceof StructType) {
+      // Shouldn't be called like that
+    } else if (t instanceof ArrayType) {
+      // Shouldn't be called like that
+    }
+
+    rin.setStatus(Register.Status.Used);
+    return code;
+  }
 
   /**
-   * Generate the code for 'updating' the value of a variable
+   * Generate the code for 'updating' the value of a variable in the stack, with an additionnal displacement
    * @param info info of the variable to store
    * @param disp (integer) displacement to consider
    * @param rin value to put in the variabe
    * @return the generated code
    */
-  public String generateStoreVariable(VariableInfo vinfo, int disp, Register rin);
+  public String generateStoreVariable(VariableInfo vinfo, int disp, Register rin) throws MCSException  {
+    String code = "", addr = "";
+    Type t = vinfo.type();
+
+    if (t instanceof StructType) {
+      Register raddr = new Register();
+      code +=
+        generateLoadFromStack(vinfo.displacement(), raddr) +
+        generateStoreInHeap(raddr, disp, rin);
+    } else {
+      // Shouldn't be called ?
+    }
+
+    return code;
+  }
 
   /**
-   * Generate the code for 'updating' the value of a variable
+   * Generate the code for 'updating' the value of a variable in the stack
    * @param info info of the variable to store
    * @param rdisp (register) displacement to consider
    * @param rin value to put in the variabe
    * @return the generated code
    */
-  public String generateStoreVariable(VariableInfo vinfo, Register rdisp, Register rin);
+  public String generateStoreVariable(VariableInfo vinfo, Register rdisp, Register rin) throws MCSException  {
+    String code = "";
+    Type t = vinfo.type();
+
+    if (t instanceof StructType) {
+      Register raddr = new Register();
+      code +=
+        generateLoadFromStack(vinfo.displacement(), raddr) +
+        generateStoreInHeap(raddr, rdisp, rin);
+    } else {
+      // Shouldn't be called ?
+    }
+
+    return code;
+  }
 
   /**
    * Generate the code for storing a variable into the heap
@@ -273,7 +339,27 @@ public class ARMEngine extends AbstractMachine {
    * @param rin register containing the value to be stored
    * @return the generated code
    */
-  public String generateStoreInHeap(Register raddr, int disp, Register rin);
+  public String generateStoreInHeap(Register raddr, int disp, Register rin) throws MCSException  {
+    String code = "", addr = raddr + ", ";
+
+    raddr.setStatus(Register.Status.Used);
+
+    if (disp < 65536) {
+      addr += "#" + disp;
+    } else {
+      Register r = new Register();
+      code +=
+        generateLoadConstant(new ConstantInfo(new IntegerType(), disp), r);
+      addr += r;
+      r.setStatus(Register.Status.Used);
+    }
+    
+    code += 
+      ARMEngine.Prefix + "STR\t" + rin + ", [" + addr + "]\n";
+
+    rin.setStatus(Register.Status.Used);
+    return code;
+  }
 
   /**
    * Generate the code for storing a variable into the heap, with optionnal register displacement
@@ -282,14 +368,21 @@ public class ARMEngine extends AbstractMachine {
    * @param rin register containing the value to be stored
    * @return the generated code
    */
-  public String generateStoreInHeap(Register raddr, Register rdisp, Register rin);
+  public String generateStoreInHeap(Register raddr, Register rdisp, Register rin) throws MCSException  {
+    String code =
+      ARMEngine.Prefix + "STR\t" + rin + ", [" + raddr + ", " + rdisp + "]\n";
+    raddr.setStatus(Register.Status.Used);
+    rdisp.setStatus(Register.Status.Used);
+    rin.setStatus(Register.Status.Used);
+    return code;
+  }
 
   /**
    * Generate the code for allocating a variable in the stack
    * @param type type to allocate
    * @return the generated code
    */
-  public String generateAllocateInStack(Type type) {
+  public String generateAllocateInStack(Type type) throws MCSException  {
     String code = "";
 
     if (type instanceof StructType) {
@@ -310,7 +403,7 @@ public class ARMEngine extends AbstractMachine {
 	 * @param rsize register containing the size of the block (array only)
 	 * @return the generated code
 	 */
-	public String generateAllocate(Type type, Register raddr, Register rsize) {
+	public String generateAllocate(Type type, Register raddr, Register rsize) throws MCSException  {
 		Register reg = getNextUnusedRegister();
 
 		String code = ARMEngine.Prefix + "MOV\t" + reg + ", " + ht + " ; Store current address\n";
@@ -349,7 +442,7 @@ public class ARMEngine extends AbstractMachine {
 	 * @param type type of the variable
 	 * @return the generated code
 	 */
-	public String generateFlushVariable(Type type) {
+	public String generateFlushVariable(Type type) throws MCSException  {
 		Register reg = getNextUnusedRegister();
 		String code = ARMEngine.Prefix;
 
@@ -372,7 +465,7 @@ public class ARMEngine extends AbstractMachine {
 	 * @param symtab the symbol table
 	 * @return the generated code
 	 */
-	public String generateFlush(SymbolTable symtab) {
+	public String generateFlush(SymbolTable symtab) throws MCSException  {
 		Register reg = getNextUnusedRegister();
 		String code = "";
 		ListIterator<String> iter = symtab.symbols().listIterator(symtab.symbols().size());
@@ -395,9 +488,10 @@ public class ARMEngine extends AbstractMachine {
 	 * @param code code generated for the content of the function
 	 * @return the generated code
 	 */
-	public String generateFunctionDeclaration(FunctionInfo info, String blockcode) {
+	public String generateFunctionDeclaration(FunctionInfo info, String blockcode) throws MCSException {
 		Register r = getNextUnusedRegister();
 		info.assignRegister(r);
+		
 		String code =
 			info.label() + ":\n" +
 			ARMEngine.Prefix + "; Push link register, stack base and stack pointer\n" +
@@ -468,7 +562,7 @@ public class ARMEngine extends AbstractMachine {
 	 * @param reg register in which the argument is stored
 	 * @return the generated code
 	 */
-	public String generateFunctionPushArgument(Register reg) {
+	public String generateFunctionPushArgument(Register reg) throws MCSException  {
 		String code =
 			ARMEngine.Prefix + "PUSH\t" + reg + "\n";
 		reg.setStatus(Register.Status.Used);
@@ -482,7 +576,7 @@ public class ARMEngine extends AbstractMachine {
 	 * @param info info of the function
 	 * @return the generated code
 	 */
-	public String generateFunctionCall(FunctionInfo info) {
+	public String generateFunctionCall(FunctionInfo info) throws MCSException  {
 		String code =
 			ARMEngine.Prefix + "BL\t" + info.label() + "\n";
 		return code;
@@ -548,7 +642,7 @@ public class ARMEngine extends AbstractMachine {
 	 * @param rout output register
 	 * @return the generated code
 	 */
-	public String generateOperation(Operator op, Register r1, Register r2, Register rout) {
+	public String generateOperation(Operator op, Register r1, Register r2, Register rout) throws MCSException  {
 		// TODO: wrong operation type
 		// The last part of the code never changes : xxx Rx, R<1>, R<2>
 
@@ -610,7 +704,7 @@ public class ARMEngine extends AbstractMachine {
 	 * @param rout destination register
 	 * @return the generated code
 	 */
-	public String generateOperation(Operator op, Register rin, Register rout) {
+	public String generateOperation(Operator op, Register rin, Register rout) throws MCSException  {
 		// TODO: wrong operation type
 		String code = ", " + rin + ", #0\n";
 
@@ -647,7 +741,7 @@ public class ARMEngine extends AbstractMachine {
 		return code;
 	}
 
-	public String generateOperation(RelationalOperator op, Register r1, Register r2, Register rout) {
+	public String generateOperation(RelationalOperator op, Register r1, Register r2, Register rout) throws MCSException  {
 		Register r = getNextUnusedRegister();
 		String code = ARMEngine.Prefix + "MOV\t" + r + "#0\n"; 
 		switch (op) {
@@ -705,7 +799,7 @@ public class ARMEngine extends AbstractMachine {
 	 * @param rout output register
 	 * @return the generated code
 	 */
-	public String generateOperation(RelationalOperator op, Register rin, Register rout) {
+	public String generateOperation(RelationalOperator op, Register rin, Register rout) throws MCSException {
 		Register r = getNextUnusedRegister();
 		String code = ARMEngine.Prefix + "MOV\t" + r + "#0\n";
 		switch (op) {
@@ -733,7 +827,7 @@ public class ARMEngine extends AbstractMachine {
 	 * Get the next unused register in the register database
 	 * @return the register
 	 */
-	private Register getNextUnusedRegister() {
+	private Register getNextUnusedRegister() throws MCSException {
 		// TODO: register use policy
 		for (int i = 0; i < registers.size(); i++) {
 			if (registers.get(i).status() == Register.Status.Empty)
@@ -745,7 +839,7 @@ public class ARMEngine extends AbstractMachine {
 				return registers.get(i);
 		}
 
-		return null;
+    throw new MCSRegisterLimitReachedException();
 	}
 
 	public String logRegisters() {

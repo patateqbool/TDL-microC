@@ -6,6 +6,7 @@ import mcs.symtab.FunctionInfo;
 import mcs.symtab.SymbolTable;
 import mcs.symtab.ConstantInfo;
 import mcs.symtab.Type;
+import mcs.compiler.MCSException;
 
 /**
  * Cette interface décrit une machine cible. A compléter, selon votre modèle
@@ -75,7 +76,7 @@ public interface IMachine {
    * @param rout (out) register in which the value will be
    * @return the generated code
    */
-  String generateLoadValue(VariableInfo info, Register rout);
+  String generateLoadValue(VariableInfo info, Register rout) throws MCSException;
 
   /**
    * Generate the code for loading a variable into a register, with an optionnal field name (for structs)
@@ -84,7 +85,7 @@ public interface IMachine {
    * @param rout (out) register in which the value will be
    * @return the generated code
    */
-  String generateLoadValue(VariableInfo info, int disp, Register rout);
+  String generateLoadValue(VariableInfo info, int disp, Register rout) throws MCSException;
 
   /**
    * Generate the code for loading a variable into a register, with an optionnal displacement register (for arrays)
@@ -93,7 +94,7 @@ public interface IMachine {
    * @param rout (out) register in which the value will be
    * @return the generated code
    */
-  String generateLoadValue(VariableInfo info, Register rdisp, Register rout);
+  String generateLoadValue(VariableInfo info, Register rdisp, Register rout) throws MCSException;
 
   /**
    * Generate the code for loading a value from the stack to a register
@@ -101,7 +102,7 @@ public interface IMachine {
    * @param rout (out) register in which the value will be
    * @return the generated code
    */
-  String generateLoadFromStack(int disp, Register rout);
+  String generateLoadFromStack(int disp, Register rout) throws MCSException;
 
   /**
 	 * Generate the code for loading a constant itneger into a register.
@@ -109,7 +110,7 @@ public interface IMachine {
 	 * @param rout register where the value is put, for later referencing
 	 * @return the generated code
 	 */
-	String generateLoadConstant(ConstantInfo info, Register rout);
+	String generateLoadConstant(ConstantInfo info, Register rout) throws MCSException;
 
   /**
    * Generate the code for loading a variable from the heap into a register
@@ -118,7 +119,7 @@ public interface IMachine {
    * @param rout register where the value is put
    * @return the generated code
    */
-  String generateLoadFromHeap(Register raddr, int disp, Register rout);
+  String generateLoadFromHeap(Register raddr, int disp, Register rout) throws MCSException;
 
   /**
    * Generate the code for loading a variable from the heap into a register, with an optionnal register displacement
@@ -127,7 +128,7 @@ public interface IMachine {
    * @param rout register where the value is put
    * @return the generated code
    */
-  String generateLoadFromHeap(Register raddr, Register rdisp, Register rout);
+  String generateLoadFromHeap(Register raddr, Register rdisp, Register rout) throws MCSException;
 
   ///////////// STORE ////////////
 
@@ -137,7 +138,7 @@ public interface IMachine {
    * @param rin value to put in the variabe
    * @return the generated code
    */
-  String generateStoreVariable(VariableInfo vinfo, Register rin);
+  String generateStoreVariable(VariableInfo vinfo, Register rin) throws MCSException;
 
   /**
    * Generate the code for 'updating' the value of a variable
@@ -146,7 +147,7 @@ public interface IMachine {
    * @param rin value to put in the variabe
    * @return the generated code
    */
-  String generateStoreVariable(VariableInfo vinfo, int disp, Register rin);
+  String generateStoreVariable(VariableInfo vinfo, int disp, Register rin) throws MCSException;
 
   /**
    * Generate the code for 'updating' the value of a variable
@@ -155,7 +156,7 @@ public interface IMachine {
    * @param rin value to put in the variabe
    * @return the generated code
    */
-  String generateStoreVariable(VariableInfo vinfo, Register rdisp, Register rin);
+  String generateStoreVariable(VariableInfo vinfo, Register rdisp, Register rin) throws MCSException;
 
   /**
    * Generate the code for storing a variable into the heap
@@ -164,7 +165,7 @@ public interface IMachine {
    * @param rin register containing the value to be stored
    * @return the generated code
    */
-  String generateStoreInHeap(Register raddr, int disp, Register rin);
+  String generateStoreInHeap(Register raddr, int disp, Register rin) throws MCSException;
 
   /**
    * Generate the code for storing a variable into the heap, with optionnal register displacement
@@ -173,7 +174,7 @@ public interface IMachine {
    * @param rin register containing the value to be stored
    * @return the generated code
    */
-  String generateStoreInHeap(Register raddr, Register rdisp, Register rin);
+  String generateStoreInHeap(Register raddr, Register rdisp, Register rin) throws MCSException;
   
   /////// MEMORY MANAGEMENT ///////
   /**
@@ -181,7 +182,7 @@ public interface IMachine {
    * @param type type to allocate
    * @return the generated code
    */
-  String generateAllocateInStack(Type type);
+  String generateAllocateInStack(Type type) throws MCSException;
 
   /**
    * Generate the code for allocating a block in the heap
@@ -190,14 +191,14 @@ public interface IMachine {
    * @param rsize register containing the size of the block (array only)
    * @return the generated code
    */
-  String generateAllocate(Type type, Register addr, Register rsize);
+  String generateAllocate(Type type, Register addr, Register rsize) throws MCSException;
 
   /**
    * Generate the code for flushing the stack top variable
    * @param type type of the variable
    * @return the generated code
    */
-  String generateFlushVariable(Type type);
+  String generateFlushVariable(Type type) throws MCSException;
 
 	/**
 	 * Generate the code for flushing every variable of a symbol table
@@ -205,7 +206,7 @@ public interface IMachine {
 	 * @param symtab the symbol table
 	 * @return the generated code
 	 */
-	String generateFlush(SymbolTable symtab);
+	String generateFlush(SymbolTable symtab) throws MCSException;
 
   /////////////////////// FUNCTION MANAGEMENT ///////////////////////
 
@@ -215,7 +216,7 @@ public interface IMachine {
    * @param code code generated for the content of the function
    * @return the generated code
    */
-  String generateFunctionDeclaration(FunctionInfo info, String code);
+  String generateFunctionDeclaration(FunctionInfo info, String code) throws MCSException;
 
   /**
    * Generate the code for the 'return' keyword
@@ -223,21 +224,21 @@ public interface IMachine {
    * @param rval the register containing the value to be returned
    * @return the generated code
    */
-  String generateFunctionReturn(FunctionInfo info, Register rval);
+  String generateFunctionReturn(FunctionInfo info, Register rval) throws MCSException;
 
   /**
    * Generate the code for pushing an argument
    * @param reg register in which the argument is stored
    * @return the generated code
    */
-  String generateFunctionPushArgument(Register reg);
+  String generateFunctionPushArgument(Register reg) throws MCSException;
 
   /**
    * Generate the code for the call to a function
    * @param info info of the function
    * @return the generated code
    */
-  String generateFunctionCall(FunctionInfo info);
+  String generateFunctionCall(FunctionInfo info) throws MCSException;
 
 	////////////////////////////// MISC ///////////////////////////////
 	/**
@@ -275,7 +276,7 @@ public interface IMachine {
 	 * @param rout output register
 	 * @return the generated code
 	 */
-	String generateOperation(Operator op, Register r1, Register r2, Register rout);
+	String generateOperation(Operator op, Register r1, Register r2, Register rout) throws MCSException;
 
 	/**
 	 * Generate an arithmetic unary operation
@@ -283,7 +284,7 @@ public interface IMachine {
 	 * @param rout destination register
 	 * @return the generated code
 	 */
-	String generateOperation(Operator op, Register rin, Register rout);
+	String generateOperation(Operator op, Register rin, Register rout) throws MCSException;
 
 	/**
 	 * Generate a relational binary operation
@@ -292,7 +293,7 @@ public interface IMachine {
 	 * @param rout output register
 	 * @return the generated code
 	 */
-	String generateOperation(RelationalOperator op, Register r1, Register r2, Register rout);
+	String generateOperation(RelationalOperator op, Register r1, Register r2, Register rout) throws MCSException;
 
 	/**
 	 * Generate a relational unary operation
@@ -300,5 +301,5 @@ public interface IMachine {
 	 * @param rout destination register
 	 * @return the generated code
 	 */
-	String generateOperation(RelationalOperator op, Register rin, Register rout);
+	String generateOperation(RelationalOperator op, Register rin, Register rout) throws MCSException;
 }

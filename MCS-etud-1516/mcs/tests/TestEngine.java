@@ -12,8 +12,8 @@ class TestEngine {
 		Register r2 = new Register("R", -1);
 		Register rout = new Register("R", -1);
 		code =
-			engine.generateLoadVariable(new VariableInfo(new IntegerType(), 26), r1) +
-			engine.generateLoadInteger(0x00123456, r2) +
+			engine.generateLoadValue(new VariableInfo(new IntegerType(), 26), r1) +
+			engine.generateLoadValue(new ConstantInfo(new IntegerType(), 0x00123456), r2) +
 			engine.generateOperation(IMachine.Operator.ADD, r1, r2, rout);
 		System.out.println(code);
 		System.out.println("output register : " + rout);
@@ -23,11 +23,18 @@ class TestEngine {
 		for (int i = 0; i < 50; i++) {
 			Register r = new Register();
 			VariableInfo vi = new VariableInfo(new IntegerType(), i);
-			code += engine.generateLoadVariable(vi, r);
-			code += engine.generateStoreVariable(vi);
+			code += engine.generateLoadValue(vi, r);
+			code += engine.generateStoreVariable(vi, r);
 		}
 		System.out.println(code);
 		System.out.println(engine.logRegisters());
+
+    Type t1 = new IntegerType();
+    Type t2 = new IntegerType();
+    Type t3 = new CharacterType();
+    System.out.println(t1.isEqualTo(t2));
+    System.out.println(t2.isEqualTo(t3));
+    System.out.println(t2.isEqualTo(t1));
 	}
 }
 
