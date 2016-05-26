@@ -396,6 +396,8 @@ public class ARMEngine extends AbstractMachine {
 	 * @return the generated code
 	 */
 	public String generateFunctionDeclaration(FunctionInfo info, String blockcode) {
+		Register r = getNextUnusedRegister();
+		info.assignRegister(r);
 		String code =
 			info.label() + ":\n" +
 			ARMEngine.Prefix + "; Push link register, stack base and stack pointer\n" +
@@ -404,29 +406,23 @@ public class ARMEngine extends AbstractMachine {
 			ARMEngine.Prefix + "PUSH\t" + sp + "\n" +
 			blockcode;
 
+		// End of the function
+		if (!(info.returnType() instanceof VoidType)) {
+			Register rval = getNextUnusedRegister();
+
+			code +=
+				ARMEngine.Prefix + "; Default return. It is not wise to reach this point\n" +
+				ARMEngine.Prefix + "MOV\t" + rval + ", #0\n" + 
+				ARMEngine.Prefix + "MOV\t" + info.register() + ", " + ht + "\n" +
+				ARMEngine.Prefix + "STMIA\t!" + ht + ", " + rval + "\n\n";
+		}
+
 		code +=
-			ARMEngine.Prefix + "; Default return. It is not wise to reach this point\n" +
-			generateFunctionReturn(info, new ConstantInfo(info.returnType()));
-
-		heapbase += 3;
-		return code;
-	}
-
-
-	/**
-	 * Generate the code for the 'return' keyword
-	 * @param info the info of the fuunction
-	 * @param vinfo info of the value to return (register must be set)
-	 * @return the generated code
-	 */
-	public String generateFunctionReturn(FunctionInfo info, VariableInfo vinfo) {
-		String code =
+			info.label() + "_end:\n" +
 			ARMEngine.Prefix + "; Pop registers \n" +
 			ARMEngine.Prefix + "POP\t" + sp + "\n" +
 			ARMEngine.Prefix + "POP\t" + sb + "\n" +
-			ARMEngine.Prefix + "POP\t" + lr + "\n";
-
-		code +=
+			ARMEngine.Prefix + "POP\t" + lr + "\n\n" +
 			ARMEngine.Prefix + "; Pop arguments \n";
 
 		// As we push arguments in one order, we need to pop them in the
@@ -436,13 +432,34 @@ public class ARMEngine extends AbstractMachine {
 			code += generateFlushVariable(iter.previous());
 		}
 
-		if (!(info.returnType() instanceof VoidType))
-			code += generateStoreVariable(vinfo);
-
 		code +=
 			ARMEngine.Prefix + "BX\t" + lr + "\n\n";
 
-		heapbase += 4;
+		return code;
+	}
+
+
+	/**
+	 * Generate the code for the 'return' keyword
+	 * @param info the info of the fuunction
+	 * @param rval the register containing the value to be returned
+	 * @return the generated code
+	 */
+	public String generateFunctionReturn(FunctionInfo info, Register rval) {
+		String code = "";
+
+		if (!(info.returnType() instanceof VoidType)) {
+			code +=
+				ARMEngine.Prefix + "MOV\t" + info.register() + ", " + ht + "\n" +
+				ARMEngine.Prefix + "STMIA\t!" + ht + ", " + rval + "\n";
+
+			info.register().setStatus(Register.Status.Loaded);
+			rval.setStatus(Register.Status.Used);
+		}
+
+		code +=
+			ARMEngine.Prefix + "B\t" + info.label() + "_end\n\n";
+
 		return code;
 	}
 
@@ -468,8 +485,58 @@ public class ARMEngine extends AbstractMachine {
 	public String generateFunctionCall(FunctionInfo info) {
 		String code =
 			ARMEngine.Prefix + "BL\t" + info.label() + "\n";
-		// TODO: result of the function is on the stack
-		// (addr = SP)
+		return code;
+	}
+
+	////////////////////////////// MISC ///////////////////////////////
+	/**
+	 * Generate the code for making an address from a list of displacement pair.
+	 * The principle is to get into a register the addres of, let us say, the field
+	 * of a structure. The thing is that we can chain struct fields calls, thus
+	 * making the address calculation quite complex.
+	 * To achieve this calculation, we first create a displacement list, storing
+	 * displacement of each fields one by one (as welle as a boolean indicating
+	 * if should dereference the field (arrow) or not (point).
+	 * Then, we can create the addres by a succession of LDR
+	 * @param dlist displacement list
+	 * @param raddr (out) register that will contain the address
+	 * @return the generated code
+	 */
+	public String generateMakeAddress(DisplacementList dlist, Register raddr) {
+		return generateMakeAddress(dlist, sb, raddr);
+	}
+
+	/**
+	 * Generate the code for making an address from a list of displacement pair,
+	 * using the specified register as base register.
+	 * @param dlist displacement list
+	 * @param rbaseaddr base address register
+	 * @param raddr (out) register that will contain the address
+	 * @return the generated code
+	 */
+	public String generateMakeAddress(DisplacementList dlist, Register rbaseaddr, Register raddr) {		 String code = "";
+		Register r = getNextUnusedRegister();
+		DisplacementPair dp;
+		
+		// First displacement is the one of the struct itself
+		// it is special because it is relative to the stack
+		ListIterator<DisplacementPair> iter = dlist.listIterator();
+		dp = iter.next();
+		code += ARMEngine.Prefix + "LDR\t" + r + ", [" + rbaseaddr + ", #" + Integer.toString(-dp.disp) + "]\n";
+
+		while (iter.hasNext()) {
+			dp = iter.next();
+			if (dp.deref)
+				code +=
+					ARMEngine.Prefix + "LDR\t" + r + ", [" + r + "]\n";
+			code +=
+				ARMEngine.Prefix + "LDR\t" + r + ", [" + r + ", #" + dp.disp + "]\n";
+		}
+
+		rbaseaddr.setStatus(Register.Status.Used);
+		r.setStatus(Register.Status.Loaded);
+		raddr.copy(r);
+
 		return code;
 	}
 
