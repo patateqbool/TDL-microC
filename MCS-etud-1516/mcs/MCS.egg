@@ -1064,14 +1064,14 @@ AFFX -> affect A #affValide #estVar ;
 
 -- Vérifie que l'affectation est valide :
 --   - la partie à gauche du = doit être une variable,
---   - le type de la variable doit être le même que celui de A.
+--   - le type de A doit être compatible avec celui de AFFX.
 #affValide {
 local
 do
   if !(AFFX^affPossible) then
     error(LEFT_PART_NOT_VARIABLE --, AFFX^txt);	
   else
-    if --(TODO: teste sur les types : isCompatible ou égalité ?) then
+    if (A^type.isCompatible(AFFX^type)) then
      error(TYPE_NOT_COMPATIBLE, AFFX^typeH.name(), A^type.name());     
 		end
 	end
