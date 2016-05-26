@@ -221,10 +221,10 @@ public interface IMachine {
   /**
    * Generate the code for the 'return' keyword
    * @param info the info of the function
-   * @param vinfo the info of the value to return
+   * @param rval the register containing the value to be returned
    * @return the generated code
    */
-  String generateFunctionReturn(FunctionInfo info, VariableInfo vinfo) throws MCSException;
+  String generateFunctionReturn(FunctionInfo info, Register rval) throws MCSException;
 
   /**
    * Generate the code for pushing an argument
@@ -239,6 +239,33 @@ public interface IMachine {
    * @return the generated code
    */
   String generateFunctionCall(FunctionInfo info) throws MCSException;
+
+	////////////////////////////// MISC ///////////////////////////////
+	/**
+	 * Generate the code for making an address from a list of displacement pair; the 
+	 * base register is stack base.
+	 * The principle is to get into a register the addres of, let us say, the field
+	 * of a structure. The thing is that we can chain struct fields calls, thus
+	 * making the address calculation quite complex.
+	 * To achieve this calculation, we first create a displacement list, storing
+	 * displacement of each fields one by one (as welle as a boolean indicating
+	 * if should dereference the field (arrow) or not (point).
+	 * Then, we can create the addres by a succession of LDR
+	 * @param dlist displacement list
+	 * @param raddr (out) register that will contain the address
+	 * @return the generated code
+	 */
+	String generateMakeAddress(DisplacementList dlist, Register raddr);
+
+	/**
+	 * Generate the code for making an address from a list of displacement pair,
+	 * using the specified register as base register.
+	 * @param dlist displacement list
+	 * @param rbaseaddr base address register
+	 * @param raddr (out) register that will contain the address
+	 * @return the generated code
+	 */
+	String generateMakeAddress(DisplacementList dlist, Register rbaseaddr, Register raddr);
 
 	//////////////////////////// CALCULUS /////////////////////////////
 

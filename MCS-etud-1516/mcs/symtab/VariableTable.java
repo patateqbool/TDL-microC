@@ -56,10 +56,10 @@ public class VariableTable implements SymbolTable {
    * Look up into the table
    */
   public SymbolInfo lookup(String name, boolean local) {
-    for (String key : this.symbols) {
-      if (key.equals(name))
-        return this.content.get(name);
-    }
+		SymbolInfo si = this.content.get(name);
+
+		if (si != null)
+			return si;
 
     if (!local)
       return parent().lookup(name, false);

@@ -40,7 +40,10 @@ public class PointerType extends Type {
 		return this.type;
 	}
 
-  public Object getDefault() {
-    return null;
-  }
+	/**
+	 * Default
+	 */
+	public Object getDefault() {
+		return new Integer(0);
+	}
 }

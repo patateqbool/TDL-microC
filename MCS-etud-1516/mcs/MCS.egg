@@ -2,9 +2,6 @@
 -- Grammaires de MC  et MCS                       --
 ----------------------------------------------------
 
--- TODO : Pas sur qu'on ait respecté le langage egg sur certains points...
---   - Les 'if then else' y a pas d'accolade pour les blocs et il faut un end...
-
 --options
 option auto = true;
 option version = 0.0.1;
@@ -32,6 +29,11 @@ inh tvar : VariableTable for  -- A completer --
 syn tvarS : VariableTable for 
          PARFS, DECL, ENTITE
          ; -- Utilisée pour récupérer la TDS màj avec les paramètres de la fonction.
+
+inh talias : AliasTable for  -- A completer --
+         ENTITES, ENTITE, TYPE
+         ; --Table des alias contenant les types propres au programme.
+
 
 inh tfun : FunctionTable for -- A completer --
          ENTITES, ENTITE
@@ -180,6 +182,7 @@ local
 do
   ENTITES^tvar := new VariableTable();
   ENTITES^tfun := new FunctionTable();
+	ENTITES^talias := new AliasTable();
 end
 }
 -- Ecrit le code dans un fichier
@@ -247,10 +250,7 @@ do
         error(IDENT_TAKEN, identc^txt);
      -- Sinon, on peut ajouter le nouveau type à la TDS.
     else
-        -- TODO
-        -- Création de la VariableInfo à ajouter à la TDS.
-        -- Y aura un TypeType.
-        ENTITE^tvar.insert(identc^txt, --type );
+        ENTITE^talias.insert(identc^txt, TYPE^type );
     end
   end  
 end
@@ -664,27 +664,19 @@ do
 end
 }
 
--- TODO
 -- Nom de type (commence par une majuscule)
 STYPE -> identc #testType;
 
 local
 #testType {
-  info : SymbolInfo;
-  tinfo : TypeInfo
+  typeRech : Type;
 do
-  info := STYPE^tvar.lookup(identc^txt, false);
+  typeRech := STYPE^talias.lookup(identc^txt);
   -- Si identc n'est pas une clef dans la TDSvar, erreur.
-  if info = null then
+  if typeRech = null then
      error(IDENT_UNDEFINED, identc^txt);
   else
-    match info
-      with TypeInfo then
-        tinfo := info;
-        STYPE^type :=  tinfo.type();
-      else
-        error(NOT_A_TYPE,identc^txt);
-      end
+     STYPE^type :=  typeRech;
   end
 end
 }
@@ -1054,13 +1046,13 @@ end
 #estVarEtVi {
 local
 do
-  if (A^estVar) && (AFFX^estVar) then {
+  if (A^estVar) && (AFFX^estVar) then
 	  E^estVar := true ;
 		E^vi := A^vi ;
-  } else {
+  else 
 	  E^estVar := false ;
 		E^vi := null ;
-	}
+	end
 end
 }
 
@@ -1070,15 +1062,17 @@ AFFX -> affect A #affValide #estVar ;
 
 -- Vérifie que l'affectation est valide :
 --   - la partie à gauche du = doit être une variable,
---   - le type de la variable doit être le même que celui de A.
+--   - le type de A doit être compatible avec celui de AFFX.
 #affValide {
 local
 do
   if !(AFFX^affPossible) then
     error(LEFT_PART_NOT_VARIABLE --, AFFX^txt);	
   else
-    if -- teste sur les types : isCompatible ou égalité ?
+    if (A^type.isCompatible(AFFX^type)) then
      error(TYPE_NOT_COMPATIBLE, AFFX^typeH.name(), A^type.name());     
+		end
+	end
 end
 }
 
@@ -1109,12 +1103,11 @@ A -> R AX #oper #estVarEtVi ;
 #oper {
 local
 do
-  if AX^estVar then {
-	  A^code := R^code;
-	} 
-	else {
+  if AX^estVar then
+	  A^code := R^code;	
+	else 
 		A^code := AX^code + R^code + A^machine.generateOperation(AX^op,R^reg,AX^reg,A^reg);
-	}
+	end
 end
 }
 
@@ -1124,13 +1117,13 @@ end
 #estVarEtVi {
 local
 do
-  if (R^estVar)&&(AX^estVar) then {
+  if (R^estVar)&&(AX^estVar) then 
     A^estVar := true;
     A^vi := R^vi;
-	}else{
+	else
 	  A^estVar := false;
     A^vi := null;
-	}
+	end
 end
 }
 
@@ -1229,9 +1222,9 @@ R ->  T  RX #oper #estVarEtVi ;
 #oper {
 local
 do
-  if (RX^op != NOP) {
+  if (RX^op != NOP) then
 	  R^code := RX^code + T^code + RX^machine.generateOperation(RX^op,T^reg,RX^reg,R^reg);
-	}
+	end
 
 end
 }
@@ -1242,13 +1235,13 @@ end
 #estVarEtVi {
 local
 do
-  if ((T^estVar)&&(RX^estVar)) then {
+  if ((T^estVar)&&(RX^estVar)) then
 	  R^estVar := true;
 		R^vi := T^vi;
-	}else{
+	else
 	  R^estVar := false;
 		R^vi := null;
-	}
+	end
 end
 }
 
@@ -1258,11 +1251,11 @@ RX -> OPADD T RX #actuOp #estVar ;
 #actuOp {
 local
 do
-  if (RX1^op != NOP) {
+  if (RX1^op != NOP) then
 	  RX^code := RX1^code + T^code + RX1^machine.generateOperation(RX1^op,T^reg,RX1^reg,RX^reg);
-	} else {
+	else 
 	  RX^code := RX1^code + T^code;
-	}
+	end
 	RX^op = OPADD^op;
 end
 }
@@ -1331,11 +1324,11 @@ T ->  F  TX #oper #estVarEtVi ;
 #oper {
 local
 do
-  if (TX^op != NOP) {
+  if (TX^op != NOP) then
 	  T^code := TX^code + F^code + TX^machine.generateOperation(TX^op,F^reg,TX^reg,T^reg);
-	} else {
+	else 
 	  T^code := TX^code + F^code;
-	}
+	end
 
 end
 }
@@ -1346,13 +1339,13 @@ end
 #estVarEtVi {
 local
 do
-  if ((F^estVar)&&(TX^estVar)) then {
+  if ((F^estVar)&&(TX^estVar)) then
 	  T^estVar := true;
 		T^vi := F^vi;
-	}else{
+  else
 	  T^estVar := false;
 		T^vi := null;
-	}
+	end
 end
 }
 
@@ -1362,11 +1355,11 @@ TX -> OPMUL F TX #actuOp #estVar;
 #actuOp {
 local
 do
-  if (TX1^op != NOP) {
+  if (TX1^op != NOP) then
 	  TX^code := TX1^code + F^code + TX1^machine.generateOperation(TX1^op,F^reg,TX1^reg,TX^reg);
-	} else {
+	else 
 	  TX^code := TX1^code + F^code;
-	}
+	end
 	TX^op = OPMUL^op;
 end
 }
@@ -1626,19 +1619,18 @@ F ->  paro E parf FX #estVarEtVi;
 #estVarEtVi {
 local
 do
-  if ((E^estVar)&&(FX^estVar)) then {
+  if ((E^estVar)&&(FX^estVar)) then
 	  F^estVar := true;
 		F^vi := E^vi;
-	}else{
+	else
 	  F^estVar := false;
 		F^vi := null;
-	}
+	end
 end
 }
 
 
 -- Cast
--- TODO : quid de "l'appelant"
 F ->  paro TYPE parf #cast F #estVarEtVi;
 
 -- (int)a ne représente pas une variable : 
@@ -1657,10 +1649,11 @@ local
 do
   if F1^type.isCompatible(TYPE^type) then
 	   F^type := TYPE^type;
-  else {
+		 F^vi := new VariableInfo(TYPE^type,F1^vi.disp());
+  else
 	   -- Pas de méthode name() dans Type pour l'instant.
      error(TYPE_NOT_COMPATIBLE, F1^type.name(), TYPE^type.name());	   
-  } 
+  end
 end
 }
 
@@ -1800,6 +1793,7 @@ local
 do
   if FX^estFun then
 	  error(FUNCTION_CALL_WITHOUT_PARS);
+	end
 end
 }
 
@@ -1930,6 +1924,7 @@ local
 do
   if !(FX^estFun) then
 	  error(NOT_A_FUN);
+	end
 end
 }
 
