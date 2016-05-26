@@ -1633,7 +1633,6 @@ end
 
 
 -- Cast
--- TODO : quid de "l'appelant"
 F ->  paro TYPE parf #cast F #estVarEtVi;
 
 -- (int)a ne représente pas une variable : 
@@ -1652,6 +1651,7 @@ local
 do
   if F1^type.isCompatible(TYPE^type) then
 	   F^type := TYPE^type;
+		 F^vi := new VariableInfo(TYPE^type,F1^vi.disp());
   else
 	   -- Pas de méthode name() dans Type pour l'instant.
      error(TYPE_NOT_COMPATIBLE, F1^type.name(), TYPE^type.name());	   
