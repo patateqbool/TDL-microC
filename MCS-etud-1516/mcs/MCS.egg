@@ -1,6 +1,10 @@
 ----------------------------------------------------
 -- Grammaires de MC  et MCS                       --
 ----------------------------------------------------
+
+-- TODO : Pas sur qu'on ait respecté le langage egg sur certains points...
+--   - Les 'if then else' y a pas d'accolade pour les blocs et il faut un end...
+
 --options
 option auto = true;
 option version = 0.0.1;
@@ -236,19 +240,19 @@ do
   -- Si identc est une clef dans la TDSvar, erreur.
   if info != null then
      error(IDENT_TAKEN, identc^txt);
-  else {
+  else
      info := ENTITE^tfun.lookup(identc^txt, true);
      -- De même si identc est déjà utilisé dans la TDSfun.
-     if info != null then
+    if info != null then
         error(IDENT_TAKEN, identc^txt);
      -- Sinon, on peut ajouter le nouveau type à la TDS.
-     else {
+    else
         -- TODO
         -- Création de la VariableInfo à ajouter à la TDS.
         -- Y aura un TypeType.
         ENTITE^tvar.insert(identc^txt, --type );
-    }
-  }  
+    end
+  end  
 end
 }
 
@@ -271,19 +275,19 @@ do
   -- Si identc est une clef dans la TDSvar, erreur.
   if info != null then
      error(IDENT_TAKEN, ident^txt);
-  else {
+  else
      info := ENTITE^tfun.lookup(ident^txt, true);
      -- De même si identc est déjà utilisé dans la TDSfun.
-     if info != null then
+    if info != null then
         error(IDENT_TAKEN, ident^txt);
      -- Sinon, on fait passer les infos utiles à DECL.
-     else {
+    else
         DECL^typeH := TYPE^type;
         DECL^nom := ident^txt;
         DECL^tvar := ENTITE^tvar;
         DECL^tfun := ENTITE^tfun;
-    }
-  }  
+    end
+  end  
 end
 }
 
@@ -563,18 +567,18 @@ do
   info := PARF^tvar.lookup(ident^txt, false);
   -- Si identc est une clef dans la TDSvar, erreur.
   if info != null then
-     error(IDENT_TAKEN, ident^txt);
-  else {
-     info := ENTITE^tfun.lookup(ident^txt, false);
-     -- De même si identc est déjà utilisé dans la TDSfun.
-     if info != null then
-        error(IDENT_TAKEN, ident^txt);
-     -- Ajout de ident à la TDS locale.
-     else {
-        PARF^tvar.insert(ident^txt, 
-				                 new VariableInfo(TYPE^type, PARF^funInfo.displacement(PARF^cParam)));
-     }
-  }
+    error(IDENT_TAKEN, ident^txt);
+  else
+    info := ENTITE^tfun.lookup(ident^txt, false);
+    -- De même si identc est déjà utilisé dans la TDSfun.
+    if info != null then
+      error(IDENT_TAKEN, ident^txt);
+    else
+      -- Ajout de ident à la TDS locale.
+      PARF^tvar.insert(ident^txt, 
+			                 new VariableInfo(TYPE^type, PARF^funInfo.displacement(PARF^cParam)));
+    end
+  end
 	PARF^funInfo := fi;
 end
 }
@@ -664,10 +668,10 @@ end
 
 -- TODO
 -- Nom de type (commence par une majuscule)
-STYPE -> identc #testtype;
+STYPE -> identc #testType;
 
 local
-#testtype {
+#testType {
   info : SymbolInfo;
   tinfo : TypeInfo
 do
@@ -675,16 +679,16 @@ do
   -- Si identc n'est pas une clef dans la TDSvar, erreur.
   if info = null then
      error(IDENT_UNDEFINED, identc^txt);
-  else {
-     match info
-       with TypeInfo then
-         tinfo := info;
-         STYPE^type :=  tinfo.type();
-       else
-          error(NOT_A_TYPE,identc^txt);
-       end
-  } 
+  else
+    match info
+      with TypeInfo then
+        tinfo := info;
+        STYPE^type :=  tinfo.type();
+      else
+        error(NOT_A_TYPE,identc^txt);
+      end
   end
+end
 }
 
 
@@ -822,18 +826,18 @@ do
   -- Si ident est une clef dans la TDSvar, erreur.
   if info != null then
      error(IDENT_TAKEN, ident^txt);
-  else {
-     info := ENTITE^tfun.lookup(ident^txt, false);
-     -- De même si identc est déjà utilisé dans la TDSfun.
-     if info != null then
-        error(IDENT_TAKEN, ident^txt);
-     -- Sinon, on ajoute cet id à la tdsvar.
-     else {
-		    tv := INST^tvar;
-				tv.insert(ident^txt, TYPE^type);
-        INST^tvarS := tv;
-    }
-  } 
+  else
+    info := ENTITE^tfun.lookup(ident^txt, false);
+    -- De même si identc est déjà utilisé dans la TDSfun.
+    if (info != null) then
+      error(IDENT_TAKEN, ident^txt);
+		-- Sinon, on ajoute cet id à la tdsvar.
+		else
+		  tv := INST^tvar;
+	   	tv.insert(ident^txt, TYPE^type);
+      INST^tvarS := tv;
+    end
+  end 
 end
 }
 
@@ -844,15 +848,14 @@ local
   reg : Register;
 	varinf : VariableInfo;
 do
-	if AFFX^estVar then {
+	if (AFFX^estVar) then
 		-- Pas d'affectation a droite, juste une decl locale
     INST^code := INST^machine.generateAllocateInStack(TYPE^type); 
-	}
-  else {
+	else
 		-- On a une affectation (au moins)
 		varinf := INST^tvar.lookup(ident^txt, false);		 
     INST^code := INST^machine.generateAllocateInStack(TYPE^type) +INST^machine.generateStoreValue(varinf,AFFX^reg);
-  }
+  end
 end
 }
 
@@ -1007,7 +1010,8 @@ do
 	-- Si typeRet ne correspond pas à E^type
 	-- alors erreur.
 	if not typeRet.isEqual(E^type) then
-     error(TYPE_NOT_COMPATIBLE, typeRet.name(), E^type.name());     
+     error(TYPE_NOT_COMPATIBLE, typeRet.name(), E^type.name());  
+	end
 end
 }
 
@@ -1615,6 +1619,7 @@ end
 }
 
 -- Expression parenthesee
+-- TODO.
 F ->  paro E parf FX #estVarEtVi;
 
 -- F est une variable si E l'est et FX ne l'empeche pas.
@@ -1669,96 +1674,119 @@ F -> mult F #estVarEtVi;
 #estVar {
 local
 do
-  F^estVar := (F1^estVar)&&(F1^type --TODO : vérifier qu'il s'agit d'un pointeur.
-	                                  --       cf TP "match with"        
+          
 end
 }
 
 -- LA REGLE OU C'EST REPARTI EN VRILLE. --
 
-F -> ident #estStructOuFun FX #estVarEtPassType ; 
+F -> ident #rechercheTables FX #estVar #genCodeEtReg ; 
 global
   info : SymbolInfo;
-  varInfo : VariableInfo;
+  varInfo : VariableInfo; --
   funInfo : FunctionInfo;
-	estStruct : boolean;
-	estVar : boolean;
-	estFun : boolean;
+	estFun : boolean; --
 
--- On regarde si ident représente un struct ou une fonction.
-#estStructOuFun {
+-- On cherche ident dans les TDS.
+-- Instenciation des attributs nécessaires.
+#rechercheTables {
 local
-  pileDepl : Stack<Integer> ;
+  listeDepl : DisplacementList ;
 	type : Type;
 do
   
   --Initialisations.
-  pileDepl := new Stack();
-	estStruct := false;
-	estVar := false;
+  listeDepl := new DisplacementList();
 	estFun := false;
 	type := null;
 
 	-- Recherche dans la TVar.
   info := F^tvar.lookup(ident^txt);
-  if (info = null) then {
+  if (info = null) then
 	  -- ident n'est pas dans la TVar, F n'est pas une variable.
-		estVar := false;
 		-- On regarde dans la TFun s'il s'agit de l'identifiant d'une fonction.
 		info := F^tfun(lookup(ident^txt);
-    if (info = null){
+    if (info = null) then
 		  -- On n'a pas trouvé le symbole dans les TDS : erreur.
 			error(IDENT_UNDEFINED, ident^txt);
-    } else {
+    else
 		  -- L'id est celui d'une fonction.
 			-- On passe estFun à vrai.
 			estFun := true;
 			funInfo := (FunctionInfo)info;
 			type := funInfo.returnType();
-    }
-  } else {
-	  -- ident représente une variable.
-		estVar := true;
+    end
+  else
 		-- On peut passer le type.
 		varInfo := (VariableInfo)info;
 		type := varInfo.type();
-		-- Deux cas possibles : 
-		--   - il s'agit d'un struct ce qui permet certains choix pour FX.
-		--   - il s'agit d'une variable conventionnelle, FX doit être vide.
-
-	-- TODO : match with pour savoir si info est un struct ou non.
-	-- {
-	-- Si info est struct : 
-	-- On met l'attribut estStruct de FX à true.
-	-- On empile le déplacement dans l'attribut pileDepl de FX.
-	    estStruct := true ;
-	    pileDepl.push(info.displacement);
-	-- }
-	-- Si ident est une variable non-struct, rien à faire :
-	-- estStruct est déjà à faux, estVar à vrai, la pile est initialisée...
-
+		-- On rajoute toujours le déplacement de a à la liste.
+		-- Le test pour savoir si a est bien un struct se fait dans les RP ,de FX.
+		listeDepl.add(varInfo.displacement, false);
+  end
 	-- On passe les attributs qui serviront à FX.
-	FX^estStruct := estStruct;
-	FX^pileDepl := pileDepl;
+	FX^listeDepl := listeDepl;
 	FX^estFun := estFun;
-	FX^typeH := type.
+	FX^typeH := type;
 end
 }
 
-
--- TODO : Réécrire tout ça :D
--- F est une variable si ident représente une variable (recherche dans tvar).
--- Et si FX ne l'empeche pas.
--- Passage du type, celui ci dépend de FX et de s'il s'agit d'une variable ou d'une fonction.
-#estVarEtPassType {
+-- F est une variable si l'identifiant n'était pas celui d'une fonction : NOP.
+-- On peut considérer un appel de fonction comme une variable.
+#estVar {
 local
 do
+  F^estVar := true;
+	-- F^estVar := !(estFun);
+end
+}
 
+-- Le type de F est celui de FX.
+#type {
+local
+do
+  F^type := FX^type;
+end
+}
+
+-- Génération du code.
+-- Traitements différents selon qu'on ait : - éffectué un appel de fonction.
+--																					- accédé simplement à une variable.
+--               														- accédé à un champ de struct.
+#genCodeEtReg {
+local
+  listeDepl : DisplacementList; 
+  reg : Registre;
+	code : String;
+	vi : VariableInfo;
+do
+  listeDepl := FX^listeDeplS;
+	vi := null;
+  reg := new Registre();
+	if (listeDepl.size() > 1) then
+	  -- Des déplacements ont été ajoutés à la liste en plus de celui de ident : on a accédé à des champs de struct !
+		-- Le registre contient l'adresse de la variable accédée par FX dans le struct.
+    code := F^machine.generateMakeAddress(listeDepl, reg);
+	else 
+	  -- On n'a pas ajouté de champs, on a soit un appel de fonction, soit un accés 'direct'.
+		if estFun then
+      -- On a un appel de fonction.
+      -- TODO
+		else
+      -- Accés direct à une variable.
+      -- On ne génére pas de code directement ici, par contre on fait remonter la vi.
+			-- La VariableInfo est déjà dans varInfo.
+      code := "";
+			vi := varInfo;
+		end
+  end
+	F^vi := vi;
+	F^code := code;
 end
 }
 
 
-FX -> #verifFonction #estVar #passStack #passType ;
+FX -> #verifFonction #typeEtDepl ;
 
 -- Vérifie qu'on n'attendait pas une liste d'argument pour un appel de fonction.
 #verifFonction {
@@ -1769,113 +1797,128 @@ do
 end
 }
 
--- N'empeche pas l'expression d'être une variable.
-#estVar {
-local
-do
-  FX^estVar := true;
-end
-}
-
--- On fait remonter la pile de deplacements.
-#passStack {
-local
-do
-  FX^pileDeplS := FX^pileDepl;
-end
-}
-
 -- On fait remonter le type.
-#passType {
+-- Et la liste de déplacements.
+#typeEtDepl {
 local
 do
-  FX^type := FX^typeH
+  FX^type := FX^typeH;
+  FX^listeDeplS := FX^listeDepl;
 end
 }
-
 
 -- Acces champ
-FX -> pt ident #rechChamp FX #estVar;
+FX -> pt ident #rechChamp FX #typeEtPileDepl;
 
 -- Recherche du champ. 
 #rechChamp {
 local
   typeStruct : StructType; 
 	type : Type;
+	listeDepl : DisplacementList;
 do
+  listeDepl := FX^listeDepl;
+	type := FX^typeH;
   -- On vérifie que ce qui est à gauche de cet appel est bien un struct.
-  if !(FX^estStruct) then 
-	  error(NOT_STRUCT);
-	else {
-	  -- On vérifie que le champ existe et on y accède.
-    typeStruct := (StructType)FX^typeH;
-		if (typeStruct.fields().instanceOf(ident^txt) = -1) then {
+  match type
+	with StructType then  
+		-- On vérifie que le champ existe et on y accède.
+    typeStruct := (StructType)type;
+		if (typeStruct.fields().instanceOf(ident^txt) = -1) then
 		  -- Si le instanceOf renvoie -1, c'est que l'identifiant n'apparait pas dans les champs : erreur.
 		  error(CHAMP_INEXISTANT, ident^txt);
-		} else {
-
-		-- PAUSE ICI,
-		-- C'EST LA QU'IL FAUT QUE JE REPRENDE.
-		-- ICI, LA, ICI
-		-- ICI
-		-- ICI.
+		else
+      -- Si le champ existe, on ajoute le déplacement correspondant à la liste.
+			listeDepl.add(typeStruct.fieldDisplacement(ident^txt),false);
+			-- On récupère le type.
    		type := typeStruct.find(ident^txt);
-
-    
+	  end
+	else
+		-- Sinon : erreur !
+	  error(NOT_STRUCT);
+  end
+	FX1^listeDepl := listeDepl;
+	FX1^estFun := false;
+	FX1^typeH := type;  
 end
 }
 
--- Si FX1 ne l'empeche pas, FX peut représenter une variable.
-#estVar {
+-- On fait remonter le type et la liste de deplacement.
+#typeEtPileDepl{
 local
 do
-  FX^estVar := FX1^estVar;
-end
-}
-
--- TODO
--- Verification que le champ existe.
--- Faire passer le type en fonction de FX.
-#TODO {
-local
-do
-
+  FX^type := FX1^type;
+	FX^listeDeplS := FX1^listeDeplS;
 end
 }
 
 
 -- Acces champ pointeur
-FX -> arrow ident FX #estVar #TODO;
+FX -> arrow ident #rechChamp FX #typeEtPileDepl;
 
--- Si FX1 ne l'empeche pas, FX peut représenter une variable.
--- (si le struct dont le champ est accedé est bien une variable, mais la verification ne se fait pas ici). 
-#estVar {
+-- Comme dans la RP precedent, on doit vérifier que la règle est applicable.
+-- Le type passé à FX doit etre celui d'un pointeur et le type pointé un struct.
+-- La champ doit exister dans le type pointé.
+#rechChamp {
 local
+  type : Type;
+	typeP : PointerType;
+	typeS : StructType;
+	listeDepl : DisplacementList;
 do
-  FX^estVar := FX1^estVar;
+  type := FX^typeH;
+	listeDepl := FX^listeDepl;
+	match type
+	with PointerType then
+	-- Si type est un pointeur on va vérifier qu'il s'agit d'un pointeur sur struct.
+    typeP := (PointerType)type;
+		type := typeP.getType();
+		-- Si le type pointé est struct, on va vérifier que le champ existe.
+    match type
+		with StructType
+		  typeS := (StructType)type;
+      if (typeS.fields().instanceOf(ident^txt) = -1) then
+		    -- Si le instanceOf renvoie -1, c'est que l'identifiant n'apparait pas dans les champs : erreur.
+		    error(CHAMP_INEXISTANT, ident^txt);
+		  else
+        -- Si le champ existe, on ajoute le déplacement correspondant à la liste.
+		  	listeDepl.add(typeS.fieldDisplacement(ident^txt),true);
+		  	-- On récupère le type.
+   	  	type := typeS.find(ident^txt);
+	    end
+		-- Sinon : erreur !
+		else
+      error(NOT_STRUCT);
+		end
+	else
+	-- Sinon : erreur !
+	  error(NOT_A_POINTEUR);
+  end
+	FX1^estFun := false;
+	FX1^typeH := type;
+	FX1^listeDepl := listeDepl;
 end
 }
 
--- TODO
--- Verification que le champ existe.
--- Faire remonter l'info que "l'appelant" doit être un POINTEUR sur struct.
--- Faire passer le type en fonction de FX.
-#TODO {
+-- On fait remonter le type et la liste de deplacement.
+#typeEtPileDepl{
 local
 do
-
+  FX^type := FX1^type;
+	FX^listeDeplS := FX1^listeDeplS;
 end
 }
 
 
 -- Appel de sous-programme
-FX ->   paro ES parf FX #estVar #TODO;
+FX -> #estFun paro ES parf FX #TODO;
 
--- Une liste d'arguments, même vide ne peut représenter une variable.
-#estVar {
+--Verification que l'appelant est une fonction.
+#estFun {
 local
 do
-  FX^estVar := false;
+  if !(FX^estFun) then
+	  error(NOT_A_FUN);
 end
 }
 
