@@ -78,6 +78,31 @@ public class StructType extends Type {
 	}
 
 	/**
+	 * isEqual()
+	 */
+	@Override
+	public boolean isEqualTo(Type other) {
+		if (other instanceof StructType) {
+			StructType t = (StructType)other;
+			List<String> flds = t.fields();
+			for (String f : flds) {
+				if (this.fields.exists(f)) {
+					try {
+						if (!this.fields.find(f).isEqualTo(t.fields.find(f)))
+							return false;
+					} catch (MCSException e) {
+						// This will never happen
+					}
+				} else
+					return false;
+			}
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
 	 * Default
 	 * As a default value for a structure, we just "instanciate" every field
 	 * to its default value regarding of its type;
