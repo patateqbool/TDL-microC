@@ -314,7 +314,7 @@ DECL -> pv #ajoutDansTDS #genCode;
 
 -- Ajout de la variable (puisqu'on sait désormais que c'en est une) à la TDSvar (de DECL) la TDSfun reste inchangée.
 -- DECL possède les attributs nécessaires à la création de la VariableInfo.
--- Les tds à jours sont mises dans des attributs spéciaux de manière à ce que la règle de prod précèdete puisse les récupérer.
+-- Les tds à jours sont mises dans des attributs spéciaux de manière à ce que la règle de prod précèdente puisse les récupérer.
 #ajoutDansTDS {
 local
   tv : VariableTable ;
@@ -329,9 +329,7 @@ end
 -- Génération du code pour la déclaration de la variable.
 #genCode {
 local
-  vi : VariableInfo;
 do
-  vi := DECL^tvarS.lookup(DECL^nom);
 	DECL^code := DECL^machine.generateAllocateInStack(DECL^typeH);
 end
 }
@@ -1679,13 +1677,14 @@ end
 }
 
 -- LA REGLE OU C'EST REPARTI EN VRILLE. --
+-- TODO : code sur F et FX.
 
 F -> ident #rechercheTables FX #estVar #genCodeEtReg ; 
+
 global
-  info : SymbolInfo;
-  varInfo : VariableInfo; --
+  varInfo : VariableInfo;
   funInfo : FunctionInfo;
-	estFun : boolean; --
+	estFun : boolean;
 
 -- On cherche ident dans les TDS.
 -- Instenciation des attributs nécessaires.
@@ -1693,12 +1692,15 @@ global
 local
   listeDepl : DisplacementList ;
 	type : Type;
+  info : SymbolInfo; 
 do
   
   --Initialisations.
   listeDepl := new DisplacementList();
 	estFun := false;
 	type := null;
+	varInfo := null;
+	funInfo := null;
 
 	-- Recherche dans la TVar.
   info := F^tvar.lookup(ident^txt);
@@ -1712,6 +1714,7 @@ do
     else
 		  -- L'id est celui d'une fonction.
 			-- On passe estFun à vrai.
+			listeDepl.add(0, false);
 			estFun := true;
 			funInfo := (FunctionInfo)info;
 			type := funInfo.returnType();
@@ -1728,6 +1731,7 @@ do
 	FX^listeDepl := listeDepl;
 	FX^estFun := estFun;
 	FX^typeH := type;
+	FX^fi := funInfo;
 end
 }
 
@@ -1763,15 +1767,17 @@ do
   listeDepl := FX^listeDeplS;
 	vi := null;
   reg := new Registre();
-	if (listeDepl.size() > 1) then
-	  -- Des déplacements ont été ajoutés à la liste en plus de celui de ident : on a accédé à des champs de struct !
-		-- Le registre contient l'adresse de la variable accédée par FX dans le struct.
-    code := F^machine.generateMakeAddress(listeDepl, reg);
+	if estFun then
+    -- On a un appel de fonction, peut être suivi d'accés à des champs de struct.
+	  -- regRetourFun est le registre contenant le résultat de l'appel de fonction,
+		-- il se trouve dans le FunctionInfo \o/.
+    code := F^machine.generateMakeAddress(funInfo., listeDepl, reg);
 	else 
-	  -- On n'a pas ajouté de champs, on a soit un appel de fonction, soit un accés 'direct'.
-		if estFun then
-      -- On a un appel de fonction.
-      -- TODO
+	  -- On n'a pas d'appel de fonction. 
+		if (listeDepl.size() > 1) then
+	    -- Des déplacements ont été ajoutés à la liste en plus de celui de ident : on a accédé à des champs de struct !
+		  -- Le registre contient l'adresse de la variable accédée par FX dans le struct.
+      code := F^machine.generateMakeAddress(listeDepl.register(), reg);
 		else
       -- Accés direct à une variable.
       -- On ne génére pas de code directement ici, par contre on fait remonter la vi.
@@ -1781,7 +1787,7 @@ do
 		end
   end
 	F^vi := vi;
-	F^code := code;
+	F^code := FX^code + code;
 end
 }
 
@@ -1839,7 +1845,8 @@ do
   end
 	FX1^listeDepl := listeDepl;
 	FX1^estFun := false;
-	FX1^typeH := type;  
+	FX1^typeH := type;
+	FX1^fi := null;
 end
 }
 
@@ -1897,6 +1904,7 @@ do
 	FX1^estFun := false;
 	FX1^typeH := type;
 	FX1^listeDepl := listeDepl;
+	FX1^fi := null;
 end
 }
 
@@ -1911,9 +1919,12 @@ end
 
 
 -- Appel de sous-programme
-FX -> #estFun paro ES parf FX #TODO;
-
---Verification que l'appelant est une fonction.
+-- La verification des paramètres ainsi que la generation des pushs
+-- se font dans ES.
+FX -> #estFun #passParams paro ES parf #attributs FX #genCode #attributs2;
+global
+  codeAppel : String
+-- Verification que l'appelant est une fonction.
 #estFun {
 local
 do
@@ -1922,17 +1933,186 @@ do
 end
 }
 
--- TODO
--- L'appelant fonction ?
--- FX ?
+-- Passage du type des paramètres de la fonction à ES.
+-- Init du code des pops.
+#passParams {
+local
+  fi : FunctionInfo;
+do
+  fi := FX^fi;
+  ES^typesAttendus := fi.parameters();
+  ES^codeH := "";
+end
+}
+
+-- Instenciation des arguments hérités de FX.
+#attributs {
+local
+do
+  -- La liste des deplacements n'a pas été modifié par le parcours des arguments.
+  FX1^listeDepl := FX^listeDepl;
+	-- L'appel de fonction n'est pas une fonction.
+	FX1^estFun := false; 
+	-- Le type de l'appel est le type de retour de la fonction.
+	FX1^typeH := FX^typeH;
+	-- Pas une fonction : pas de FunctionInfo.
+	FX1^fi := null;
+end
+}
+
+-- On push les arguments, le code est dans ES^code.
+-- Puis on appel la fonction.
+-- Et on met le code de FX1.
+#genCode {
+local
+do
+  FX^code := ES^code + generateFunctionCall(FX^fi) + FX1^code; 
+end
+}
+
+-- On fait remonter les attributs hérités.
+#attributs2 {
+local
+do
+  FX^type := FX1^type;
+	FX^listeDeplS := FX1^listeDeplS;
+end
+}
 
 
 -- Arguments appel de sous-programme
-ES -> ;
-ES -> E ESX  ;
-ESX ->  ;
-ESX -> virg E ESX ;
+ES -> #verifParams #genCode ;
 
+-- Verification que la liste des parametres attendus est bien vide.
+#verifParams {
+local
+  l : List<Types>;
+do
+  l := ES^typesAttendus;
+	if !(l.isEmpty() then
+	  error(NO_ENOUGH_PARAMS);
+	end
+end
+}
+
+-- On n'a rien à ajouter comme code à cette RP.
+-- On fait remonter le code des paramètres précédents.
+#genCode {
+local
+do
+  ES^code := ES^codeH;
+end
+}
+
+
+ES -> E #typesEtPassListe ESX #genCode ;
+
+-- On vérifie que E est bien du type attendu pour ce paramètre.
+-- Egalité stricte entre les types, on pourrait améliorer en utilisant isEqual.
+-- Et on fait passer le reste de la liste des paramètres.
+#typesEtPassListe {
+local
+  l : List<Types>;
+  t : Type;
+	code : String;
+do
+  l := ES^typesAttendus;
+	-- On vérifie que la liste n'est pas vide.
+	if (l.isEqual()) then
+	  error(TOO_MANY_ARGS);
+	else
+    -- On recupère le premier element de listeAttendus.
+    t := l.get(0);
+	  code := ES^code;
+	  if !(t.isEqual(E^type) then
+	    error(WRONG_TYPE_FOR_THIS_PARAMETER);
+  	else
+  	 	l := l.remove(0);
+  		-- On génère le code pour push l'argument grace au registre de E.
+  		-- On l'ajoute à la suite du code de E lui même à la suite 
+  		-- du code des arguments précédents. 
+      code := code + E^code + ES^machine.generateFunctionPushArgument(E^reg);
+	  end
+	end
+  ESX^typesAttendus := l;
+  ESX^codeH := code;
+end
+}
+
+-- Passage du code de ESX à ES.
+#gencode {
+local
+do
+  ES^code := ESX^code;
+end
+}
+
+
+ESX -> #verifParams #genCode ;
+
+-- Verification que la liste des parametres attendus est bien vide.
+#verifParams {
+local
+  l : List<Types>;
+do
+  l := ESX^typesAttendus;
+	if !(l.isEmpty() then
+	  error(NO_ENOUGH_PARAMS);
+	end
+end
+}
+
+-- On n'a rien à ajouter comme code à cette RP.
+-- On fait remonter le code des paramètres précédents.
+#genCode {
+local
+do
+  ESX^code := ESX^codeH;
+end
+}
+
+
+ESX -> virg E #typesEtPassListe ESX #genCode ;
+
+-- On vérifie que E est bien du type attendu pour ce paramètre.
+-- Egalité stricte entre les types, on pourrait améliorer en utilisant isEqual.
+-- Et on fait passer le reste de la liste des paramètres.
+#typesEtPassListe {
+local
+  l : List<Types>;
+  t : Type;
+	code : String;
+do
+  l := ESX^typesAttendus;
+	-- On vérifie que la liste n'est pas vide.
+	if (l.isEmpty()) then
+	  error(TOO_MANY_ARGS);
+  else
+    -- On recupère le premier element de listeAttendus.
+    t := l.get(0);
+	  code := ESX^code;
+  	if !(t.isEqual(E^type) then
+	    error(WRONG_TYPE_FOR_THIS_PARAMETER);
+	  else
+	   	l := l.remove(0);
+		  -- On génère le code pour push l'argument grace au registre de E.
+		  -- On l'ajoute à la suite du code de E lui même à la suite 
+		  -- du code des arguments précédents. 
+      code := code + E^code + ESX^machine.generateFunctionPushArgument(E^reg);
+	  end
+	end
+  ESX1^typesAttendus := l;
+  ESX1^codeH := code;
+end
+}
+
+-- Passage du code de ESX à ES.
+#gencode {
+local
+do
+  ESX^code := ESX1^code;
+end
+}
 
 -----------------------------------------
 ------------- INLINE ASM ----------------
@@ -1941,7 +2121,7 @@ ENTITE -> asm #tds ASM #gen;
 #tds {
 do 
   -- A faire : Remplacer 'null' par la table courante pour que
-  -- le code  ASM puisse acceder aux variables de MC ou MCS
+  -- le code ASM puisse acceder aux variables de MC ou MCS
   ASM^tds_asm := null; 
 end
 }
