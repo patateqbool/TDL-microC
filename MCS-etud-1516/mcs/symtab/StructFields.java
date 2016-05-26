@@ -11,9 +11,9 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
-import mcs.compiler.MCSSymbolNotFound;
+import mcs.compiler.MCSSymbolNotFoundException;
 import mcs.compiler.MCSException;
-import mcs.compiler.MCSSymbolAlreadyDefineException;
+import mcs.compiler.MCSSymbolAlreadyDefinedException;
 
 class StructFields {
 	// The list of the fields
@@ -43,7 +43,7 @@ class StructFields {
 		Type type = this.fields.put(n, t);
 		if (type != null) {
 			this.fields.put(n, type);
-			throw new MCSSymbolAlreadyDefineException();
+			throw new MCSSymbolAlreadyDefinedException(n);
 		}
 		this.fieldsnb.add(n);
 	}
@@ -53,10 +53,10 @@ class StructFields {
 	 * @param n name of the field
 	 * @return t type of the field
 	 */ 
-	public Type find(String n) {
+	public Type find(String n) throws MCSException {
 		Type t = this.fields.get(n);
 		if (t == null) {
-			throw new MCSSymbolNotFound();
+			throw new MCSSymbolNotFoundException(n);
 		}
 		return t;
 	}
