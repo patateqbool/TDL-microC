@@ -13,6 +13,9 @@
  */
 package mcs.symtab;
 
+import java.util.Map;
+import java.util.HashMap;
+
 class ClassType extends Type {
   enum AccessSpecifier {
     APublic, APrivate, AProtected
@@ -23,8 +26,8 @@ class ClassType extends Type {
   private String name;
   private int id;
   private ClassType parent;
-  private FunctionTable methodTable;
-  private VariableTable attributeTable;
+  private Map<String,MethodInfo> methodTable;
+  private Map<String,AttributeInfo> attributeTable;
  
   // public ClassType(String name, List<ClassType> parents) {
   /**
@@ -44,8 +47,8 @@ class ClassType extends Type {
     ClassType.nextID++;
 
     // Internal stuff
-    this.methodTable = new FunctionTable();
-    this.attributeTable = new VariableTable();
+    this.methodTable = new HashMap<String,MethodInfo>();
+    this.attributeTable = new HashMap<String,AttributeInfo>();
 
 		if (parent != null) {
 			////////// Inheritance thingy //////////
@@ -89,9 +92,12 @@ class ClassType extends Type {
    */
   public void addMethod(String name, MethodInfo mi) {
 		if (this.methodTable.exists(name, mi)) {
-			// TODO
-		} else
-			this.methodTable.insert(name, mi);
+			// Inserting a method that already exists is fine, it
+      // is called overriding !
+      this.methodTable.remove(name);
+		}
+		
+    this.methodTable.put(name, mi);
   }
 
 	/**
