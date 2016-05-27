@@ -6,7 +6,7 @@
  */
 package mcs.symtab;
 
-import java.util.Set;
+import java.util.List;
 
 public interface SymbolTable {
   /**
