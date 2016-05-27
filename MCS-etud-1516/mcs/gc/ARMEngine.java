@@ -653,6 +653,7 @@ public class ARMEngine extends AbstractMachine {
       "end_" + condition_nb + ":\n\n";
 
     rcond.setStatus(Register.Status.Used);
+    condition_nb++;
 
     return code;
   }

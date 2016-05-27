@@ -68,6 +68,14 @@ public class FunctionInfo implements SymbolInfo {
   }
 
   /**
+   * Add a parameter to the FRONT of the paraemeters list
+   * @param t the type to add
+   */
+  public void pushFront(Type t) {
+    this.parameters.add(0, t);
+  }
+
+  /**
    * Calculate displacement of given parameter number
    * @param n number of the argument for which to get the displacement
    * @return the displacement
