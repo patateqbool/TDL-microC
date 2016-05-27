@@ -24,6 +24,23 @@ public class FunctionTable implements SymbolTable
     this.symbols = new ArrayList<String>();
   }
 
+	public boolean exists(String name, SymbolInfo si) {
+		if (this.content.get(name) != null) {
+			FunctionInfo ffi = (FunctionInfo)si;
+			FunctionInfo ofi = (FunctionInfo)this.lookup(name, true);
+
+			if (ffi.parameters().size() == ofi.parameters().size()) {
+				for (int i = 0; i < ffi.parameters().size(); i++) {
+					if (!ffi.parameters().get(i).isEqualTo(ofi.parameters().get(i)))
+						return false;
+				}
+				return true;
+			}
+		}
+
+		return false;
+	}
+
   public SymbolInfo lookup(String name, boolean local) {
     // local is unused
     for (String key : this.symbols) {

@@ -52,6 +52,10 @@ public class VariableTable implements SymbolTable {
 		return this.symbols;
 	}
 
+	public boolean exists(String name, SymbolInfo si) {
+		return (this.content.get(name) != null);
+	}
+
   /**
    * Look up into the table
    */
@@ -61,7 +65,7 @@ public class VariableTable implements SymbolTable {
 		if (si != null)
 			return si;
 
-    if (!local)
+    if (!local && this.parent != null)
       return parent().lookup(name, false);
 
     return new SymbolInfoNotFound();

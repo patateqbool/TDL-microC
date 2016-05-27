@@ -161,7 +161,7 @@ term identc is  "[A-Z][_0-9A-Za-z]*";
 -- pour les instructions en assembleur TAM 'inline'
 compil ASM;
 
--- REGLS DE PRODUCTION
+-- (1) : REGLES DE PRODUCTION
 PROGRAMME -> #init #initTDS ENTITES #gen;
 global
    machine : IMachine;
@@ -195,7 +195,7 @@ do
 end
 }
 
-
+-- (2)
 ENTITES -> #code ;
 
 -- Fin du code.
@@ -206,7 +206,7 @@ do
 end
 }
 
-
+-- (3)
 ENTITES -> #passAH ENTITE #transmissionTDS ENTITES #passCode ;
 
 -- Passage des attributs hérités.
@@ -245,6 +245,7 @@ end
 --      (commence avec une majuscule)      --
 ---------------------------------------------
 
+-- (4)
 ENTITE -> typedef TYPE #ajout identc pv ;
 
 -- Ajout de identc à la table des alias.
@@ -292,6 +293,7 @@ end
 --            (commence par une minuscule)             --
 ---------------------------------------------------------
 
+-- (5)
 ENTITE -> TYPE ident #idLibre DECL #majTDS #passCode; 
 
 -- Vérification que ident n'est pas déjà utilisé dans une TDS.
@@ -348,7 +350,8 @@ do
 end
 }
 
--- VARIABLE
+
+-- (6) : VARIABLE
 DECL -> pv #ajoutDansTDS #genCode;
 
 -- Ajout de la variable (puisqu'on sait désormais que c'en est une) à la TDSvar (de DECL) la TDSfun reste inchangée.
@@ -374,7 +377,7 @@ end
 }
 
 
--- FONCTION
+-- FONCTION (7)
 DECL -> #transmission FONCTION #majTDS #passCode;
 
 -- L'ajout de la fonction dans la TDS nécessitant la connaissance des params, on ne peut pas le faire dans cette RP.
@@ -407,7 +410,7 @@ end
 }
 
 
-
+-- (8)
 FONCTION -> #creationTDSfille #creationFunctionInfo #initC paro PARFS parf #ajoutEtPassFI #creationTDSPetiteFille BLOC #declFonction ;
 
 -- On crée la TDSvar fille pour la passer à PARFS.
@@ -473,6 +476,8 @@ end
 -------------------------------------------
 -------- PARAMETRES DE FONCTION -----------
 -------------------------------------------
+
+-- (9)
 PARFS ->  #passageFunInfo #transTvar ;
 
 #passageFunInfo {
@@ -491,6 +496,7 @@ end
 }
 
 
+-- (10)
 PARFS -> #increC PARF #TODOpassTvar #ajoutType PARFSX #majTvarSynt #transFI ;
 -- (Normalement le passage des TDS de PARFS à PARF puis de PARF à PARFSX se fait automatiquement).
 
@@ -535,6 +541,7 @@ end
 }
 
 
+-- (11)
 PARFSX ->  #passageFunInfo ;
 
 -- Passage de FunctionInfo (transformation d'attribut hérité en attribut synthétisé).
@@ -546,6 +553,7 @@ end
 }
 
  
+-- (12)
 PARFSX -> #incrC virg PARF #majFI PARFSX #transFI ;
 
 -- Incrementation du compteur de parametres, et passage de l'attribut.
@@ -581,6 +589,7 @@ end
 }
 
 
+-- (13)
 PARF ->  TYPE #ajouts ident ;
 
 -- Ajout de ident à la TDS locale.
@@ -622,6 +631,8 @@ end
 ----------------------------------------------------------------
 -------- LES TYPES (de base, noms, struct et pointeurs) --------
 ----------------------------------------------------------------
+
+-- (14)
 TYPE -> STYPE #passage PTRS #recupType;
 
 -- Passage du type de STYPE à PTRS pour qu'il "pointeurise" la chose.
@@ -641,7 +652,7 @@ end
 }
 
 
--- Des * pour definir un pointeur
+-- Des * pour definir un pointeur (15)
 PTRS -> #passage ;
 
 -- Passage de l'attribut hérité à celui synthétisé. 
@@ -653,6 +664,7 @@ end
 }
 
 
+-- (16)
 PTRS -> mult #point PTRS #passage ;
 
 -- Passage du type une foix la couche de pointeur ajoutée.
@@ -672,7 +684,7 @@ end
 }
 
 
--- Types de base
+-- Types de base (17)
 STYPE-> void #typage ;
 
 #typage {
@@ -682,6 +694,8 @@ do
 end
 }
 
+
+-- (18)
 STYPE-> int #typage ;
 
 #typage {
@@ -692,6 +706,7 @@ end
 }
 
 
+-- (19)
 STYPE-> char #typage ;
 
 #typage {
@@ -701,7 +716,7 @@ do
 end
 }
 
--- Nom de type (commence par une majuscule)
+-- Nom de type (commence par une majuscule) (20)
 STYPE -> identc #testType;
 
 #testType {
@@ -722,6 +737,8 @@ end
 ------------------------
 ------ STRUCTURES ------
 ------------------------
+
+-- (21)
 STYPE -> struct aco #ch CHAMPS acf  #type ;
 
 -- Création de la liste de champs qui servira à construire le type.
@@ -741,6 +758,7 @@ end
 }
 
 
+-- (22)
 CHAMPS -> #pass ;
 
 -- Passage de l'attribut hérité à celui synthétisé.
@@ -752,7 +770,7 @@ end
 }
 
 
--- Un nom de champ commence par une minuscule
+-- Un nom de champ commence par une minuscule (23)
 CHAMPS -> CHAMP #ch CHAMPS #passChamps ;
 #ch {
 local
@@ -780,6 +798,7 @@ end
 }
 
 
+-- (24) 
 CHAMP -> TYPE #pass ident pv;
 
 -- Passage des attributs qui serviront à créer le champ.
@@ -795,6 +814,8 @@ CHAMP -> TYPE #pass ident pv;
 ----------------------------------------------------------------
 ----------- CORPS DE FONCTION ET BLOC D'INSTRUCTIONS -----------
 ----------------------------------------------------------------
+
+-- (25)
 BLOC ->  aco #passage INSTS acf  #flushPassCode ;
 
 -- Probablement inutile, mais passage des TDS de BLOC à INSTS.
@@ -823,7 +844,7 @@ end
 
 
 -- Instructions
--- Fin des instructions du bloc.
+-- (26) : Fin des instructions du bloc.
 INSTS -> #initCode ;
 
 -- Initialisation de l'attribut code (chaine vide).
@@ -834,6 +855,8 @@ do
 end
 }
 
+
+-- (27)
 INSTS -> #funInfo INST #passage INSTS #passCode ;
 
 -- Passage du type retour de la fonction.
@@ -863,7 +886,7 @@ end
 }
 
 
--- Declaration de variable locale avec ou sans init 
+-- (28) : Declaration de variable locale avec ou sans init 
 INST ->  TYPE ident #ajoutTDS AFFX pv #genCode;
 
 -- Vérifiation que l'identifiant n'est pas déjà use localement.
@@ -911,12 +934,12 @@ end
 }
 
 -- TODO : Passage tvar.
--- Instruction expression (affectation et appel de procedure)
+-- (29) : Instruction expression (affectation et appel de procedure)
 INST -> E pv ;
 
 
 
--- Bloc d'instructions
+-- (30) : Bloc d'instructions
 INST ->  #tdsFille #passFI BLOC #passTvar #passCode;
 
 -- Création d'une tvar fille héritant de celle de INST pour BLOC.
@@ -954,7 +977,7 @@ end
 }
 
 -- TODO : Code de la condition et branchs.
--- Conditionnelle
+-- (31) : Conditionnelle
 INST -> si paro E parf #passFI #tdsFille BLOC #transTDS SIX #passAttributs #passCode;
 
 -- Passage de FunctionInfo.
@@ -1004,6 +1027,8 @@ do
 end
 }
 
+
+-- (32)
 SIX -> sinon #passFI #tdsFille BLOC #passCode;
 
 -- Passage de FunctionInfo
@@ -1036,7 +1061,7 @@ end
 }
 
 
-
+-- (33)
 SIX -> #codeVide ;
 -- Rien à faire pour la gestion des TDS.
 -- Génération d'une chaine de caractère vide.
@@ -1049,7 +1074,7 @@ end
 
 
 
--- Retour de fonction.
+-- (34) : Retour de fonction.
 INST ->  retour E pv #verifTypage #genCode ;
 
 -- Vérification que E est du type retour de la fonction.
@@ -1088,6 +1113,7 @@ end
 -- F = expression figurant dans une expression multiplicative (FACTEUR)
 -----------------------------------------------------------------------
 
+-- (35)
 E -> #needVi A #affPossible AFFX #estVarEtVi ;
 
 -- Maj d'un attribut pour AFFX signalant si A est, ou non, une variable.
@@ -1118,7 +1144,7 @@ end
 }
 
 
--- Affectation
+-- (36) : Affectation
 AFFX -> affect A #affValide #estVar ;
 
 -- Vérifie que l'affectation est valide :
@@ -1147,6 +1173,7 @@ end
 }
 
 
+-- (37)
 AFFX -> #estVar ;
 
 -- On met estVar à true car cette RP n'empeche pas la representation d'une var.
@@ -1158,7 +1185,7 @@ end
 }
 
 
--- Relation
+-- (38) : Relation
 A -> R AX #oper #estVarEtVi ;
 
 #oper {
@@ -1189,6 +1216,7 @@ end
 }
 
 
+-- (39)
 AX -> OPREL R #actuOp #estVarEtVi;
 
 #actuOp {
@@ -1207,6 +1235,7 @@ end
 }
 
 
+-- (40)
 AX -> #oprel #estVarEtVi ;
 
 -- L'oprel de AX est null dans ce cas.
@@ -1226,7 +1255,7 @@ do
 end
 }
 
--- Operateurs relationnels
+-- (41) Operateurs relationnels
 OPREL -> #opr inf ;
 
 #opr {
@@ -1237,6 +1266,7 @@ end
 }
 
 
+-- (42)
 OPREL -> #opr sup ;
 
 #opr {
@@ -1247,6 +1277,7 @@ end
 }
 
 
+-- (43)
 OPREL -> #opr infeg ;
 
 #opr {
@@ -1257,6 +1288,7 @@ end
 }
 
 
+-- (44)
 OPREL -> #opr supeg ;
 
 #opr {
@@ -1267,6 +1299,7 @@ end
 }
 
 
+-- (45)
 OPREL -> #opr eg ;
 
 #opr {
@@ -1277,6 +1310,7 @@ end
 }
 
 
+-- (46)
 OPREL -> #opr neg ;
 
 #opr {
@@ -1287,6 +1321,7 @@ end
 }
 
 
+-- (47)
 R -> T RX #oper #estVarEtVi ;
 
 #oper {
@@ -1315,7 +1350,7 @@ do
 end
 }
 
--- Additions ...
+-- (48) : Additions ...
 RX -> OPADD T RX #actuOp #estVar ;
 
 #actuOp {
@@ -1339,6 +1374,7 @@ end
 }
 
 
+-- (49)
 RX -> #nop #estVar;
 
 #nop {
@@ -1357,7 +1393,7 @@ end
 }
 
 
--- Operateurs additifs
+-- (50) : Operateurs additifs
 OPADD -> #op plus ;
 
 #op {
@@ -1368,6 +1404,7 @@ end
 }
 
 
+-- (51)
 OPADD -> #op moins ;
 
 #op {
@@ -1378,6 +1415,7 @@ end
 }
 
 
+-- (52)
 OPADD -> #op ou ;
 
 #op {
@@ -1388,7 +1426,7 @@ end
 }
 
 
--- Multiplication, ...
+-- (53) : Multiplication, ...
 T ->  F  TX #oper #estVarEtVi ;
 
 #oper {
@@ -1420,6 +1458,7 @@ end
 }
 
 
+-- (54)
 TX -> OPMUL F TX #actuOp #estVar;
 
 #actuOp {
@@ -1443,6 +1482,7 @@ end
 }
 
 
+-- (55)
 TX -> #nop #estVar ;
 
 #nop {
@@ -1461,7 +1501,7 @@ end
 }
 
 
--- Operateurs multiplicatifs
+-- (56) : Operateurs multiplicatifs
 OPMUL -> #op mult ;
 #op {
 local
@@ -1471,6 +1511,7 @@ end
 }
 
 
+-- (57)
 OPMUL -> #op div ;
 
 #op {
@@ -1481,6 +1522,7 @@ end
 }
 
 
+-- (58)
 OPMUL -> #op mod ;
 
 #op {
@@ -1490,6 +1532,8 @@ do
 end
 }
 
+
+-- (59)
 OPMUL -> #op et ;
 
 #op {
@@ -1504,7 +1548,7 @@ end
 --------- Expressions de base ---------
 ---------------------------------------
 
--- Constante entiere
+-- (60) : Constante entiere
 F -> entier #typeEtGenCode #estVarEtVi ;
 
 -- Set de l'attribut de type de F pour indiquer qu'il s'agit d'un entier.
@@ -1540,7 +1584,7 @@ end
 }
 
 
--- Constante chaine
+-- (61) : Constante chaine
 F -> chaine #typeEtGenCode #estVarEtVi ;
 
 -- Set de l'attribut type et reg de F.
@@ -1581,7 +1625,7 @@ end
 }
 
 
--- Constante caractere
+-- (62) : Constante caractere
 F -> caractere #typeEtGenCode #estVarEtVi ;
 
 -- Set de l'attribut type et reg de F.
@@ -1615,7 +1659,7 @@ end
 }
 
 
--- Expression unaire
+-- (63) : Expression unaire
 F ->  OPUN  F  #genCode #estVarEtVi;
 
 -- Génération du code pour la déclaration de la variable.
@@ -1637,7 +1681,7 @@ end
 }
 
 
--- Operateurs unaires
+-- (64) : Operateurs unaires
 OPUN -> plus ;
 
 #op {
@@ -1647,6 +1691,8 @@ do
 end
 }
 
+
+-- (65)
 OPUN -> moins ;
 
 #op {
@@ -1656,6 +1702,8 @@ do
 end
 }
 
+
+-- (66)
 OPUN -> non;
 
 #op {
@@ -1666,7 +1714,7 @@ end
 }
 
 
--- Pointeur NULL
+-- (67) : Pointeur NULL
 F -> null #estVarEtVi;
 
 -- Le pointeur null ne représente pas une variable.
@@ -1679,7 +1727,7 @@ do
 end
 }
 
--- Expression parenthesee
+-- (68) : Expression parenthesee
 -- TODO.
 F ->  paro E parf FX #estVarEtVi;
 
@@ -1700,7 +1748,7 @@ end
 }
 
 
--- Cast
+-- (69) : Cast
 F ->  paro TYPE parf #cast F #estVarEtVi;
 
 -- (int)a ne représente pas une variable : 
@@ -1727,7 +1775,7 @@ do
 end
 }
 
--- Dereferencement.
+-- (70) : Dereferencement.
 -- TODO : F^type.
 F -> mult F #estVarEtVi;
 
@@ -1741,7 +1789,7 @@ end
 
 -- LA REGLE OU C'EST REPARTI EN VRILLE. --
 -- TODO : code sur F et FX.
-
+-- (71)
 F -> ident #rechercheTables FX #estVar #genCodeEtReg ; 
 
 global
@@ -1855,6 +1903,7 @@ end
 }
 
 
+-- (72)
 FX -> #verifFonction #typeEtDepl ;
 
 -- Vérifie qu'on n'attendait pas une liste d'argument pour un appel de fonction.
@@ -1879,7 +1928,7 @@ do
 end
 }
 
--- Acces champ
+-- (73) : Acces champ
 FX -> pt ident #rechChamp FX #typeEtPileDepl;
 
 -- Recherche du champ. 
@@ -1927,7 +1976,7 @@ end
 }
 
 
--- Acces champ pointeur
+-- (74) : Acces champ pointeur
 FX -> arrow ident #rechChamp FX #typeEtPileDepl;
 
 -- Comme dans la RP precedent, on doit vérifier que la règle est applicable.
@@ -1986,7 +2035,7 @@ end
 }
 
 
--- Appel de sous-programme
+-- (75) : Appel de sous-programme
 -- La verification des paramètres ainsi que la generation des pushs
 -- se font dans ES.
 FX -> #estFun #passParams paro ES parf #attributs FX #genCode #attributs2;
@@ -2049,7 +2098,7 @@ end
 }
 
 
--- Arguments appel de sous-programme
+-- (76) : Arguments appel de sous-programme
 ES -> #verifParams #genCode ;
 
 -- Verification que la liste des parametres attendus est bien vide.
@@ -2074,6 +2123,7 @@ end
 }
 
 
+-- (77)
 ES -> E #typesEtPassListe ESX #genCode ;
 
 -- On vérifie que E est bien du type attendu pour ce paramètre.
@@ -2117,6 +2167,7 @@ end
 }
 
 
+-- (78)
 ESX -> #verifParams #genCode ;
 
 -- Verification que la liste des parametres attendus est bien vide.
@@ -2141,6 +2192,7 @@ end
 }
 
 
+-- (79)
 ESX -> virg E #typesEtPassListe ESX #genCode ;
 
 -- On vérifie que E est bien du type attendu pour ce paramètre.
@@ -2186,6 +2238,8 @@ end
 -----------------------------------------
 ------------- INLINE ASM ----------------
 -----------------------------------------
+
+-- (80)
 ENTITE -> asm #tds ASM #gen; 
 #tds {
 do 
@@ -2201,6 +2255,8 @@ do
 end
 }
 
+
+-- (81)
 INST ->  asm   #tds ASM #gen ;
 #tds {
 do

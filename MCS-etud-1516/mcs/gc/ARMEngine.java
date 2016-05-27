@@ -644,12 +644,19 @@ public class ARMEngine extends AbstractMachine {
    * @return the generated code
    */
   public String generateIfThenElse(Register rcond, String cif, String celse) throws MCSException {
+		boolean else_present = !(celse.isEmpty());
     String code = 
-      ARMEngine.Prefix + "CBZ\t" + rcond + ", else_" + condition_nb + "\n" +
-      cif + "\n" +
-      ARMEngine.Prefix + "B\tend_" + condition_nb + "\n" +
-      "else_" + condition_nb + ":\n" +
-      celse + "\n" +
+      ARMEngine.Prefix + "CBZ\t" + rcond + ", " + (else_present ? "else" : "end") + "_" + condition_nb + "\n" +
+      cif + "\n";
+
+		if (else_present) {
+			code +=
+      	ARMEngine.Prefix + "B\tend_" + condition_nb + "\n" +
+      	"else_" + condition_nb + ":\n" +
+      	celse + "\n";
+		}
+
+		code +=
       "end_" + condition_nb + ":\n\n";
 
     rcond.setStatus(Register.Status.Used);
