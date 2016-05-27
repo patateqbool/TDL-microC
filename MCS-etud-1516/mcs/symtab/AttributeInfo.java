@@ -17,7 +17,11 @@ public class AttributeInfo extends VariableInfo {
     this.parent = parent;
   }
 
-  public ClassType.AccessSpecifier accessModifier() {
+	public AttributeInfo(ClassType.AccessSpecifier as, ClassType parent, VariableInfo vi) {
+		this(as, vi.type(), vi.displacement(), parent);
+	}
+
+  public ClassType.AccessSpecifier accessSpecifier() {
     return this.accSpec;
   }
 

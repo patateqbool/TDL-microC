@@ -27,6 +27,11 @@ public class FunctionInfo implements SymbolInfo {
     this.parameters = new ArrayList<Type>();
   }
 
+	public FunctionInfo(Type ret, List<Type> params) {
+		this.parameters = params;
+		this.retType = ret;
+	}
+
   /**
    * Get the return type of the function
    * @return the return type of the function

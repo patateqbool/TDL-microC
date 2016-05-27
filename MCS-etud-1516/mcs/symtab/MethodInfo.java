@@ -16,6 +16,12 @@ public class MethodInfo extends FunctionInfo {
     this.accSpec = as;
 	}
 
+	public MethodInfo(ClassType.AccessSpecifier as, ClassType parent, FunctionInfo other) {
+		super(other.returnType(), other.parameters());
+		this.parent = parent;
+		this.accSpec = as;
+	}
+
   public ClassType parent() {
     return this.parent;
   }
@@ -23,6 +29,11 @@ public class MethodInfo extends FunctionInfo {
   public ClassType.AccessSpecifier accessSpecifier() {
     return this.accSpec;
   }
+
+	@Override
+	public String label() {
+		return this.parent.name() + "::" + super.label();
+	}
 }
 
 
