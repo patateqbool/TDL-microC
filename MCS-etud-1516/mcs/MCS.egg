@@ -3,6 +3,7 @@
 ----------------------------------------------------
 
 -- TODO : - lors de déclarations, on doit aussi vérifier dans talias.
+--        - finir avec vi dans les expressions
 
 --options
 option auto = true;
@@ -895,21 +896,28 @@ INST ->  TYPE ident #ajoutTDS AFFX pv #genCode;
 local
   info : SymbolInfo;
 	tv : VariableTable;
+	t : Type;
 do
   info := INST^tvar.lookup(ident^txt, true);
   -- Si ident est une clef dans la TDSvar, erreur.
   if info != null then
      error(IDENT_TAKEN, ident^txt);
   else
-    info := ENTITE^tfun.lookup(ident^txt, false);
+    info := INST^tfun.lookup(ident^txt, false);
     -- De même si identc est déjà utilisé dans la TDSfun.
     if (info != null) then
       error(IDENT_TAKEN, ident^txt);
-		-- Sinon, on ajoute cet id à la tdsvar.
 		else
-		  tv := INST^tvar;
-	   	tv.insert(ident^txt, TYPE^type);
-      INST^tvarS := tv;
+		  t := INST^talias.lookup(ident^txt);
+			-- De même pour la talias.
+			if (t != null) then 
+			  error(IDENT_TAKEN, ident^txt);
+			else
+		    -- Sinon, on ajoute cet id à la tdsvar.
+		    tv := INST^tvar;
+	   	  tv.insert(ident^txt, TYPE^type);
+        INST^tvarS := tv;
+			end
     end
   end 
 end
@@ -1116,6 +1124,14 @@ end
 -- (35)
 E -> #needVi A #affPossible AFFX #estVarEtVi ;
 
+-- TODO
+#needVi {
+local
+do
+
+end
+}
+
 -- Maj d'un attribut pour AFFX signalant si A est, ou non, une variable.
 -- Maj de l'attribut typeH de AFFX afin de tester que les types correspondent.
 #affPossible {
@@ -1194,7 +1210,7 @@ do
   if AX^estVar then
 	  A^code := R^code;	
 	else 
-		A^code := AX^code + R^code + A^machine.generateOperation(AX^op,R^reg,AX^reg,A^reg);
+		A^code := R^code +AX^code + A^machine.generateOperation(AX^op,R^reg,AX^reg,A^reg);
 	end
 end
 }
@@ -1248,7 +1264,7 @@ end
 }
 
 -- La RP n'empeche pas d'etre une variable.
-#estVar {
+#estVarEtVi {
 local
 do
   AX^estVar := true;
@@ -1328,7 +1344,7 @@ R -> T RX #oper #estVarEtVi ;
 local
 do
   if (RX^op != NOP) then
-	  R^code := RX^code + T^code + RX^machine.generateOperation(RX^op,T^reg,RX^reg,R^reg);
+	  R^code := T^code + RX^code + RX^machine.generateOperation(RX^op,T^reg,RX^reg,R^reg);
 	end
 
 end
@@ -1353,15 +1369,23 @@ end
 -- (48) : Additions ...
 RX -> OPADD T RX #actuOp #estVar ;
 
+-- Génération du code de T RX en fonction de RX.
+-- Passage de l'operateur de OPADD à RX.
 #actuOp {
 local
+  code : String;
+	reg : Register;
 do
+  reg := new Register ();
+  -- On met le code de T et RX1.
+  code := T^code + RX1^code;
+	-- Si il y a une opération, on ajoute son code.
   if (RX1^op != NOP) then
-	  RX^code := RX1^code + T^code + RX1^machine.generateOperation(RX1^op,T^reg,RX1^reg,RX^reg);
-	else 
-	  RX^code := RX1^code + T^code;
+	  code := code + RX^machine.generateOperation(RX1^op,T^reg,RX1^reg,reg);
 	end
-	RX^op = OPADD^op;
+	RX^op := OPADD^op;
+	RX^reg := reg;
+	RX^code := code;
 end
 }
 
@@ -1375,7 +1399,7 @@ end
 
 
 -- (49)
-RX -> #nop #estVar;
+RX -> #nop #estVar #code;
 
 #nop {
 local
@@ -1389,6 +1413,14 @@ end
 local
 do
   RX^estVar := true;
+end
+}
+
+-- RX a un attribut synthétisé code. On doit donc l'initialisé dans TOUTES les RP.
+#code {
+local
+do
+  RX^code := "";
 end
 }
 
@@ -1427,15 +1459,16 @@ end
 
 
 -- (53) : Multiplication, ...
-T ->  F  TX #oper #estVarEtVi ;
+T -> F TX #oper #estVarEtVi ;
 
+-- 
 #oper {
 local
 do
   if (TX^op != NOP) then
-	  T^code := TX^code + F^code + TX^machine.generateOperation(TX^op,F^reg,TX^reg,T^reg);
+	  T^code := F^code + TX^code + TX^machine.generateOperation(TX^op,F^reg,TX^reg,T^reg);
 	else 
-	  T^code := TX^code + F^code;
+	  T^code := F^code + TX^code;
 	end
 
 end
@@ -1458,7 +1491,7 @@ end
 }
 
 
--- (54)
+-- (54) TODO to myself.
 TX -> OPMUL F TX #actuOp #estVar;
 
 #actuOp {
