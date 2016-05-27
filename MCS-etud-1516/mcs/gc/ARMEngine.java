@@ -23,6 +23,7 @@ public class ARMEngine extends AbstractMachine {
 	private List<Register> registers;
 	private Register sp, lr, pc, ht, sb;
 	private int heapbase = 0;
+  private int condition_nb = 0;
 
 	/**
 	 * Constructor
@@ -596,7 +597,7 @@ public class ARMEngine extends AbstractMachine {
 	 * @param raddr (out) register that will contain the address
 	 * @return the generated code
 	 */
-	public String generateMakeAddress(DisplacementList dlist, Register raddr) {
+	public String generateMakeAddress(DisplacementList dlist, Register raddr) throws MCSException {
 		return generateMakeAddress(dlist, sb, raddr);
 	}
 
@@ -608,7 +609,8 @@ public class ARMEngine extends AbstractMachine {
 	 * @param raddr (out) register that will contain the address
 	 * @return the generated code
 	 */
-	public String generateMakeAddress(DisplacementList dlist, Register rbaseaddr, Register raddr) {		 String code = "";
+	public String generateMakeAddress(DisplacementList dlist, Register rbaseaddr, Register raddr) throws MCSException {
+    String code = "";
 		Register r = getNextUnusedRegister();
 		DisplacementPair dp;
 		
@@ -633,6 +635,29 @@ public class ARMEngine extends AbstractMachine {
 
 		return code;
 	}
+
+  /**
+   * Generate the code for an if-then-else structure
+   * @param rcond register containing the result of the condition
+   * @param cif code for the if branch
+   * @param celse code for the else branch
+   * @return the generated code
+   */
+  public String generateIfThenElse(Register rcond, String cif, String celse) throws MCSException {
+    String code = 
+      ARMEngine.Prefix + "CBZ\t" + rcond + ", else_" + condition_nb + "\n" +
+      cif + "\n" +
+      ARMEngine.Prefix + "B\tend_" + condition_nb + "\n" +
+      "else_" + condition_nb + ":\n" +
+      celse + "\n" +
+      "end_" + condition_nb + ":\n\n";
+
+    rcond.setStatus(Register.Status.Used);
+
+    return code;
+  }
+
+
 
 	/// Calculus
 	/**

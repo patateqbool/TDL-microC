@@ -255,7 +255,7 @@ public interface IMachine {
 	 * @param raddr (out) register that will contain the address
 	 * @return the generated code
 	 */
-	String generateMakeAddress(DisplacementList dlist, Register raddr);
+	String generateMakeAddress(DisplacementList dlist, Register raddr) throws MCSException;
 
 	/**
 	 * Generate the code for making an address from a list of displacement pair,
@@ -265,7 +265,17 @@ public interface IMachine {
 	 * @param raddr (out) register that will contain the address
 	 * @return the generated code
 	 */
-	String generateMakeAddress(DisplacementList dlist, Register rbaseaddr, Register raddr);
+	String generateMakeAddress(DisplacementList dlist, Register rbaseaddr, Register raddr) throws MCSException;
+
+  /**
+   * Generate the code for an if-then-else structure
+   * @param rcond register containing the result of the condition
+   * @param cif code for the if branch
+   * @param celse code for the else branch
+   * @return the generated code
+   */
+  String generateIfThenElse(Register rcond, String cif, String celse) throws MCSException;
+
 
 	//////////////////////////// CALCULUS /////////////////////////////
 
