@@ -15,7 +15,7 @@ package mcs.symtab;
 
 class ClassType extends Type {
   enum AccessSpecifier {
-    APublic, APrivate
+    APublic, APrivate, AProtected
   };
 
   private static int nextID = 0;
@@ -46,6 +46,37 @@ class ClassType extends Type {
     // Internal stuff
     this.methodTable = new FunctionTable();
     this.attributeTable = new VariableTable();
+
+		if (parent != null) {
+			////////// Inheritance thingy //////////
+			// Attributes
+			for (String attr : parent.attributeTable.symbols()) {
+				AttributeInfo ai = (AttributeInfo)(parent.attributeTable.lookup(attr, true));
+
+				if (ai.accessSpecifier() != AccessSpecifier.APrivate) {
+					AccessSpecifier newSpec = AccessSpecifier.APublic;
+
+					if (ai.accessSpecifier() == AccessSpecifier.AProtected)
+						newSpec = AccessSpecifier.APrivate;
+
+					this.addAttribute(attr, newSpec, ai);
+				}
+			}
+
+			// Methods
+			for (String attr : parent.methodTable.symbols()) {
+				MethodInfo mi = (MethodInfo)(parent.methodTable.lookup(attr, true));
+
+				if (mi.accessSpecifier() != AccessSpecifier.APrivate) {
+					AccessSpecifier newSpec = AccessSpecifier.APublic;
+
+					if (mi.accessSpecifier() == AccessSpecifier.AProtected)
+						newSpec = AccessSpecifier.APrivate;
+
+					this.addMethod(attr, newSpec, mi);
+				}
+			}
+		}
   }
 
   /**
@@ -53,11 +84,49 @@ class ClassType extends Type {
    */
   /**
    * Append a method to the class's function table
+	 * @param name name of the symbol
    * @param mi the method info
    */
-  public void addMethod(MethodInfo mi) {
-    mi.pushFront();
+  public void addMethod(String name, MethodInfo mi) {
+		if (this.methodTable.exists(name, mi)) {
+			// TODO
+		} else
+			this.methodTable.insert(name, mi);
   }
+
+	/**
+	 * Append a method to the class's function table
+	 * @param name name of the symbol
+	 * @param fi the function info
+	 */
+	public void addMethod(String name, AccessSpecifier as, FunctionInfo fi) {
+		this.methodTable.insert(
+				name,
+				new MethodInfo(as, this, fi)
+		);
+	}
+
+	/**
+	 * Append an attribute to the class's variable table
+	 * @param name name of the symbol
+	 * @param ai the attribute info
+	 */
+	public void addAttribute(String name, AttributeInfo ai) {
+		this.attributeTable.insert(name, ai);
+	}
+
+	/**
+	 * Append an attribute to the class's variable table
+	 * @param name name of the symbol
+	 * @param as access specifier
+	 * @param vi variable info
+	 */
+	public void addAttribute(String name, AccessSpecifier as, VariableInfo vi) {
+		this.attributeTable.insert(
+				name,
+				new AttributeInfo(as, this, vi)
+		);
+	}
 
 
   /**
@@ -70,6 +139,11 @@ class ClassType extends Type {
   public int classId() {
     return this.id;
   }
+
+	public String name() {
+		return this.name();
+	}
+
 
   /**
    * Inherited abstract methods

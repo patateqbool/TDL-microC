@@ -9,6 +9,14 @@ package mcs.symtab;
 import java.util.List;
 
 public interface SymbolTable {
+	/**
+	 * Detect whether or not the given symbol exists in the table
+	 * @param name symbol name
+	 * @param si symbol to test
+	 * @return true if the symbol exists
+	 */
+	boolean exists(String name, SymbolInfo si);
+
   /**
    * Globally look up into the table.
    * @param name name to look up
