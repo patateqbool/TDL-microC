@@ -704,8 +704,8 @@ end
 -- Nom de type (commence par une majuscule)
 STYPE -> identc #testType;
 
-local
 #testType {
+local
   typeRech : Type;
 do
   typeRech := STYPE^talias.lookup(identc^txt);
