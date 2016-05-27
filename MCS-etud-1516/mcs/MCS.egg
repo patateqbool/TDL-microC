@@ -2,8 +2,7 @@
 -- Grammaires de MC  et MCS                       --
 ----------------------------------------------------
 
--- TODO : cParam utilité ? (Mémoire de fou)
---        lors de déclarations, on doit aussi vérifier dans talias.
+-- TODO : - lors de déclarations, on doit aussi vérifier dans talias.
 
 --options
 option auto = true;
@@ -199,7 +198,7 @@ end
 
 ENTITES -> #code ;
 
--- Pas de code : initialisation du code.
+-- Fin du code.
 #code {
 local
 do
@@ -208,7 +207,18 @@ end
 }
 
 
-ENTITES -> ENTITE #transmissionTDS ENTITES #passCode ;
+ENTITES -> #passAH ENTITE #transmissionTDS ENTITES #passCode ;
+
+-- Passage des attributs hérités.
+#passAH {
+local
+do
+  ENTITE^machine := ENTITE^machine;
+	ENTITE^tvar : =ENTITE^tvar;
+	ENTITE^tfun := ENTITE^tfun;
+	ENTITE^talias := ENTITE^talias;
+end
+}
 
 -- Transmission des TDS mise à jour après ENTITE à ENTITES1.
 -- (La transmission de ENTITES à ENTITE se fait, normalement, automatiquement).
@@ -217,6 +227,8 @@ local
 do
   ENTITES1^tvar := ENTITE^tvarS;
   ENTITES1^tfun := ENTITE^tfunS;
+	ENTITES1^talias := ENTITE^taliasS;
+	ENTITES1^machine := ENTITES^machine;
 end
 }
 
@@ -235,13 +247,16 @@ end
 
 ENTITE -> typedef TYPE #ajout identc pv ;
 
--- Ajout de identc à TDSvar.
--- Vérifie que identc n'est pas déjà utilisé (par une variable ou une fonction).
+-- Ajout de identc à la table des alias.
+-- Vérifie que identc n'est pas déjà utilisé (par une variable, une fonction ou un autre alias).
 #ajout {
 local
   info : SymbolInfo;
   infoVar : VariableInfo;
+	t : Type;
+	ta : AliasTable;
 do
+  ta := ENTITE^talias;
   info := ENTITE^tvar.lookup(identc^txt, true);
   -- Si identc est une clef dans la TDSvar, erreur.
   if info != null then
@@ -253,9 +268,22 @@ do
         error(IDENT_TAKEN, identc^txt);
      -- Sinon, on peut ajouter le nouveau type à la TDS.
     else
-        ENTITE^talias.insert(identc^txt, TYPE^type );
+		  -- Vérification dans la table des alias.
+			t := ta.lookup(identc^txt);
+			if (t != null) then
+			  error(IDENT_TAKEN, identc^txt);
+      else
+        ta.insert(identc^txt, TYPE^type );
+			end
     end
   end  
+	-- On fait remonter la nouvelle talias.
+	ENTITE^taliasS := ta;
+	-- Les autres tds ne sont pas modifiées.
+	ENTITE^tvarS := ENTITE^tvar;
+	ENTITE^tfunS := ENTITE^tfun;
+	-- Pas de code pour cette RP.
+	ENTITE^code := "";
 end
 }
 
@@ -273,6 +301,7 @@ ENTITE -> TYPE ident #idLibre DECL #majTDS #passCode;
 #idLibre {
 local
   info : SymbolInfo;
+	t : Type;
 do
   info := ENTITE^tvar.lookup(ident^txt, true);
   -- Si identc est une clef dans la TDSvar, erreur.
@@ -285,11 +314,17 @@ do
         error(IDENT_TAKEN, ident^txt);
      -- Sinon, on fait passer les infos utiles à DECL.
     else
+		  -- Verification dans talias.
+			t := ENTITE^talias.lookup(ident^txt, true);
+			if (t!= null) then
+			  error(IDENT_TAKEN, ident^txt);
+			else
         DECL^typeH := TYPE^type;
         DECL^nom := ident^txt;
         DECL^tvar := ENTITE^tvar;
         DECL^tfun := ENTITE^tfun;
-    end
+      end
+		end
   end  
 end
 }
@@ -300,10 +335,11 @@ local
 do
   ENTITE^tvarS := DECL^tvarS ;
   ENTITE^tfunS := DECL^tfunS ;
+	-- La talias n'est pas modifiée par cette RP.
+	ENTITE^taliasS := ENTITE^talias ;
 end
 }
 
---Useless
 -- Passage du code généré par DECL à ENTITE.
 #passCode {
 local
@@ -455,7 +491,7 @@ end
 }
 
 
-PARFS -> #increC PARF #ajoutType PARFSX #majTvarSynt #transFI ;
+PARFS -> #increC PARF #TODOpassTvar #ajoutType PARFSX #majTvarSynt #transFI ;
 -- (Normalement le passage des TDS de PARFS à PARF puis de PARF à PARFSX se fait automatiquement).
 
 -- Incrementation du compteur de parametres, et passage de l'attribut.
@@ -486,7 +522,7 @@ end
 #majTvarSynt {
 local
 do
-  PARFS^tvarS := PARFSX^tvar;
+  PARFS^tvarS := PARFSX^tvarS;
 end
 }
 
@@ -524,6 +560,7 @@ end
 }
 
 -- Ajout du paramètre de PARF au functionInfo et passage à PARFSX1.
+-- Passage de la tvar locale.
 #majFI {
 local
   fi : functionInfo;
@@ -531,6 +568,7 @@ do
   fi := PARFSX^funInfoH;
   fi.add(PARF^type);
   PARFSX1^funInfoH := fi;
+	PARFSX1^tvar := PARF^tvarS;
 end
 }
 
@@ -547,26 +585,35 @@ PARF ->  TYPE #ajouts ident ;
 
 -- Ajout de ident à la TDS locale.
 -- Vérifications concernant ident.
--- TODO : verifier dans talias.
 -- Passage du type.
 #ajouts {
 local
+  tv : VariableTable;
+	t : Type;
 do
+  tv := PARF^tvar;
   -- Vérifications concernant ident.
-  info := PARF^tvar.lookup(ident^txt, false);
+  info := tv.lookup(ident^txt, false);
   -- Si identc est une clef dans la TDSvar, erreur.
   if info != null then
     error(IDENT_TAKEN, ident^txt);
   else
-    info := ENTITE^tfun.lookup(ident^txt, false);
+    info := PARF^tfun.lookup(ident^txt, false);
     -- De même si identc est déjà utilisé dans la TDSfun.
     if info != null then
       error(IDENT_TAKEN, ident^txt);
     else
-      -- Ajout de ident à la TDS locale.
-      PARF^tvar.insert(ident^txt, new VariableInfo(TYPE^type, PARF^funInfo.displacement(PARF^cParam)));
-    end
+		  t := PARF^talias.lookup(ident^txt, false);
+			-- De même dans talias.
+			if (t != null) then
+			  error(IDENT_TAKEN, ident^txt);
+			else
+			  -- Ajout de ident à la TDS locale.
+        tv.insert(ident^txt, new VariableInfo(TYPE^type, PARF^funInfo.displacement(PARF^cParam)));
+      end
+		end
   end
+	PARF^tvarS := tv;
   PARF^type := TYPE^type;
 end
 }
@@ -672,47 +719,71 @@ end
 }
 
 
--- Struct
+------------------------
+------ STRUCTURES ------
+------------------------
 STYPE -> struct aco #ch CHAMPS acf  #type ;
 
-global 
-  lc : StructFields ;
+-- Création de la liste de champs qui servira à construire le type.
 #ch {
+local
 do
-  lc := new StructFields();
-  CHAMPS^champs := lc;
+  CHAMPS^champs := new StructFields();
 end
 }
 
+-- On récupère la liste des champs, synthétisée par CHAMPS,
+-- pour créer le type.
 #type {
 do
-  STYPE^type := new StructType(lc);
+  STYPE^type := new StructType(CHAMPS^champsS);
 end
 }
 
-CHAMPS -> ;
 
--- Un nom de champ commence par une minuscule
-CHAMPS -> CHAMP #ch CHAMPS ;
-#ch {
- local
- do
- -- J'ai changé l'attribut pour récupérer l'identifiant
- -- Il vaut mieux stocker directement la chaine comme attribut de CHAMP.
-    if CHAMPS^champs.exist(CHAMP^nom) then
-       error(IDENT_TAKEN, CHAMP^nom);
-    else 
-		-- Pourquoi le call ?
-    -- call CHAMPS^champs.insert(CHAMP^nom,CHAMP^type);
-      CHAMPS^champs.insert(CHAMP^nom,CHAMP^type);
-		end
- end
+CHAMPS -> #pass ;
+
+-- Passage de l'attribut hérité à celui synthétisé.
+#pass {
+local
+do
+  CHAMPS^champsS := CHAMPS^champs;
+end
 }
 
 
-CHAMP -> TYPE #ajout ident pv;
+-- Un nom de champ commence par une minuscule
+CHAMPS -> CHAMP #ch CHAMPS #passChamps ;
+#ch {
+local
+  c : StructFields
+do
+  c := CHAMPS^champs;
+  if c.exist(CHAMP^nom) then
+	  -- si un champ porte déjà ce nom : erreur.
+    error(IDENT_TAKEN, CHAMP^nom);
+  else
+	  -- Sinon, on ajoute le champ au StructFields.
+    c.insert(CHAMP^nom,CHAMP^type);
+   end
+	 -- On passe le StructFields à CHAMPS1.
+	 CHAMPS1^champs := c;
+end
+}
 
-#ajout {
+-- Passage du StructFields.
+#passChamps {
+local
+do
+  CHAMPS^champsS := CHAMPS1^champsS;
+end
+}
+
+
+CHAMP -> TYPE #pass ident pv;
+
+-- Passage des attributs qui serviront à créer le champ.
+#pass {
   local
   do
     CHAMP^nom = ident^txt;
@@ -752,7 +823,7 @@ end
 
 
 -- Instructions
--- Fin des instructions de la fonction.
+-- Fin des instructions du bloc.
 INSTS -> #initCode ;
 
 -- Initialisation de l'attribut code (chaine vide).
@@ -882,6 +953,7 @@ do
 end
 }
 
+-- TODO : Code de la condition et branchs.
 -- Conditionnelle
 INST -> si paro E parf #passFI #tdsFille BLOC #transTDS SIX #passAttributs #passCode;
 
@@ -1056,10 +1128,10 @@ AFFX -> affect A #affValide #estVar ;
 local
 do
   if !(AFFX^affPossible) then
-    error(LEFT_PART_NOT_VARIABLE --, AFFX^txt);	
+    error(LEFT_PART_NOT_VARIABLE ); --, AFFX^txt);	
   else
     if (A^type.isCompatible(AFFX^type)) then
-     error(TYPE_NOT_COMPATIBLE, AFFX^typeH.name(), A^type.name());     
+     error(TYPE_NOT_COMPATIBLE); --, AFFX^typeH.name(), A^type.name());     
 		end
 	end
 end
@@ -1122,7 +1194,7 @@ AX -> OPREL R #actuOp #estVarEtVi;
 #actuOp {
 local
 do
-	AX^oprel = OPREL^oprel;
+  AX^oprel = OPREL^oprel;
 end
 }
 
@@ -1135,7 +1207,16 @@ end
 }
 
 
-AX -> #estVarEtVi ;
+AX -> #oprel #estVarEtVi ;
+
+-- L'oprel de AX est null dans ce cas.
+-- Il faut tout de même l'initialiser comme il s'agit d'un attribut synthétisé.
+#oprel {
+local
+do
+  AX^oprel := null;
+end
+}
 
 -- La RP n'empeche pas d'etre une variable.
 #estVar {
@@ -1206,7 +1287,7 @@ end
 }
 
 
-R ->  T  RX #oper #estVarEtVi ;
+R -> T RX #oper #estVarEtVi ;
 
 #oper {
 local
@@ -1713,7 +1794,7 @@ do
 	FX^listeDepl := listeDepl;
 	FX^estFun := estFun;
 	FX^typeH := type;
-	FX^fi := funInfo;
+	FX^funInfoH := funInfo;
 end
 }
 
@@ -1788,9 +1869,11 @@ end
 
 -- On fait remonter le type.
 -- Et la liste de déplacements.
+-- Et une chaine vide comme code.
 #typeEtDepl {
 local
 do
+  FX^code := "";
   FX^type := FX^typeH;
   FX^listeDeplS := FX^listeDepl;
 end
@@ -1829,14 +1912,15 @@ do
 	FX1^listeDepl := listeDepl;
 	FX1^estFun := false;
 	FX1^typeH := type;
-	FX1^fi := null;
+	FX1^funInfoH := null;
 end
 }
 
--- On fait remonter le type et la liste de deplacement.
+-- On fait remonter le code, le type et la liste de deplacement.
 #typeEtPileDepl{
 local
 do
+  FX^code := FX1^code;
   FX^type := FX1^type;
 	FX^listeDeplS := FX1^listeDeplS;
 end
@@ -1887,14 +1971,15 @@ do
 	FX1^estFun := false;
 	FX1^typeH := type;
 	FX1^listeDepl := listeDepl;
-	FX1^fi := null;
+	FX1^funInfoH := null;
 end
 }
 
--- On fait remonter le type et la liste de deplacement.
+-- On fait remonter le code, le type et la liste de deplacement.
 #typeEtPileDepl{
 local
 do
+  FX^code := FX1^code;
   FX^type := FX1^type;
 	FX^listeDeplS := FX1^listeDeplS;
 end
@@ -1923,7 +2008,7 @@ end
 local
   fi : FunctionInfo;
 do
-  fi := FX^fi;
+  fi := FX^funInfoH;
   ES^typesAttendus := fi.parameters();
   ES^codeH := "";
 end
@@ -1940,7 +2025,7 @@ do
 	-- Le type de l'appel est le type de retour de la fonction.
 	FX1^typeH := FX^typeH;
 	-- Pas une fonction : pas de FunctionInfo.
-	FX1^fi := null;
+	FX1^funInfoH := null;
 end
 }
 
@@ -1950,7 +2035,7 @@ end
 #genCode {
 local
 do
-  FX^code := ES^code + generateFunctionCall(FX^fi) + FX1^code; 
+  FX^code := ES^code + generateFunctionCall(FX^funInfoH) + FX1^code; 
 end
 }
 
@@ -1970,7 +2055,7 @@ ES -> #verifParams #genCode ;
 -- Verification que la liste des parametres attendus est bien vide.
 #verifParams {
 local
-  l : List<Types>;
+  l : List<Type>;
 do
   l := ES^typesAttendus;
 	if !(l.isEmpty() then
