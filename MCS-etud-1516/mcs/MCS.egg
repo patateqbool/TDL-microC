@@ -34,12 +34,12 @@ syn tvarS : VariableTable for
          ; -- Utilisée pour récupérer la TDS màj avec les paramètres de la fonction.
 
 inh talias : AliasTable for  -- A completer --
-         ENTITES, ENTITE, TYPE
+         ENTITES, ENTITE, TYPE, F
          ; --Table des alias contenant les types propres au programme.
 
 
 inh tfun : FunctionTable for -- A completer --
-         ENTITES, ENTITE
+         ENTITES, ENTITE, F
 	 ;
 
 syn tfunS : FunctionTable for 
@@ -47,19 +47,19 @@ syn tfunS : FunctionTable for
          ;
 
 syn type : Type for -- A completer --
-         TYPE, STYPE, PTRS, DECL, FONCTION
+         TYPE, STYPE, PTRS, DECL, FONCTION, F
          ;
  
 inh typeH : Type for -- A Modifier --
-         PTRS, INSTS, BLOC, INST, DECL, FONCTION, SIX
+         PTRS, INSTS, BLOC, INST, DECL, FONCTION, SIX, FX
          ;
 
 inh funInfoH : FunctionInfo for
-         PARFS, PARFSX
+         PARFS, PARFSX, FX
 				 ;
 
 syn funInfo : FunctionInfo for
-         PARFS, PARFSX
+         PARFS, PARFSX, FX
 	       ;
 
 -- Attribut servant à savoir du quantième paramètre il s'agit. 
@@ -72,11 +72,17 @@ inh nom : String for -- A completer (pas sur) --
          ;
 
 syn code : String for
-         
+         ENTITES, ENTITE, DECL, FONCTION, INST, BLOC, INSTS, SIX,
+         PARFS, PARF, PARFSX, ES, ESX, 
+         E, AFFX, A, AX, R, RX, T, TX, F,FX
+				 ;
+
+inh codeH : String for
+				 ES, ESX
 				 ;
 
 syn op : Operator for
-				 OPADD, OPMULT, OPUN, RX
+				 OPADD, OPMULT, OPUN, RX, TX
 				 ;
 
 syn oprel : RelationalOperator for
@@ -84,16 +90,38 @@ syn oprel : RelationalOperator for
 				 ;
 
 syn reg : Register for
-				 F, T, RX
+				 F, T, TX, RX
 				 ;
 
 syn estVar : boolean for
-         -- Des trucs dans les expressions. --
+         R, RX, FX, T, TX
+				 ;
+
+
+inh estFun : boolean for
+         FX
 				 ;
 
 inh affPossible : boolean for
-                                 AFFX
-                                 ;
+         AFFX
+         ;
+
+inh listeDepl : DisplacementList for
+				 FX
+				 ;
+
+syn listeDeplS : DisplacementList for
+				 FX
+				 ;
+
+inh typeAttendus : List<Type> for
+				 ES
+				 ;
+
+syn vi : VariableInfo for
+         R, T, F
+			   ;
+
 
 -- ces attributs permettent de recuperer les instructions du code ASM inline       
 syn code_asm : STRING for ASM;
@@ -1172,15 +1200,7 @@ end
 -----------------------------------------------------------------------
 
 -- (35)
-E -> #needVi A #affPossible AFFX #estVarEtVi #genCode;
-
--- TODO
-#needVi {
-local
-do
-
-end
-}
+E -> A #affPossible AFFX #estVarEtVi #genCode;
 
 -- Maj d'un attribut pour AFFX signalant si A est, ou non, une variable.
 -- Maj de l'attribut typeH de AFFX afin de tester que les types correspondent.
@@ -1212,7 +1232,7 @@ end
 #genCode {
 local
 do
-  if (not AFFX^estVar) then
+  if (A^estVar) && (not AFFX^estVar) then
 		E^machine.generateStoreVariable(A^vi,AFFX^reg);
 	end
 end
@@ -1906,10 +1926,10 @@ end
 F -> mult F #estVarEtVi;
 
 -- F représente une variable si F1 en représente une, et que celle-ci est un pointeur.
-#estVar {
+#estVarEtVi {
 local
 do
-          
+	
 end
 }
 
