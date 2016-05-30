@@ -507,7 +507,7 @@ end
 
 
 -- (10)
-PARFS -> #increC PARF #TODOpassTvar #ajoutType PARFSX #majTvarSynt #transFI ;
+PARFS -> #incrC PARF #passTvar #ajoutType PARFSX #majTvarSynt #transFI ;
 -- (Normalement le passage des TDS de PARFS à PARF puis de PARF à PARFSX se fait automatiquement).
 
 -- Incrementation du compteur de parametres, et passage de l'attribut.
@@ -520,6 +520,15 @@ do
   PARFSX^cParam := c;
 end
 }
+
+-- Passage de tvarS en tvar de PARFSX.
+#transTvar {
+local
+do
+  PARFSX^tvar := PARFS^tvarS;
+end
+}
+
 
 -- Création de lTypes de PARFS à partir de la liste des types de PARFSX et du type de PARF.
 #ajoutType {
@@ -975,7 +984,7 @@ do
 end
 }
 
--- TODO : Passage tvar.
+-- TODO : Vérifier qu'il y a bien rien a faire ici (GC se fait dans E, TDS descend, ...)
 -- (29) : Instruction expression (affectation et appel de procedure)
 INST -> E pv ;
 
@@ -1018,9 +1027,8 @@ do
 end
 }
 
--- TODO : Code de la condition et branchs.
 -- (31) : Conditionnelle
-INST -> si paro E parf #passFI #tdsFille BLOC #transTDS SIX #passAttributs #passCode;
+INST -> si paro E parf #passFI #tdsFille BLOC #transTDS SIX #passAttributs #genCode;
 
 -- Passage de FunctionInfo.
 #passFI {
@@ -1061,11 +1069,19 @@ do
 end
 }
 
--- Concaténation et passage du code.
-#passCode {
+-- Génération du code pour une conditionnelle.
+#genCode {
 local
 do
-  INST^code := BLOC^code + SIX^code;
+	-- On vérifie que le type dans la conditionnelle est bien un entier (en l'absence de booléens)
+	match E^type
+	with IntegerType then
+		-- Si c'est le cas, on génère le code
+ 		INST^code := INST^machine.generateIfThenElse(E^reg,BLOC^code,SIX^code);
+	else
+		-- Sinon, on renvoie une erreur
+    error(TYPE_NOT_EQUAL,E^type,IntegerType);
+	end
 end
 }
 
@@ -1156,6 +1172,7 @@ end
 -----------------------------------------------------------------------
 
 -- (35)
+-- TODO : GC
 E -> #needVi A #affPossible AFFX #estVarEtVi ;
 
 -- TODO
