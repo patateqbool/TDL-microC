@@ -55,7 +55,7 @@ public abstract class Type {
 	 * A default value
 	 * @return the default value
 	 */
-	abstract Object getDefault();
+	abstract public Object getDefault();
 }
 
 

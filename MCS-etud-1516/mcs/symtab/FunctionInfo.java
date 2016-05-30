@@ -131,22 +131,34 @@ public class FunctionInfo implements SymbolInfo {
    * @param other the other function
    */
   public boolean equals(FunctionInfo other) {
-    if (!this.name.equals(other.name))
+    return this.similar(other) && this.retType.isEqualTo(other.retType);
+  }
+
+	/**
+	 * Test if two functions are "similar", that is : they have the same
+	 * name and same arguments, but may have different return types
+	 */
+	public boolean similar(FunctionInfo other) {
+		return similar(other.name(), other.parameters());
+	}
+
+	/**
+	 * Same function but taking the name and the parameters
+	 */
+	public boolean similar(String name, List<Type> params) {
+		if (!this.name.equals(name))
       return false;
 
-    if (!this.retType.isEqualTo(other.retType))
-      return false;
-
-    if (this.parameters.size() != other.parameters.size())
+    if (this.parameters.size() != params.size())
       return false;
 
     for (int i = 0; i < this.parameters.size(); i++) {
-      if (!this.parameters.get(i).isEqualTo(other.parameters.get(i)))
+      if (!this.parameters.get(i).isEqualTo(params.get(i)))
         return false;
     }
 
-    return true;
-  }
+		return true;
+	}
 
   /**
    * toString()
