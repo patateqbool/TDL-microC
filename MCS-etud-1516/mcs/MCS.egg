@@ -34,12 +34,12 @@ syn tvarS : VariableTable for
          ; -- Utilisée pour récupérer la TDS màj avec les paramètres de la fonction.
 
 inh talias : AliasTable for  -- A completer --
-         ENTITES, ENTITE, TYPE
+         ENTITES, ENTITE, TYPE, F
          ; --Table des alias contenant les types propres au programme.
 
 
 inh tfun : FunctionTable for -- A completer --
-         ENTITES, ENTITE
+         ENTITES, ENTITE, F
 	 ;
 
 syn tfunS : FunctionTable for 
@@ -47,19 +47,19 @@ syn tfunS : FunctionTable for
          ;
 
 syn type : Type for -- A completer --
-         TYPE, STYPE, PTRS, DECL, FONCTION
+         TYPE, STYPE, PTRS, DECL, FONCTION, F
          ;
  
 inh typeH : Type for -- A Modifier --
-         PTRS, INSTS, BLOC, INST, DECL, FONCTION, SIX
+         PTRS, INSTS, BLOC, INST, DECL, FONCTION, SIX, FX
          ;
 
 inh funInfoH : FunctionInfo for
-         PARFS, PARFSX
+         PARFS, PARFSX, FX
 				 ;
 
 syn funInfo : FunctionInfo for
-         PARFS, PARFSX
+         PARFS, PARFSX, FX
 	       ;
 
 -- Attribut servant à savoir du quantième paramètre il s'agit. 
@@ -72,11 +72,17 @@ inh nom : String for -- A completer (pas sur) --
          ;
 
 syn code : String for
-         
+         ENTITES, ENTITE, DECL, FONCTION, INST, BLOC, INSTS, SIX,
+         PARFS, PARF, PARFSX, ES, ESX, 
+         E, AFFX, A, AX, R, RX, T, TX, F,FX
+				 ;
+
+inh codeH : String for
+				 ES, ESX
 				 ;
 
 syn op : Operator for
-				 OPADD, OPMULT, OPUN, RX
+				 OPADD, OPMULT, OPUN, RX, TX
 				 ;
 
 syn oprel : RelationalOperator for
@@ -84,16 +90,38 @@ syn oprel : RelationalOperator for
 				 ;
 
 syn reg : Register for
-				 F, T, RX
+				 F, T, TX, RX
 				 ;
 
 syn estVar : boolean for
-         -- Des trucs dans les expressions. --
+         R, RX, FX, T, TX
+				 ;
+
+
+inh estFun : boolean for
+         FX
 				 ;
 
 inh affPossible : boolean for
-                                 AFFX
-                                 ;
+         AFFX
+         ;
+
+inh listeDepl : DisplacementList for
+				 FX
+				 ;
+
+syn listeDeplS : DisplacementList for
+				 FX
+				 ;
+
+inh typeAttendus : List<Type> for
+				 ES
+				 ;
+
+syn vi : VariableInfo for
+         R, T, F
+			   ;
+
 
 -- ces attributs permettent de recuperer les instructions du code ASM inline       
 syn code_asm : STRING for ASM;
@@ -295,7 +323,15 @@ end
 ---------------------------------------------------------
 
 -- (5)
-ENTITE -> TYPE ident #idLibre DECL #majTDS #passCode; 
+ENTITE -> #talias TYPE ident #idLibre DECL #majTDS #passCode; 
+
+-- Passage de la table des alias.
+#talias {
+local
+do
+  TYPE^talias := ENTITE^talias;
+end
+}
 
 -- Vérification que ident n'est pas déjà utilisé dans une TDS.
 -- On n'ajoute pas encore la variable / fonction à la table car on ne sait pas encore la nature.
@@ -321,14 +357,15 @@ do
 			t := ENTITE^talias.lookup(ident^txt, true);
 			if (t!= null) then
 			  error(IDENT_TAKEN, ident^txt);
-			else
-        DECL^typeH := TYPE^type;
-        DECL^nom := ident^txt;
-        DECL^tvar := ENTITE^tvar;
-        DECL^tfun := ENTITE^tfun;
       end
 		end
   end  
+  DECL^typeH := TYPE^type;
+  DECL^nom := ident^txt;
+  DECL^tvar := ENTITE^tvar;
+  DECL^tfun := ENTITE^tfun;
+	DECL^talias := ENTITE^talias;
+	DECL^machine := ENTITE^machine;
 end
 }
 
@@ -498,7 +535,7 @@ end
 
 
 -- (10)
-PARFS -> #increC PARF #TODOpassTvar #ajoutType PARFSX #majTvarSynt #transFI ;
+PARFS -> #incrC PARF #passTvar #ajoutType PARFSX #majTvarSynt #transFI ;
 -- (Normalement le passage des TDS de PARFS à PARF puis de PARF à PARFSX se fait automatiquement).
 
 -- Incrementation du compteur de parametres, et passage de l'attribut.
@@ -511,6 +548,15 @@ do
   PARFSX^cParam := c;
 end
 }
+
+-- Passage de tvarS en tvar de PARFSX.
+#transTvar {
+local
+do
+  PARFSX^tvar := PARFS^tvarS;
+end
+}
+
 
 -- Création de lTypes de PARFS à partir de la liste des types de PARFSX et du type de PARF.
 #ajoutType {
@@ -591,7 +637,16 @@ end
 
 
 -- (13)
-PARF ->  TYPE #ajouts ident ;
+PARF -> #talias TYPE #ajouts ident ;
+
+-- Passage de la table des alias.
+#talias {
+local
+do
+  TYPE^talias := PARF^talias;
+end
+}
+
 
 -- Ajout de ident à la TDS locale.
 -- Vérifications concernant ident.
@@ -800,7 +855,15 @@ end
 
 
 -- (24) 
-CHAMP -> TYPE #pass ident pv;
+CHAMP -> #talias TYPE #pass ident pv;
+
+-- Passage de la table des alias.
+#talias {
+local
+do
+  TYPE^talias := CHAMP^talias;
+end
+}
 
 -- Passage des attributs qui serviront à créer le champ.
 #pass {
@@ -888,7 +951,15 @@ end
 
 
 -- (28) : Declaration de variable locale avec ou sans init 
-INST ->  TYPE ident #ajoutTDS AFFX pv #genCode;
+INST -> #talais TYPE ident #ajoutTDS AFFX pv #genCode;
+
+-- Passage de la table des alias.
+#talias {
+local
+do
+  TYPE^talias := ENTITE^talias;
+end
+}
 
 -- Vérifiation que l'identifiant n'est pas déjà use localement.
 -- Ajout à la Tvar.
@@ -941,7 +1012,7 @@ do
 end
 }
 
--- TODO : Passage tvar.
+-- TODO : Vérifier qu'il y a bien rien a faire ici (GC se fait dans E, TDS descend, ...)
 -- (29) : Instruction expression (affectation et appel de procedure)
 INST -> E pv ;
 
@@ -1129,15 +1200,7 @@ end
 -----------------------------------------------------------------------
 
 -- (35)
-E -> #needVi A #affPossible AFFX #estVarEtVi ;
-
--- TODO
-#needVi {
-local
-do
-
-end
-}
+E -> A #affPossible AFFX #estVarEtVi #genCode;
 
 -- Maj d'un attribut pour AFFX signalant si A est, ou non, une variable.
 -- Maj de l'attribut typeH de AFFX afin de tester que les types correspondent.
@@ -1166,6 +1229,14 @@ do
 end
 }
 
+#genCode {
+local
+do
+  if (A^estVar) && (not AFFX^estVar) then
+		E^machine.generateStoreVariable(A^vi,AFFX^reg);
+	end
+end
+}
 
 -- (36) : Affectation
 AFFX -> affect A #affValide #estVar ;
@@ -1259,7 +1330,7 @@ end
 
 
 -- (40)
-AX -> #oprel #estVarEtVi ;
+AX -> #oprel #estVarEtVi #code;
 
 -- L'oprel de AX est null dans ce cas.
 -- Il faut tout de même l'initialiser comme il s'agit d'un attribut synthétisé.
@@ -1277,6 +1348,15 @@ do
   AX^estVar := true;
 end
 }
+
+-- Il faut init code.
+#code {
+local
+do
+  AX^code =: "";
+end
+}
+
 
 -- (41) Operateurs relationnels
 OPREL -> #opr inf ;
@@ -1349,11 +1429,17 @@ R -> T RX #oper #estVarEtVi ;
 
 #oper {
 local
+  code : String;
+	reg : Register;
 do
+  -- Init du registre dans lequel sera stocké le résultat de l'opération.
+  reg := new Register();
+  code := T^code + RX^code;
   if (RX^op != NOP) then
-	  R^code := T^code + RX^code + RX^machine.generateOperation(RX^op,T^reg,RX^reg,R^reg);
+	  code := code + RX^machine.generateOperation(RX^op,T^reg,RX^reg,reg);
 	end
-
+	R^reg := reg;
+	R^code := code;
 end
 }
 
@@ -1471,13 +1557,16 @@ T -> F TX #oper #estVarEtVi ;
 -- 
 #oper {
 local
+  code : String;
+	reg : Register;
 do
+  reg := new Register();
+  code := F^code + TX^code;
   if (TX^op != NOP) then
-	  T^code := F^code + TX^code + TX^machine.generateOperation(TX^op,F^reg,TX^reg,T^reg);
-	else 
-	  T^code := F^code + TX^code;
+	  code := code + TX^machine.generateOperation(TX^op,F^reg,TX^reg,reg);
 	end
-
+	T^reg := reg;
+	T^code := code;
 end
 }
 
@@ -1498,18 +1587,22 @@ end
 }
 
 
--- (54) TODO to myself.
+-- (54)
 TX -> OPMUL F TX #actuOp #estVar;
 
 #actuOp {
 local
+  code : String;
+	reg : Register;
 do
+  reg := new Register();
+	code := F^code + TX1^code;
   if (TX1^op != NOP) then
-	  TX^code := TX1^code + F^code + TX1^machine.generateOperation(TX1^op,F^reg,TX1^reg,TX^reg);
-	else 
-	  TX^code := TX1^code + F^code;
+	  code := code + TX1^machine.generateOperation(TX1^op,F^reg,TX1^reg,reg);
 	end
-	TX^op = OPMUL^op;
+	TX^op := OPMUL^op;
+	TX^reg := reg;
+	TX^code := code;
 end
 }
 
@@ -1601,7 +1694,7 @@ local
 do
   -- Creation du type et du registre.
   t := new IntegerType();
-  r := new Registre();
+  r := new Register();
 	-- Récup de l'entier et conversion au bon format.
 	n := Integer.parseInt(entier^txt);
 	-- Set de l'attribut type.
@@ -1645,7 +1738,7 @@ do
 	-- Initialisation du type, en précisant la taille.
 	t := new StringType(l);
   -- Création du registre.
-	r := new Registre();
+	r := new Register();
 	-- Génération du code et set des attributs de F.
 	F^code := F^machine.generateLoadConstant(ConstantInfo.fromString(s), r);
 	F^reg =: r;
@@ -1705,8 +1798,13 @@ F ->  OPUN  F  #genCode #estVarEtVi;
 -- Génération du code pour la déclaration de la variable.
 #genCode {
 local
+  reg : Register();
+  code : String;
 do
-	F^code:= F1^code + F^machine.generateOperation(OPUN^op,F1^reg,F^reg);
+  reg := new Register();
+	code:= F1^code + F^machine.generateOperation(OPUN^op,F1^reg,reg);
+  F^code := code;
+	F^reg := reg;
 end
 }
 
@@ -1789,7 +1887,15 @@ end
 
 
 -- (69) : Cast
-F ->  paro TYPE parf #cast F #estVarEtVi;
+F ->  paro #talias TYPE parf #cast F #estVarEtVi;
+
+-- Passage de la table des alias.
+#talias {
+local
+do
+  TYPE^talias := ENTITE^talias;
+end
+}
 
 -- (int)a ne représente pas une variable : 
 -- le cast empeche une expression d'etre une variable.
@@ -1820,10 +1926,10 @@ end
 F -> mult F #estVarEtVi;
 
 -- F représente une variable si F1 en représente une, et que celle-ci est un pointeur.
-#estVar {
+#estVarEtVi {
 local
 do
-          
+	
 end
 }
 
@@ -1922,7 +2028,7 @@ do
     -- On a un appel de fonction, peut être suivi d'accés à des champs de struct.
 	  -- regRetourFun est le registre contenant le résultat de l'appel de fonction,
 		-- il se trouve dans le FunctionInfo \o/.
-    code := F^machine.generateMakeAddress(funInfo., listeDepl, reg);
+    code := F^machine.generateMakeAddress(funInfo.register(), listeDepl, reg);
 	else 
 	  -- On n'a pas d'appel de fonction. 
 		if (listeDepl.size() > 1) then
