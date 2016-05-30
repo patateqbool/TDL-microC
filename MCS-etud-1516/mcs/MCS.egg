@@ -25,37 +25,37 @@ inh machine : IMachine for
 
 -- TODO : Verifier que les attributs sont bien def.
 
-inh tvar : VariableTable for  -- A completer --
-         ENTITES, ENTITE, F
+inh tvar : VariableTable for
+         ENTITES, ENTITE, BLOC, F, INSTS, INST, SIX
          ;
 
 syn tvarS : VariableTable for 
-         PARFS, DECL, ENTITE
+         PARFS, DECL, ENTITE, INST
          ; -- Utilisée pour récupérer la TDS màj avec les paramètres de la fonction.
 
-inh talias : AliasTable for  -- A completer --
-         ENTITES, ENTITE, TYPE, F
+inh talias : AliasTable for 
+         ENTITES, ENTITE, BLOC, STYPE, TYPE, F, INSTS, INST, SIX, CHAMP
          ; --Table des alias contenant les types propres au programme.
 
 
-inh tfun : FunctionTable for -- A completer --
-         ENTITES, ENTITE, F
+inh tfun : FunctionTable for
+         ENTITES, ENTITE, BLOC, F, INSTS, INST, SIX
 	 ;
 
 syn tfunS : FunctionTable for 
          DECL, ENTITE
          ;
 
-syn type : Type for -- A completer --
-         TYPE, STYPE, PTRS, DECL, FONCTION, F
+syn type : Type for
+         TYPE, STYPE, PTRS, DECL, FONCTION, F, CHAMP, E, A, AFFX
          ;
  
-inh typeH : Type for -- A Modifier --
-         PTRS, INSTS, BLOC, INST, DECL, FONCTION, SIX, FX
+inh typeH : Type for
+         PTRS, INSTS, INST, DECL, FONCTION, SIX, FX, AFFX
          ;
 
 inh funInfoH : FunctionInfo for
-         PARFS, PARFSX, FX
+         PARFS, PARFSX, FX, BLOC, INSTS, INST, SIX
 				 ;
 
 syn funInfo : FunctionInfo for
@@ -67,9 +67,13 @@ inh cParam : int for
          PARFS, PARF, PARFSX
 				 ;
 
-inh nom : String for -- A completer (pas sur) --
-         DECL, FONCTION
-         ;
+inh nom : String for 
+         DECL, FONCTION,
+				 ;
+
+syn nomS : String for 
+         CHAMP
+				 ;
 
 syn code : String for
          ENTITES, ENTITE, DECL, FONCTION, INST, BLOC, INSTS, SIX,
@@ -86,15 +90,15 @@ syn op : Operator for
 				 ;
 
 syn oprel : RelationalOperator for
-				 OPREL
+				 OPREL, AX
 				 ;
 
 syn reg : Register for
-				 F, T, TX, RX
+				 F, T, TX, RX, E
 				 ;
 
 syn estVar : boolean for
-         R, RX, FX, T, TX
+         R, RX, FX, T, TX, E, A, AFFX, AX
 				 ;
 
 
@@ -119,8 +123,16 @@ inh typeAttendus : List<Type> for
 				 ;
 
 syn vi : VariableInfo for
-         R, T, F
+         R, T, F, E, A
 			   ;
+
+inh champs : StructFields for
+				 CHAMPS
+				 ;
+
+syn champsS : StructFields for
+				 CHAMPS
+				 ;
 
 
 -- ces attributs permettent de recuperer les instructions du code ASM inline       
@@ -833,12 +845,12 @@ local
   c : StructFields
 do
   c := CHAMPS^champs;
-  if c.exist(CHAMP^nom) then
+  if c.exist(CHAMP^nomS) then
 	  -- si un champ porte déjà ce nom : erreur.
-    error(IDENT_TAKEN, CHAMP^nom);
+    error(IDENT_TAKEN, CHAMP^nomS);
   else
 	  -- Sinon, on ajoute le champ au StructFields.
-    c.insert(CHAMP^nom,CHAMP^type);
+    c.insert(CHAMP^nomS,CHAMP^type);
    end
 	 -- On passe le StructFields à CHAMPS1.
 	 CHAMPS1^champs := c;
