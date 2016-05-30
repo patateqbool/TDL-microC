@@ -14,59 +14,63 @@ import java.util.HashMap;
 public class FunctionTable implements SymbolTable 
 {
 	// Attributes
-  private List<String> symbols;
-	private Map<String, SymbolInfo> content;
+	private List<FunctionInfo> content;
 
   // Ther is no parent ("global" and "local" function does not have any sens for now
 
   public FunctionTable() {
-		this.content = new HashMap<String, SymbolInfo>();
-    this.symbols = new ArrayList<String>();
+		this.content = new ArrayList<FunctionInfo>();
   }
 
 	public boolean exists(String name, SymbolInfo si) {
-		if (this.content.get(name) != null) {
-			FunctionInfo ffi = (FunctionInfo)si;
-			FunctionInfo ofi = (FunctionInfo)this.lookup(name, true);
-
-			if (ffi.parameters().size() == ofi.parameters().size()) {
-				for (int i = 0; i < ffi.parameters().size(); i++) {
-					if (!ffi.parameters().get(i).isEqualTo(ofi.parameters().get(i)))
-						return false;
-				}
+		for (FunctionInfo csi : this.content) {
+			if (csi.similar(name, ((FunctionInfo)si).parameters()))
 				return true;
-			}
 		}
 
 		return false;
 	}
 
+	public boolean exists(SymbolInfo si) {
+		for (FunctionInfo csi : this.content) {
+			if (csi.equals(si))
+				return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Note: this function only serve to see if there is a function
+	 * named "name".
+	 * Retrieving the actual function must be done with a complete
+	 * set of parameters
+	 */
   public SymbolInfo lookup(String name, boolean local) {
-    // local is unused
-    for (String key : this.symbols) {
-      if (key.equals(name))
-        return this.content.get(name);
-    }
+		for (FunctionInfo fi : this.content)
+			if (fi.name().equals(name))
+				return fi;
 
     return new SymbolInfoNotFound();
   }
 
+	public SymbolInfo lookup(String name, List<Type> params) {
+		for (FunctionInfo fi : this.content) {
+			if (fi.similar(name, params))
+				return fi;
+		}
+
+		return new SymbolInfoNotFound();
+	}
+
   public boolean insert(String name, SymbolInfo info) {
-    /*
-     * TODO: problem for redefining functions with different signature
-     */
-    if (this.content.containsKey(name))
-      return false;
+		if (exists(name, info))
+			return false;
 
-    if (!(info instanceof FunctionInfo))
-      return false;
-
-    FunctionInfo fi = (FunctionInfo)info;
-    fi.setName(name);
-    
-    this.content.put(name, fi);
-    this.symbols.add(name);
-    return true;
+		FunctionInfo fi = (FunctionInfo)info;
+		fi.setName(name);
+		this.content.add(fi);
+		return true;
   }
 
   public SymbolTable parent() {
@@ -74,7 +78,10 @@ public class FunctionTable implements SymbolTable
   }
 
 	public List<String> symbols() {
-		return this.symbols;
+		List<String> l = new ArrayList<String>();
+		for (FunctionInfo fi : this.content)
+			l.add(fi.name());
+		return l;
 	}
 }
 
