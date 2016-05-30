@@ -5,6 +5,11 @@
 -- TODO : - lors de déclarations, on doit aussi vérifier dans talias.
 --        - finir avec vi dans les expressions
 
+-- TODO : changements pour permettres à deux fonctions n'ayant pas le meme
+--        type de parametres de porter le meme nom.
+--            - Appel de fonction
+--            - Declaration
+
 --options
 option auto = true;
 option version = 0.0.1;
@@ -55,7 +60,7 @@ inh typeH : Type for
          ;
 
 inh funInfoH : FunctionInfo for
-         PARFS, PARFSX, FX, BLOC, INSTS, INST, SIX
+         PARFS, PARFSX, BLOC, INSTS, INST, SIX
 				 ;
 
 syn funInfo : FunctionInfo for
@@ -867,7 +872,7 @@ end
 }
 
 
--- Un nom de champ commence par une minuscule (23)
+-- (23) : Un nom de champ commence par une minuscule.
 CHAMPS -> #talias CHAMP #ch CHAMPS #passChamps ;
 
 -- Passage talias.
@@ -917,11 +922,11 @@ end
 
 -- Passage des attributs qui serviront à créer le champ.
 #pass {
-  local
-  do
-    CHAMP^nom = ident^txt;
-    CHAMP^type = TYPE^type;
-  end
+local
+do
+  CHAMP^nomS = ident^txt;
+  CHAMP^type = TYPE^type;
+end
 }
 
 
@@ -939,6 +944,8 @@ local
 do
   INSTS^tvar := BLOC^tvar;
   INSTS^tfun := BLOC^tfun;
+	INSTS^talias := BLOC^talias;
+	INSTS^machine := BLOC^machine;
   INSTS^funInfoH := BLOC^funInfoH;
 end
 }
@@ -950,7 +957,7 @@ local
   code : String;
 do
   code := INSTS^code;
-  code := code + BLOC^machine.generateFlush(BLOC^tvar);
+  code := code + BLOC^machine.generateFlush(INSTS^tvarS);
   BLOC^code := code;
 end
 }
@@ -959,13 +966,21 @@ end
 
 -- Instructions
 -- (26) : Fin des instructions du bloc.
-INSTS -> #initCode ;
+INSTS -> #initCode #tvarS;
 
 -- Initialisation de l'attribut code (chaine vide).
 #initCode {
 local
 do
   INSTS^code := "";
+end
+}
+
+-- On fait remonter la tvarS pour le flush.
+#tvarS {
+local
+do
+  INSTS^tvarS := INSTS^tvar;
 end
 }
 
@@ -979,6 +994,10 @@ local
 do
   INST^funInfoH := INSTS^funInfoH;
 	INSTS1^funInfoH := INSTS^funInfoH;
+	INST^tvar := INSTS^tvar;
+	INST^tfun := INSTS^tfun;
+	INST^talias := INSTS^talias;
+	INST^machine := INSTS^machine;
 end
 }
 
@@ -987,15 +1006,20 @@ end
 local
 do
   INSTS1^tvar := INST^tvarS;
-  INSTS1^tfun := INST^tfun;  -- La table des fonctions ne changera pas.
+	-- tfun, talias et machine directement hérité de INSTS.
+  INSTS1^tfun := INSTS^tfun; 
+	INSTS1^talias := INSTS^talias;
+	INSTS1^machine := INSTS^machine;
 end
 }
 
 -- Concaténation des codes et passage à INSTS.
+-- Remontée de tvarS.
 #passCode {
 local
 do
   INSTS^code := INST^code + INSTS1^code;
+	INSTS^tvarS := INSTS1^tvarS;
 end
 }
 
@@ -1046,19 +1070,23 @@ end
 
 -- Génération du code
 -- On vérifie si on a TYPE ident := X; ou TYPE ident;
+-- TODO : vérifier que ident n'est pas déjà use.
+--        generateStoreValue ?Oo
 #genCode {
 local
+  code : String;
   reg : Register;
 	varinf : VariableInfo;
 do
-	if (AFFX^estVar) then
-		-- Pas d'affectation a droite, juste une decl locale
-    INST^code := INST^machine.generateAllocateInStack(TYPE^type); 
-	else
-		-- On a une affectation (au moins)
-		varinf := INST^tvar.lookup(ident^txt, false);		 
-    INST^code := INST^machine.generateAllocateInStack(TYPE^type) +INST^machine.generateStoreValue(varinf,AFFX^reg);
+  -- On a une déclaration : on alloue dans la mémoire.
+  code := INST^machine.generateAllocateInStack(TYPE^type);
+	if !(AFFX^estVar) then
+		-- On a une affectation.
+		varinf := INST^tvar.lookup(ident^txt, false);		 -- Oo
+    code := INST^machine.generateStoreValue(varinf,reg);
   end
+	INST^code := code;
+
 end
 }
 
@@ -2021,7 +2049,6 @@ do
 			-- On passe estFun à vrai.
 			listeDepl.add(0, false);
 			estFun := true;
-			funInfo := (FunctionInfo)info;
 			type := funInfo.returnType();
     end
   else
@@ -2036,7 +2063,7 @@ do
 	FX^listeDepl := listeDepl;
 	FX^estFun := estFun;
 	FX^typeH := type;
-	FX^funInfoH := funInfo;
+	FX^nom := ident^txt;
 end
 }
 
@@ -2132,6 +2159,10 @@ local
 	type : Type;
 	listeDepl : DisplacementList;
 do
+  -- On vérifie qu'on était pas dans un appel de fonction.
+	if FX^estFun then
+	  error(FUNCTION_CALL_WITHOUT_PARS);
+	end
   listeDepl := FX^listeDepl;
 	type := FX^typeH;
   -- On vérifie que ce qui est à gauche de cet appel est bien un struct.
@@ -2155,7 +2186,7 @@ do
 	FX1^listeDepl := listeDepl;
 	FX1^estFun := false;
 	FX1^typeH := type;
-	FX1^funInfoH := null;
+  FX1^nom := ident^txt;	
 end
 }
 
@@ -2183,6 +2214,10 @@ local
 	typeS : StructType;
 	listeDepl : DisplacementList;
 do
+  -- On vérifie qu'on était pas dans un appel de fonction.
+	if FX^estFun then
+	  error(FUNCTION_CALL_WITHOUT_PARS);
+	end
   type := FX^typeH;
 	listeDepl := FX^listeDepl;
 	match type
@@ -2214,7 +2249,7 @@ do
 	FX1^estFun := false;
 	FX1^typeH := type;
 	FX1^listeDepl := listeDepl;
-	FX1^funInfoH := null;
+  FX1^nom := ident^txt;
 end
 }
 
@@ -2232,9 +2267,10 @@ end
 -- (75) : Appel de sous-programme
 -- La verification des paramètres ainsi que la generation des pushs
 -- se font dans ES.
-FX -> #estFun #passParams paro ES parf #attributs FX #genCode #attributs2;
+FX -> #estFun #passParams paro ES parf #verifFun #attributs FX #genCode #attributs2;
 global
   codeAppel : String
+
 -- Verification que l'appelant est une fonction.
 #estFun {
 local
@@ -2245,15 +2281,24 @@ do
 end
 }
 
--- Passage du type des paramètres de la fonction à ES.
--- Init du code des pops.
+-- Init de la liste des types des params et du code des pops. 
 #passParams {
 local
-  fi : FunctionInfo;
 do
-  fi := FX^funInfoH;
-  ES^typesAttendus := fi.parameters();
+  ES^typesParams := new List<Type>;
   ES^codeH := "";
+end
+}
+
+-- Verification qu'il existe bien une fonction avec cette signature.
+#verifFun {
+local
+  fi : functionInfo;
+do
+  fi := FX^tfun.lookup(FX^nom, ES^typesParamsS);
+	if (fi = null) then
+	  error(NO_FUN_WITH_SUCH_PARS, FX^nom);
+	end
 end
 }
 
@@ -2267,8 +2312,8 @@ do
 	FX1^estFun := false; 
 	-- Le type de l'appel est le type de retour de la fonction.
 	FX1^typeH := FX^typeH;
-	-- Pas une fonction : pas de FunctionInfo.
-	FX1^funInfoH := null;
+	-- Pas de nom pour FX ici.
+	FX1^nom := "";
 end
 }
 
@@ -2293,17 +2338,13 @@ end
 
 
 -- (76) : Arguments appel de sous-programme
-ES -> #verifParams #genCode ;
+ES -> #tparams #genCode ;
 
--- Verification que la liste des parametres attendus est bien vide.
-#verifParams {
+-- Passage de la liste des types des params de l'appel.
+#tparams {
 local
-  l : List<Type>;
 do
-  l := ES^typesAttendus;
-	if !(l.isEmpty() then
-	  error(NO_ENOUGH_PARAMS);
-	end
+  ES^typesParamsS := ES^typesParams;
 end
 }
 
@@ -2326,53 +2367,45 @@ ES -> E #typesEtPassListe ESX #genCode ;
 #typesEtPassListe {
 local
   l : List<Types>;
-  t : Type;
-	code : String;
+  code : String;
 do
-  l := ES^typesAttendus;
-	-- On vérifie que la liste n'est pas vide.
-	if (l.isEqual()) then
-	  error(TOO_MANY_ARGS);
-	else
-    -- On recupère le premier element de listeAttendus.
-    t := l.get(0);
-	  code := ES^code;
-	  if !(t.isEqual(E^type) then
-	    error(WRONG_TYPE_FOR_THIS_PARAMETER);
-  	else
-  	 	l := l.remove(0);
-  		-- On génère le code pour push l'argument grace au registre de E.
-  		-- On l'ajoute à la suite du code de E lui même à la suite 
-  		-- du code des arguments précédents. 
-      code := code + E^code + ES^machine.generateFunctionPushArgument(E^reg);
-	  end
-	end
-  ESX^typesAttendus := l;
+  -- Ajout du type de E à la liste des types des params.
+  l := ES^typesParams;
+	l.add(E^type);
+  -- Ajout du code du push pour ce param.
+  code := code + E^code + ES^machine.generateFunctionPushArgument(E^reg);
+  ESX^typesParams := l;
   ESX^codeH := code;
 end
 }
 
+-- Passage de la liste des types des params.
+#tparams {
+local
+do
+  ES^typesParamsS := ESX^typesParamsS;
+end
+}
+
 -- Passage du code de ESX à ES.
+-- Et remontée de la liste des types.
 #gencode {
 local
 do
   ES^code := ESX^code;
+	ES^typesParamsS := ESX^typesParamsS;
 end
 }
 
 
 -- (78)
-ESX -> #verifParams #genCode ;
+ESX -> #tparams #genCode ;
 
--- Verification que la liste des parametres attendus est bien vide.
-#verifParams {
+-- Passage des types des params.
+#tparams {
 local
-  l : List<Types>;
 do
-  l := ESX^typesAttendus;
-	if !(l.isEmpty() then
-	  error(NO_ENOUGH_PARAMS);
-	end
+  ESX^typesParamsS := ESX^typesParams;
 end
 }
 
@@ -2395,37 +2428,23 @@ ESX -> virg E #typesEtPassListe ESX #genCode ;
 #typesEtPassListe {
 local
   l : List<Types>;
-  t : Type;
 	code : String;
 do
-  l := ESX^typesAttendus;
-	-- On vérifie que la liste n'est pas vide.
-	if (l.isEmpty()) then
-	  error(TOO_MANY_ARGS);
-  else
-    -- On recupère le premier element de listeAttendus.
-    t := l.get(0);
-	  code := ESX^code;
-  	if !(t.isEqual(E^type) then
-	    error(WRONG_TYPE_FOR_THIS_PARAMETER);
-	  else
-	   	l := l.remove(0);
-		  -- On génère le code pour push l'argument grace au registre de E.
-		  -- On l'ajoute à la suite du code de E lui même à la suite 
-		  -- du code des arguments précédents. 
-      code := code + E^code + ESX^machine.generateFunctionPushArgument(E^reg);
-	  end
-	end
-  ESX1^typesAttendus := l;
+  l := ESX^typesParams;
+  l.add(E^type);
+  code := ESX^codeH + E^code + ESX^machine.generateFunctionPushArgument(E^reg);
+  ESX1^typesParams := l;
   ESX1^codeH := code;
 end
 }
 
 -- Passage du code de ESX à ES.
+-- Et remontée de la liste des types.
 #gencode {
 local
 do
   ESX^code := ESX1^code;
+  ESX^typesParamsS := ESX1^typesParamsS;
 end
 }
 
