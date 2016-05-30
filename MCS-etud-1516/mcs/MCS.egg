@@ -1172,8 +1172,7 @@ end
 -----------------------------------------------------------------------
 
 -- (35)
--- TODO : GC
-E -> #needVi A #affPossible AFFX #estVarEtVi ;
+E -> #needVi A #affPossible AFFX #estVarEtVi #genCode;
 
 -- TODO
 #needVi {
@@ -1210,6 +1209,14 @@ do
 end
 }
 
+#genCode {
+local
+do
+  if (not AFFX^estVar) then
+		E^machine.generateStoreVariable(A^vi,AFFX^reg);
+	end
+end
+}
 
 -- (36) : Affectation
 AFFX -> affect A #affValide #estVar ;
@@ -1571,7 +1578,7 @@ do
   reg := new Register();
 	code := F^code + TX1^code;
   if (TX1^op != NOP) then
-	  code := code + TX1^machine.generateOperation(TX1^op,F^reg,TX1^reg,TX^reg);
+	  code := code + TX1^machine.generateOperation(TX1^op,F^reg,TX1^reg,reg);
 	end
 	TX^op := OPMUL^op;
 	TX^reg := reg;
