@@ -62,12 +62,7 @@ public class FunctionTable implements SymbolTable
       return false;
 
     FunctionInfo fi = (FunctionInfo)info;
-    String label = "_" + name + "@" + fi.returnType();
-
-    for (Type t : fi.parameters())
-      label += "$" + t;
-
-    fi.setLabel(label);
+    fi.setName(name);
     
     this.content.put(name, fi);
     this.symbols.add(name);
