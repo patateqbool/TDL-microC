@@ -14,7 +14,7 @@ public class FunctionInfo implements SymbolInfo {
   // Attributes
   private Type retType; // Return type
   private List<Type> parameters; // Parameters
-  private String label;
+  private String name;
 	private Register reg;
 
   /**
@@ -22,12 +22,14 @@ public class FunctionInfo implements SymbolInfo {
    * @param ret return type of the function
    * @param params list of parameters of the function
    */
-  public FunctionInfo(Type ret) {
+  public FunctionInfo(String name, Type ret) {
+    this.name = name;
     this.retType = ret;
     this.parameters = new ArrayList<Type>();
   }
 
-	public FunctionInfo(Type ret, List<Type> params) {
+	public FunctionInfo(String name, Type ret, List<Type> params) {
+    this.name = name;
 		this.parameters = params;
 		this.retType = ret;
 	}
@@ -49,11 +51,19 @@ public class FunctionInfo implements SymbolInfo {
   }
 
   /**
-   * Set the label of the function. This is done AFTER storing it, by the function table
-   * @param lbl new label
+   * Get the name of the function
+   * @return the name
    */
-  public void setLabel(String lbl) {
-    this.label = lbl;
+  public String name() {
+    return this.name;
+  }
+
+  /**
+   * Set the name of the function
+   * @param name the new name
+   */
+  public void setName(String name) {
+    this.name = name;
   }
 
   /**
@@ -61,7 +71,12 @@ public class FunctionInfo implements SymbolInfo {
    * @return the label
    */
   public String label() {
-    return this.label;
+    String label = "_" + this.name + "@" + this.retType;
+
+    for (Type t : this.parameters)
+      label += "$" + t;
+
+    return label;
   }
 
   /**
@@ -112,6 +127,28 @@ public class FunctionInfo implements SymbolInfo {
 	}
 
   /**
+   * Equal function.
+   * @param other the other function
+   */
+  public boolean equals(FunctionInfo other) {
+    if (!this.name.equals(other.name))
+      return false;
+
+    if (!this.retType.isEqualTo(other.retType))
+      return false;
+
+    if (this.parameters.size() != other.parameters.size())
+      return false;
+
+    for (int i = 0; i < this.parameters.size(); i++) {
+      if (!this.parameters.get(i).isEqualTo(other.parameters.get(i)))
+        return false;
+    }
+
+    return true;
+  }
+
+  /**
    * toString()
    */
   public String toString(String name) {
@@ -125,7 +162,6 @@ public class FunctionInfo implements SymbolInfo {
 
     t += ")";
     return t;
-
   }
 }
 
