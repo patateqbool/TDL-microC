@@ -1025,7 +1025,7 @@ end
 
 
 -- (28) : Declaration de variable locale avec ou sans init 
-INST -> #talais TYPE ident #ajoutTDS AFFX pv #genCode;
+INST -> #talais TYPE ident #attributs AFFX pv #genCode;
 
 -- Passage de la table des alias.
 #talias {
@@ -1035,65 +1035,77 @@ do
 end
 }
 
--- Vérifiation que l'identifiant n'est pas déjà use localement.
--- Ajout à la Tvar.
-#ajoutTDS {
+-- Passage des attributs hérités de AFFX. 
+#attributs {
 local
-  info : SymbolInfo;
-	tv : VariableTable;
-	t : Type;
 do
-  info := INST^tvar.lookup(ident^txt, true);
-  -- Si ident est une clef dans la TDSvar, erreur.
-  if info != null then
-     error(IDENT_TAKEN, ident^txt);
-  else
-    info := INST^tfun.lookup(ident^txt, false);
-    -- De même si identc est déjà utilisé dans la TDSfun.
-    if (info != null) then
-      error(IDENT_TAKEN, ident^txt);
-		else
-		  t := INST^talias.lookup(ident^txt);
-			-- De même pour la talias.
-			if (t != null) then 
-			  error(IDENT_TAKEN, ident^txt);
-			else
-		    -- Sinon, on ajoute cet id à la tdsvar.
-		    tv := INST^tvar;
-	   	  tv.insert(ident^txt, TYPE^type);
-        INST^tvarS := tv;
-			end
-    end
-  end 
+
 end
 }
 
 -- Génération du code
 -- On vérifie si on a TYPE ident := X; ou TYPE ident;
--- TODO : vérifier que ident n'est pas déjà use.
---        generateStoreValue ?Oo
+-- Dans le cas où l'affectation existe, on vérifie la compatibilité des types.
 #genCode {
 local
+  nom : String;
   code : String;
-  reg : Register;
-	varinf : VariableInfo;
+	info : SymbolInfo;
+	t : Type;
+	tv : VariableTable;
 do
-  -- On a une déclaration : on alloue dans la mémoire.
-  code := INST^machine.generateAllocateInStack(TYPE^type);
+  nom := ident^txt;
+  tv := INST^tvar;
+  info := INST^tvar.lookup(nom, true);
+  -- Si ident est une clef dans la TDSvar, erreur.
+  if info != null then
+     error(IDENT_TAKEN, nom);
+  else
+    info := INST^tfun.lookup(nom, false);
+    -- De même si identc est déjà utilisé dans la TDSfun.
+    if (info != null) then
+      error(ALREADY_A_FUNCTION_IDENT, nom);
+		else
+		  t := INST^talias.lookup(nom);
+			-- De même pour la talias.
+			if (t != null) then 
+			  error(ALREADY_AN_ALIAS, nom);
+			else
+		    -- Sinon, on ajoute cet id à la tdsvar.
+	   	  tv.insert(nom, TYPE^type);
+				code := INST^machine.generateAllocateInStack(TYPE^type);
+			end
+    end
+  end 
 	if !(AFFX^estVar) then
-		-- On a une affectation.
-		varinf := INST^tvar.lookup(ident^txt, false);		 -- Oo
-    code := INST^machine.generateStoreValue(varinf,reg);
-  end
-	INST^code := code;
-
+    -- On a une affectation.	
+		-- Verification de types.
+		if (AFFX^type != TYPE^type) then
+		  error(TYPE_NOT_EQUAL);
+		else
+		  -- On génère le code pour stocker la valeur du registre 
+		  -- de AFFX dans la variable qu'on vient de déclarer.
+      code := code + INST^machine.generateStoreVariable(tv.lookup(ident^txt), AFFX^reg);
+    end
+	end
+  INST^code := code;
+	INST^tvarS := tv;
 end
 }
 
--- TODO : Vérifier qu'il y a bien rien a faire ici (GC se fait dans E, TDS descend, ...)
--- (29) : Instruction expression (affectation et appel de procedure)
-INST -> E pv ;
 
+-- (29) : Instruction expression (affectation et appel de procedure)
+INST -> E pv #passCode ;
+
+#passCode {
+local
+do
+  -- Une expression ne modifie pas la tvar.
+  INST^tvarS := INST^tvar;
+	-- Remonéte du code.
+	INST^code := E^code;
+end
+}
 
 
 -- (30) : Bloc d'instructions
@@ -1126,6 +1138,7 @@ end
 }
 
 -- Passage du code de BLOC à INST.
+-- Les instructions de fin de bloc (flush etc) sont générés dans la RP de BLOC.
 #passCode {
 local
 do
@@ -1165,6 +1178,8 @@ local
 do
   SIX^tvar := INST^tvar;
   SIX^tfun := INST^tfun;
+	SIX^talias := INST^talias;
+	SIX^machine := INST^machine;
 end
 }
 
@@ -1179,16 +1194,19 @@ end
 -- Génération du code pour une conditionnelle.
 #genCode {
 local
+  code : String;
 do
+  code := E^code;
 	-- On vérifie que le type dans la conditionnelle est bien un entier (en l'absence de booléens)
 	match E^type
 	with IntegerType then
 		-- Si c'est le cas, on génère le code
- 		INST^code := INST^machine.generateIfThenElse(E^reg,BLOC^code,SIX^code);
+ 		code := code + INST^machine.generateIfThenElse(E^reg,BLOC^code,SIX^code);
 	else
 		-- Sinon, on renvoie une erreur
-    error(TYPE_NOT_EQUAL,E^type,IntegerType);
+    error(TYPE_NOT_EQUAL);
 	end
+	INST^code := code ;
 end
 }
 
