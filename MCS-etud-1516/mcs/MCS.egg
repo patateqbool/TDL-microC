@@ -498,7 +498,7 @@ end
 
 
 -- (10)
-PARFS -> #increC PARF #TODOpassTvar #ajoutType PARFSX #majTvarSynt #transFI ;
+PARFS -> #incrC PARF #passTvar #ajoutType PARFSX #majTvarSynt #transFI ;
 -- (Normalement le passage des TDS de PARFS à PARF puis de PARF à PARFSX se fait automatiquement).
 
 -- Incrementation du compteur de parametres, et passage de l'attribut.
@@ -511,6 +511,15 @@ do
   PARFSX^cParam := c;
 end
 }
+
+-- Passage de tvarS en tvar de PARFSX.
+#transTvar {
+local
+do
+  PARFSX^tvar := PARFS^tvarS;
+end
+}
+
 
 -- Création de lTypes de PARFS à partir de la liste des types de PARFSX et du type de PARF.
 #ajoutType {
@@ -941,7 +950,7 @@ do
 end
 }
 
--- TODO : Passage tvar.
+-- TODO : Vérifier qu'il y a bien rien a faire ici (GC se fait dans E, TDS descend, ...)
 -- (29) : Instruction expression (affectation et appel de procedure)
 INST -> E pv ;
 
@@ -1129,6 +1138,7 @@ end
 -----------------------------------------------------------------------
 
 -- (35)
+-- TODO : GC
 E -> #needVi A #affPossible AFFX #estVarEtVi ;
 
 -- TODO
