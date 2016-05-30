@@ -14,7 +14,7 @@
 package mcs.symtab;
 
 import java.util.Map;
-import java.util.HashMap;
+import mcs.util.OrderedMap;
 
 class ClassType extends Type {
   enum AccessSpecifier {
@@ -28,6 +28,7 @@ class ClassType extends Type {
   private ClassType parent;
   private Map<String,MethodInfo> methodTable;
   private Map<String,AttributeInfo> attributeTable;
+  private Map<String,Integer> daughters;
  
   // public ClassType(String name, List<ClassType> parents) {
   /**
@@ -47,39 +48,46 @@ class ClassType extends Type {
     ClassType.nextID++;
 
     // Internal stuff
-    this.methodTable = new HashMap<String,MethodInfo>();
-    this.attributeTable = new HashMap<String,AttributeInfo>();
+    this.methodTable = new OrderedMap<String,MethodInfo>();
+    this.attributeTable = new OrderedMap<String,AttributeInfo>();
 
-		if (parent != null) {
-			////////// Inheritance thingy //////////
-			// Attributes
-			for (String attr : parent.attributeTable.symbols()) {
-				AttributeInfo ai = (AttributeInfo)(parent.attributeTable.lookup(attr, true));
+    if (parent != null) {
+      // Add this daughter to the parent
+      this.parent.appendDaughter(name, this.id);
 
-				if (ai.accessSpecifier() != AccessSpecifier.APrivate) {
-					AccessSpecifier newSpec = AccessSpecifier.APublic;
+      // For each attribute, we add it to the class depending on its reach
+      for (String attr : this.parent.attributeTable.keySet()) {
+        AttributeInfo ai = this.parent.attributeTable.get(attr);
 
-					if (ai.accessSpecifier() == AccessSpecifier.AProtected)
-						newSpec = AccessSpecifier.APrivate;
+        if (ai.accessSpecifier() != AccessSpecifier.APrivate) // Private attributes does not appear
+          this.addAttribute(attr, ai);
+      }
 
-					this.addAttribute(attr, newSpec, ai);
-				}
-			}
+      // Virtualize each methods
+      for (String meth : this.parent.methodTable.keySet()) {
+        MethodInfo mi = this.parent.methodTable.get(meth);
 
-			// Methods
-			for (String attr : parent.methodTable.symbols()) {
-				MethodInfo mi = (MethodInfo)(parent.methodTable.lookup(attr, true));
+        if (mi.accessSpecifier() != AccessSpecifier.APrivate) {
+          // If we have A -> B, we basically want C(:A) -> B
+          mi.vtable().set(this.id, mi.vtable().get(this.parent.id));
+          this.addMethod(name, mi);
+        }
+      }
+    }
+  }
 
-				if (mi.accessSpecifier() != AccessSpecifier.APrivate) {
-					AccessSpecifier newSpec = AccessSpecifier.APublic;
+  /**
+   * Append an id to the daughters.
+   * This method is called only by daughters classes
+   * @param cclass name of the class
+   * @param id id of the class
+   */
+  private void appendDaughter(String name, int id) {
+    this.daughters.put(name, id);
 
-					if (mi.accessSpecifier() == AccessSpecifier.AProtected)
-						newSpec = AccessSpecifier.APrivate;
-
-					this.addMethod(attr, newSpec, mi);
-				}
-			}
-		}
+    // Propagation
+    if (this.parent != null)
+      this.parent.appendDaughter(name, id);
   }
 
   /**
@@ -91,13 +99,18 @@ class ClassType extends Type {
    * @param mi the method info
    */
   public void addMethod(String name, MethodInfo mi) {
-		if (this.methodTable.exists(name, mi)) {
+		if (this.methodTable.get(name).equals(mi)) {
 			// Inserting a method that already exists is fine, it
       // is called overriding !
-      this.methodTable.remove(name);
-		}
-		
-    this.methodTable.put(name, mi);
+      // This causes a change in the vtable
+      this.methodTable.get(name).vtable().set(this.id, this.id);
+		} else {
+      // This method does not exists; we must create a vtable for it
+      VirtualTable vt = new VirtualTable();
+      vt.set(this.id, this.id);
+      mi.assignVtable(vt);
+		  this.methodTable.put(name, mi);
+    }
   }
 
 	/**
@@ -106,7 +119,7 @@ class ClassType extends Type {
 	 * @param fi the function info
 	 */
 	public void addMethod(String name, AccessSpecifier as, FunctionInfo fi) {
-		this.methodTable.insert(
+		this.addMethod(
 				name,
 				new MethodInfo(as, this, fi)
 		);
@@ -118,7 +131,7 @@ class ClassType extends Type {
 	 * @param ai the attribute info
 	 */
 	public void addAttribute(String name, AttributeInfo ai) {
-		this.attributeTable.insert(name, ai);
+		this.attributeTable.put(name, ai);
 	}
 
 	/**
@@ -128,7 +141,7 @@ class ClassType extends Type {
 	 * @param vi variable info
 	 */
 	public void addAttribute(String name, AccessSpecifier as, VariableInfo vi) {
-		this.attributeTable.insert(
+		this.addAttribute(
 				name,
 				new AttributeInfo(as, this, vi)
 		);
