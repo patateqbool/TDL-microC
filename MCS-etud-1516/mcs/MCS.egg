@@ -295,7 +295,15 @@ end
 ---------------------------------------------------------
 
 -- (5)
-ENTITE -> TYPE ident #idLibre DECL #majTDS #passCode; 
+ENTITE -> #talias TYPE ident #idLibre DECL #majTDS #passCode; 
+
+-- Passage de la table des alias.
+#talias {
+local
+do
+  TYPE^talias := ENTITE^talias;
+end
+}
 
 -- Vérification que ident n'est pas déjà utilisé dans une TDS.
 -- On n'ajoute pas encore la variable / fonction à la table car on ne sait pas encore la nature.
@@ -321,14 +329,15 @@ do
 			t := ENTITE^talias.lookup(ident^txt, true);
 			if (t!= null) then
 			  error(IDENT_TAKEN, ident^txt);
-			else
-        DECL^typeH := TYPE^type;
-        DECL^nom := ident^txt;
-        DECL^tvar := ENTITE^tvar;
-        DECL^tfun := ENTITE^tfun;
       end
 		end
   end  
+  DECL^typeH := TYPE^type;
+  DECL^nom := ident^txt;
+  DECL^tvar := ENTITE^tvar;
+  DECL^tfun := ENTITE^tfun;
+	DECL^talias := ENTITE^talias;
+	DECL^machine := ENTITE^machine;
 end
 }
 
@@ -591,7 +600,16 @@ end
 
 
 -- (13)
-PARF ->  TYPE #ajouts ident ;
+PARF -> #talias TYPE #ajouts ident ;
+
+-- Passage de la table des alias.
+#talias {
+local
+do
+  TYPE^talias := PARF^talias;
+end
+}
+
 
 -- Ajout de ident à la TDS locale.
 -- Vérifications concernant ident.
@@ -800,7 +818,15 @@ end
 
 
 -- (24) 
-CHAMP -> TYPE #pass ident pv;
+CHAMP -> #talias TYPE #pass ident pv;
+
+-- Passage de la table des alias.
+#talias {
+local
+do
+  TYPE^talias := CHAMP^talias;
+end
+}
 
 -- Passage des attributs qui serviront à créer le champ.
 #pass {
@@ -888,7 +914,15 @@ end
 
 
 -- (28) : Declaration de variable locale avec ou sans init 
-INST ->  TYPE ident #ajoutTDS AFFX pv #genCode;
+INST -> #talais TYPE ident #ajoutTDS AFFX pv #genCode;
+
+-- Passage de la table des alias.
+#talias {
+local
+do
+  TYPE^talias := ENTITE^talias;
+end
+}
 
 -- Vérifiation que l'identifiant n'est pas déjà use localement.
 -- Ajout à la Tvar.
@@ -1252,7 +1286,7 @@ end
 
 
 -- (40)
-AX -> #oprel #estVarEtVi ;
+AX -> #oprel #estVarEtVi #code;
 
 -- L'oprel de AX est null dans ce cas.
 -- Il faut tout de même l'initialiser comme il s'agit d'un attribut synthétisé.
@@ -1270,6 +1304,15 @@ do
   AX^estVar := true;
 end
 }
+
+-- Il faut init code.
+#code {
+local
+do
+  AX^code =: "";
+end
+}
+
 
 -- (41) Operateurs relationnels
 OPREL -> #opr inf ;
@@ -1342,11 +1385,17 @@ R -> T RX #oper #estVarEtVi ;
 
 #oper {
 local
+  code : String;
+	reg : Register;
 do
+  -- Init du registre dans lequel sera stocké le résultat de l'opération.
+  reg := new Register();
+  code := T^code + RX^code;
   if (RX^op != NOP) then
-	  R^code := T^code + RX^code + RX^machine.generateOperation(RX^op,T^reg,RX^reg,R^reg);
+	  code := code + RX^machine.generateOperation(RX^op,T^reg,RX^reg,reg);
 	end
-
+	R^reg := reg;
+	R^code := code;
 end
 }
 
@@ -1464,13 +1513,16 @@ T -> F TX #oper #estVarEtVi ;
 -- 
 #oper {
 local
+  code : String;
+	reg : Register;
 do
+  reg := new Register();
+  code := F^code + TX^code;
   if (TX^op != NOP) then
-	  T^code := F^code + TX^code + TX^machine.generateOperation(TX^op,F^reg,TX^reg,T^reg);
-	else 
-	  T^code := F^code + TX^code;
+	  code := code + TX^machine.generateOperation(TX^op,F^reg,TX^reg,reg);
 	end
-
+	T^reg := reg;
+	T^code := code;
 end
 }
 
@@ -1491,18 +1543,22 @@ end
 }
 
 
--- (54) TODO to myself.
+-- (54)
 TX -> OPMUL F TX #actuOp #estVar;
 
 #actuOp {
 local
+  code : String;
+	reg : Register;
 do
+  reg := new Register();
+	code := F^code + TX1^code;
   if (TX1^op != NOP) then
-	  TX^code := TX1^code + F^code + TX1^machine.generateOperation(TX1^op,F^reg,TX1^reg,TX^reg);
-	else 
-	  TX^code := TX1^code + F^code;
+	  code := code + TX1^machine.generateOperation(TX1^op,F^reg,TX1^reg,TX^reg);
 	end
-	TX^op = OPMUL^op;
+	TX^op := OPMUL^op;
+	TX^reg := reg;
+	TX^code := code;
 end
 }
 
@@ -1594,7 +1650,7 @@ local
 do
   -- Creation du type et du registre.
   t := new IntegerType();
-  r := new Registre();
+  r := new Register();
 	-- Récup de l'entier et conversion au bon format.
 	n := Integer.parseInt(entier^txt);
 	-- Set de l'attribut type.
@@ -1638,7 +1694,7 @@ do
 	-- Initialisation du type, en précisant la taille.
 	t := new StringType(l);
   -- Création du registre.
-	r := new Registre();
+	r := new Register();
 	-- Génération du code et set des attributs de F.
 	F^code := F^machine.generateLoadConstant(ConstantInfo.fromString(s), r);
 	F^reg =: r;
@@ -1698,8 +1754,13 @@ F ->  OPUN  F  #genCode #estVarEtVi;
 -- Génération du code pour la déclaration de la variable.
 #genCode {
 local
+  reg : Register();
+  code : String;
 do
-	F^code:= F1^code + F^machine.generateOperation(OPUN^op,F1^reg,F^reg);
+  reg := new Register();
+	code:= F1^code + F^machine.generateOperation(OPUN^op,F1^reg,reg);
+  F^code := code;
+	F^reg := reg;
 end
 }
 
@@ -1782,7 +1843,15 @@ end
 
 
 -- (69) : Cast
-F ->  paro TYPE parf #cast F #estVarEtVi;
+F ->  paro #talias TYPE parf #cast F #estVarEtVi;
+
+-- Passage de la table des alias.
+#talias {
+local
+do
+  TYPE^talias := ENTITE^talias;
+end
+}
 
 -- (int)a ne représente pas une variable : 
 -- le cast empeche une expression d'etre une variable.
@@ -1915,7 +1984,7 @@ do
     -- On a un appel de fonction, peut être suivi d'accés à des champs de struct.
 	  -- regRetourFun est le registre contenant le résultat de l'appel de fonction,
 		-- il se trouve dans le FunctionInfo \o/.
-    code := F^machine.generateMakeAddress(funInfo., listeDepl, reg);
+    code := F^machine.generateMakeAddress(funInfo.register(), listeDepl, reg);
 	else 
 	  -- On n'a pas d'appel de fonction. 
 		if (listeDepl.size() > 1) then
