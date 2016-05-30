@@ -186,6 +186,7 @@ do
   ENTITES^tvar := new VariableTable();
   ENTITES^tfun := new FunctionTable();
   ENTITES^talias := new AliasTable();
+	ENTITES^machine := PROGRAMME^machine;
 end
 }
 -- Ecrit le code dans un fichier
@@ -214,7 +215,7 @@ ENTITES -> #passAH ENTITE #transmissionTDS ENTITES #passCode ;
 #passAH {
 local
 do
-  ENTITE^machine := ENTITE^machine;
+  ENTITE^machine := ENTITES^machine;
 	ENTITE^tvar : =ENTITE^tvar;
 	ENTITE^tfun := ENTITE^tfun;
 	ENTITE^talias := ENTITE^talias;
@@ -397,6 +398,10 @@ local
 do
   FONCTION^nom := DECL^nom;
   FONCTION^typeH := DECL^typeH;
+	FONCTION^tvar := DECL^tvar;
+	FONCTION^talias := DECL^talias;
+	FONCTION^tfun := DECL^tfun;
+	FONCTION^machine := DECL^machine;
 end
 }
 
@@ -421,22 +426,21 @@ end
 
 
 -- (8)
-FONCTION -> #creationTDSfille #creationFunctionInfo #initC paro PARFS parf #ajoutEtPassFI #creationTDSPetiteFille BLOC #declFonction ;
+FONCTION -> #attH paro PARFS parf #ajoutEtPassFI #creationTDSPetiteFille BLOC #declFonction ;
 
--- On crée la TDSvar fille pour la passer à PARFS.
-#creationTDSfille {
+-- Init des attributs hérités pour PARFS.
+#attH {
 local
 do
+  -- On crée la TDSvar fille pour la passer à PARFS.
   PARFS^tvar := new VariableTable(FONCTION^tvar);
   PARFS^tfun := FONCTION^tfun;
-end
-}
-
--- Creation de la FunctionInfo avec le type retour.
-#creationFunctionInfo {
-local
-do
+	PARFS^talias := FONCTION^talias;
+	-- Creation de la FunctionInfo avec le type retour.
   PARFS^funInfoH := new FunctionInfo(FONCTION^typeH);
+  -- Initialisation du compteur de parametres.
+  PARFS^cParam := 0;
+  PARFS^machine := FONCTION^machine;
 end
 }
 
@@ -459,10 +463,10 @@ do
   tf := PARFS^tfun;
   fi := PARFS^funInfo;
   tf.insert(FONCTION^nom, fi);
--- Passage de tfun à FONCTION et à BLOC.
+  -- Passage de tfun à FONCTION et à BLOC.
   FONCTION^tfunS := tf;
   BLOC^tfun := tf;
--- Passage de funInfo à BLOC.
+  -- Passage de funInfo à BLOC.
   BLOC^funInfoH := fi;
 end
 }
@@ -472,6 +476,8 @@ end
 local
 do
   BLOC^tvar := new VariableTable(PARFS^tvarS);
+	BLOC^talias := FONCTION^talias;
+	BLOC^machine := FONCTION^machine;
 end
 }
 
@@ -488,49 +494,54 @@ end
 -------------------------------------------
 
 -- (9)
-PARFS ->  #passageFunInfo #transTvar ;
+PARFS -> #pass ;
 
-#passageFunInfo {
+#pass {
 local
 do
+  -- fin de la liste des parmètres, on transmet le fi 'final'.
   PARFS^funInfo := PARFS^funInfoH ;
-end
-}
-
--- Passage de tvar, de manière à ce que l'attribut tvarS de PARFS soit initialisé.
-#transTvar {
-local
-do
+	-- Passage de tvar, qui contient les paramètres de la fonction.
   PARFS^tvarS := PARFS^tvar;
 end
 }
 
 
 -- (10)
-PARFS -> #incrC PARF #passTvar #ajoutType PARFSX #majTvarSynt #transFI ;
+PARFS -> #pass PARF #passTvar #ajoutType PARFSX #majTvarSynt #transFI ;
 -- (Normalement le passage des TDS de PARFS à PARF puis de PARF à PARFSX se fait automatiquement).
 
--- Incrementation du compteur de parametres, et passage de l'attribut.
-#incrC {
+-- Passage des params inh de PARF.
+#pass {
 local
   c : int;
 do
+  -- Incrementation du compteur de parametres.
   c := PARFS^cParam + 1;
   PARF^cParam := c;
-  PARFSX^cParam := c;
+	-- Passage des tds.
+  PARF^tvar := PARFS^tvar;
+  PARF^tfun := PARFS^tfun;
+  PARF^talias := PARFS^talias;
+	PARF^machine := PARFS^machine;
+  -- Passage de c à PARFSX aussi.
+	PARFSX^cParam := c;
+	PARFSX^machine := PARFS^machine;
 end
 }
 
--- Passage de tvarS en tvar de PARFSX.
+-- Passage des tds à PARFSX.
 #transTvar {
 local
 do
-  PARFSX^tvar := PARFS^tvarS;
+  PARFSX^tvar := PARF^tvarS;
+	PARFSX^tfun := PARFS^tfun;
+	PARFSX^talias := PARFS^talias;
 end
 }
 
 
--- Création de lTypes de PARFS à partir de la liste des types de PARFSX et du type de PARF.
+-- On ajoute le type de PARF à la fi et on transmet à PARFSX.
 #ajoutType {
 local
   fi : functionInfo ; 
@@ -542,12 +553,13 @@ do
 end
 }
 
--- On crée une TDSvar synthétisée à partir de la liste des paramètres qu'on passe à PARFS.
--- Ce sera la TDS du corps de la fonction.
+-- On fait remonter la tvar contenant les params de la fonction.
+-- Ainsi que le fi final.
 #majTvarSynt {
 local
 do
   PARFS^tvarS := PARFSX^tvarS;
+  PARFS^funInfo := PARFSX^funInfo;
 end
 }
 
@@ -555,7 +567,7 @@ end
 #transFI {
 local
 do
-  PARFS^funInfo := PARFSX^funInfo ;
+  
 end
 }
 
@@ -573,21 +585,29 @@ end
 
  
 -- (12)
-PARFSX -> #incrC virg PARF #majFI PARFSX #transFI ;
+PARFSX -> #pass virg PARF #majFI PARFSX #transFI ;
 
--- Incrementation du compteur de parametres, et passage de l'attribut.
-#incrC {
+-- Passages des attributs.
+#pass {
 local
   c : int;
 do
+  -- Incrementation du compteur de parametres.
   c := PARFSX^cParam + 1;
   PARF^cParam := c;
+	-- Passage des tds.
+  PARF^tvar := PARFSX^tvar;
+  PARF^tfun := PARFSX^tfun;
+  PARF^talias := PARFSX^talias;
+	PARF^machine := PARFSX^machine;
+  -- On passe aussi c à PARFSX1.
   PARFSX1^cParam := c;
+	PARFSX1^machine := PARFSX^machine;
 end
 }
 
 -- Ajout du paramètre de PARF au functionInfo et passage à PARFSX1.
--- Passage de la tvar locale.
+-- Passage des tds.
 #majFI {
 local
   fi : functionInfo;
@@ -596,6 +616,8 @@ do
   fi.add(PARF^type);
   PARFSX1^funInfoH := fi;
 	PARFSX1^tvar := PARF^tvarS;
+	PARFSX1^tfun := PARFSX^tfun;
+	PARFSX1^talias := PARFSX^talias;
 end
 }
 
@@ -616,7 +638,7 @@ PARF -> #talias TYPE #ajouts ident ;
 local
 do
   TYPE^talias := PARF^talias;
-end
+enXd
 }
 
 
@@ -661,7 +683,15 @@ end
 ----------------------------------------------------------------
 
 -- (14)
-TYPE -> STYPE #passage PTRS #recupType;
+TYPE -> #talias STYPE #passage PTRS #recupType;
+
+-- Passage talias.
+#talias {
+local
+do
+  STYPE^talias := TYPE^talias;
+end
+}
 
 -- Passage du type de STYPE à PTRS pour qu'il "pointeurise" la chose.
 #passage {
@@ -744,7 +774,7 @@ do
 end
 }
 
--- Nom de type (commence par une majuscule) (20)
+-- (20) : Nom de type (commence par une majuscule) 
 STYPE -> identc #testType;
 
 #testType {
@@ -755,9 +785,8 @@ do
   -- Si identc n'est pas une clef dans la TDSvar, erreur.
   if typeRech = null then
      error(IDENT_UNDEFINED, identc^txt);
-  else
-     STYPE^type :=  typeRech;
   end
+  STYPE^type :=  typeRech;
 end
 }
 
@@ -767,7 +796,7 @@ end
 ------------------------
 
 -- (21)
-STYPE -> struct aco #ch CHAMPS acf  #type ;
+STYPE -> struct aco #ch CHAMPS acf #type ;
 
 -- Création de la liste de champs qui servira à construire le type.
 #ch {
@@ -799,7 +828,16 @@ end
 
 
 -- Un nom de champ commence par une minuscule (23)
-CHAMPS -> CHAMP #ch CHAMPS #passChamps ;
+CHAMPS -> #talias CHAMP #ch CHAMPS #passChamps ;
+
+-- Passage talias.
+#talias {
+local
+do
+  CHAMP^talias := CHAMPS^talias;
+end
+}
+
 #ch {
 local
   c : StructFields
@@ -852,7 +890,7 @@ end
 ----------------------------------------------------------------
 
 -- (25)
-BLOC ->  aco #passage INSTS acf  #flushPassCode ;
+BLOC ->  aco #passage INSTS acf #flushPassCode ;
 
 -- Probablement inutile, mais passage des TDS de BLOC à INSTS.
 -- Ainsi que la FunctionInfo de la fonction.
@@ -1046,8 +1084,9 @@ local
 do
   tfille := new VariableTable(INST^tvar);
   BLOC^tvar := tfille;
-  -- Useless?
   BLOC^tfun := INST^tfun;
+	BLOC^talias := INST^talias;
+	BLOC^machine := INST^machine;
 end
 }
 
@@ -1089,24 +1128,18 @@ end
 -- (32)
 SIX -> sinon #passFI #tdsFille BLOC #passCode;
 
--- Passage de FunctionInfo
-#passFI {
-local
-do
-  BLOC^funInfoH := SIX^funInfoH;
-end
-}
-
 -- Création d'une tvar fille héritant de celle de INST pour BLOC.
 -- Passage du type retour de la fonction.
 #tdsFille {
 local
   tfille : VariableTable;
 do
+  BLOC^funInfoH := SIX^funInfoH;
   tfille := new VariableTable(SIX^tvar);
   BLOC^tvar := tfille;
-  -- Useless?
   BLOC^tfun := SIX^tfun;
+	BLOC^talias := SIX^talias;
+	BLOC^machine := SIX^machine;
 end
 }
 
@@ -1257,12 +1290,15 @@ A -> R AX #oper #estVarEtVi ;
 
 #oper {
 local
+  reg : Register;
+	code : String;
 do
-  if AX^estVar then
-	  A^code := R^code;	
-	else 
-		A^code := R^code +AX^code + A^machine.generateOperation(AX^op,R^reg,AX^reg,A^reg);
+  reg := new Register();
+	code := R^code +AX^code;
+	if !(AX^estVar) then
+		code := code + A^machine.generateOperation(AX^op,R^reg,AX^reg,reg);
 	end
+	A^reg := reg;
 end
 }
 
