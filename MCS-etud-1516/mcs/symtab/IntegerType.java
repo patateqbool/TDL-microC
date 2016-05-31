@@ -6,7 +6,7 @@
  */
 package mcs.symtab;
 
-public class IntegerType extends Type {
+public class IntegerType extends SimpleType {
 	/**
 	 * Constructor
 	 */

@@ -13,7 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
 
-public class StructType extends Type {
+public class StructType extends CompositeType {
 
 	// Attributes
 	private StructFields fields;

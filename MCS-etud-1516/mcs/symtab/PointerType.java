@@ -6,7 +6,7 @@
  */
 package mcs.symtab;
 
-public class PointerType extends Type {
+public class PointerType extends SimpleType {
 
 	// Attributes
 	private Type type;

@@ -6,10 +6,9 @@
  */
 package mcs.symtab;
 
-public class ArrayType extends Type {
+public class ArrayType extends CompositeType {
 
 	// Attributes
-        private int size;
 	private Type type;
 
 	/**
