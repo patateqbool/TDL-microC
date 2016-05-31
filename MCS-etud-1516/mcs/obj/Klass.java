@@ -19,7 +19,7 @@ import java.util.Map;
 import mcs.util.OrderedMap;
 import mcs.symtab.*;
 
-class Klass extends CompositeType {
+public class Klass extends CompositeType {
   enum AccessSpecifier {
     APublic, APrivate, AProtected, AHidden
   };
@@ -114,6 +114,10 @@ class Klass extends CompositeType {
 		return false;
 	}
 
+  public boolean attributeExists(String name) {
+    return (this.attributeTable.get(name) != null);
+  }
+
   /**
    * Append a method to the class's function table
 	 * @param name name of the symbol
@@ -176,7 +180,7 @@ class Klass extends CompositeType {
 		 *
 		 * Solution : rearranging the attribute of A in PUBLIC, then PRIVATE.
 		 */
-		addAttribute(name, new AttributeInfo(as, t, currentDisp, this));
+		addAttribute(name, new AttributeInfo(as, t, this.currentDisp, this));
 	}
 
 	public MethodInfo lookupMethod(String name, List<Type> params) {
@@ -205,6 +209,14 @@ class Klass extends CompositeType {
 	public String name() {
 		return this.name();
 	}
+
+  public List<Type> attributeTypes() {
+    List<Type> res = new ArrayList<Type>();
+    for (AttributeInfo ai : this.attributeTable.values()) {
+      res.add(ai.type());
+    }
+    return res;
+  }
 
 
 	/**

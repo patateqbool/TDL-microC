@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.ListIterator;
 import mcs.symtab.*;
 import mcs.compiler.*;
+import mcs.obj.*;
 
 public class ARMEngine extends AbstractMachine {
 	/**
@@ -208,6 +209,7 @@ public class ARMEngine extends AbstractMachine {
       // TODO
     } else if (t instanceof ArrayType) {
       // TODO
+    } else if (t instanceof Klass) {
     }
 
     r.setStatus(Register.Status.Loaded);
@@ -281,6 +283,7 @@ public class ARMEngine extends AbstractMachine {
       // Shouldn't be called like that
     } else if (t instanceof ArrayType) {
       // Shouldn't be called like that
+    } else if (t instanceof Klass) {
     }
 
     rin.setStatus(Register.Status.Used);
@@ -415,7 +418,13 @@ public class ARMEngine extends AbstractMachine {
 			for (Type t : ts.fieldsTypes()) {
 				code += generateAllocate(t, r, null);
 			}
-		} else if (type instanceof ArrayType) {
+		} else if (type instanceof Klass) {
+      Klass k = (Klass)type;
+      Register r = new Register();
+      for (Type t : k.attributeTypes()) {
+        code += generateAllocate(t, r, null);
+      }
+    } else if (type instanceof ArrayType) {
 			ArrayType t = (ArrayType)type;
 			Register rs = getNextUnusedRegister();
 			code +=
@@ -447,15 +456,15 @@ public class ARMEngine extends AbstractMachine {
 		Register reg = getNextUnusedRegister();
 		String code = ARMEngine.Prefix;
 
-		if (type instanceof StructType) {
+		/*if (type instanceof StructType) {
 			StructType ts = (StructType)type;
 			for (Type tsf : ts.fieldsTypes()) {
 				generateFlushVariable(tsf);
 			}
-		} else {
+		} else {*/
 			code += "POP\t" + reg + "\n";
 			heapbase++;
-		}
+		/*}*/
 
 		return code;
 	}
