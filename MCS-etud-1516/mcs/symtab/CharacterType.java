@@ -6,7 +6,7 @@
  */
 package mcs.symtab;
 
-public class CharacterType extends Type {
+public class CharacterType extends SimpleType {
 	/**
 	 * Constructor
 	 */

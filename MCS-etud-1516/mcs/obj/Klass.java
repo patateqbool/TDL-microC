@@ -13,21 +13,24 @@
  */
 package mcs.obj;
 
+import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
 import mcs.util.OrderedMap;
 import mcs.symtab.*;
 
-class Klass extends Type {
+class Klass extends CompositeType {
   enum AccessSpecifier {
-    APublic, APrivate, AProtected
+    APublic, APrivate, AProtected, AHidden
   };
 
   private static int nextID = 0;
 
+	private int currentDisp = 4;
   private String name;
   private int id;
   private Klass parent;
-  private Map<String,MethodInfo> methodTable;
+  private List<MethodInfo> methodTable;
   private Map<String,AttributeInfo> attributeTable;
   private Map<String,Integer> daughters;
  
@@ -41,6 +44,7 @@ class Klass extends Type {
    */
   public Klass(String name, Klass parent) {
     super(4);
+
     this.name = name;
     this.parent = parent;
 
@@ -49,7 +53,7 @@ class Klass extends Type {
     Klass.nextID++;
 
     // Internal stuff
-    this.methodTable = new OrderedMap<String,MethodInfo>();
+    this.methodTable = new ArrayList<MethodInfo>();
     this.attributeTable = new OrderedMap<String,AttributeInfo>();
 
     if (parent != null) {
@@ -62,12 +66,12 @@ class Klass extends Type {
 
         if (ai.accessSpecifier() != AccessSpecifier.APrivate) // Private attributes does not appear
           this.addAttribute(attr, ai);
+				else
+					this.addAttribute(attr, new AttributeInfo(AccessSpecifier.AHidden, this, ai));
       }
 
       // Virtualize each methods
-      for (String meth : this.parent.methodTable.keySet()) {
-        MethodInfo mi = this.parent.methodTable.get(meth);
-
+      for (MethodInfo mi : this.parent.methodTable) {
         if (mi.accessSpecifier() != AccessSpecifier.APrivate) {
           // If we have A -> B, we basically want C(:A) -> B
           mi.vtable().set(this.id, mi.vtable().get(this.parent.id));
@@ -94,23 +98,40 @@ class Klass extends Type {
   /**
    * Proxy methods
    */
+	public boolean methodExists(MethodInfo meth) {
+		for (MethodInfo mi : this.methodTable) {
+			if (mi.equals(meth))
+				return true;
+		}
+		return false;
+	}
+
+	public boolean methodExists(String name, MethodInfo meth) {
+		for (MethodInfo mi : this.methodTable) {
+			if (mi.similar(name, meth.parameters()))
+				return true;
+		}
+		return false;
+	}
+
   /**
    * Append a method to the class's function table
 	 * @param name name of the symbol
    * @param mi the method info
    */
   public void addMethod(String name, MethodInfo mi) {
-		if (this.methodTable.get(name).equals(mi)) {
+		if (methodExists(mi)) {
 			// Inserting a method that already exists is fine, it
       // is called overriding !
       // This causes a change in the vtable
-      this.methodTable.get(name).vtable().set(this.id, this.id);
+      lookupMethod(name, mi.parameters()).vtable().set(this.id, this.id);
 		} else {
       // This method does not exists; we must create a vtable for it
       VirtualTable vt = new VirtualTable();
       vt.set(this.id, this.id);
       mi.assignVtable(vt);
-		  this.methodTable.put(name, mi);
+			mi.setName(name);
+		  this.methodTable.add(mi);
     }
   }
 
@@ -132,7 +153,11 @@ class Klass extends Type {
 	 * @param ai the attribute info
 	 */
 	public void addAttribute(String name, AttributeInfo ai) {
-		this.attributeTable.put(name, ai);
+		if (this.attributeTable.get(name) == null) {
+			this.attributeTable.put(name, ai);
+			int ts = ai.type().size();
+			this.currentDisp = ai.displacement() + (ts + (4 - (ts % 4)));
+		}
 	}
 
 	/**
@@ -141,13 +166,30 @@ class Klass extends Type {
 	 * @param as access specifier
 	 * @param vi variable info
 	 */
-	public void addAttribute(String name, AccessSpecifier as, VariableInfo vi) {
-		this.addAttribute(
-				name,
-				new AttributeInfo(as, this, vi)
-		);
+	public void addAttribute(String name, AccessSpecifier as, Type t) {
+		/* TODO: problem of bubbles in the memory ! 
+		 * If you have a mother A class with {private int a; public int b;},
+		 * disp(a) = 4, disp(b) = 8, A.currentDisp = 12;
+		 * If you have B : A, with {private int c;}, disp(c) = 12 but
+		 * the bloc (0,4) is not used ! (because a is private in mother).
+		 * However : A.b and B.b must return the same displacement !
+		 *
+		 * Solution : rearranging the attribute of A in PUBLIC, then PRIVATE.
+		 */
+		addAttribute(name, new AttributeInfo(as, t, currentDisp, this));
 	}
 
+	public MethodInfo lookupMethod(String name, List<Type> params) {
+		for (MethodInfo mi : this.methodTable) {
+			if (mi.similar(name, params))
+				return mi;
+		}
+		return null;
+	}
+
+	public AttributeInfo lookupAttribute(String name) {
+		return this.attributeTable.get(name);
+	}
 
   /**
    * Accessors
@@ -165,6 +207,41 @@ class Klass extends Type {
 	}
 
 
+	/**
+	 * Sum all the sizes of the fields preceding the field "to"
+	 * @param to field
+	 * @return s = sum_{k=0}^{i(to)-1} size(i)
+	 * Note: the sum size is padded to prevent alignment problems.
+	 * Thus, if a field is of a size not a multiple of 4, the next field will be at a multiple of 4 anyway.
+	 * TODO: make better this system
+	 */
+	public int sumSizes(String to) {
+		int ts;
+		int size = 0;
+		for (String n : this.attributeTable.keySet()) {
+			if (n.equals(to))
+				break;
+			
+			ts = this.attributeTable.get(n).type().size();
+			if (ts % 4 == 0)
+				size += ts;
+			else
+				size += ts + (4 - (ts % 4));
+		}
+		return size;
+	}
+
+	@Override
+	public int realSize() {
+		int ts;
+		int res = 4; // Class id
+		for (AttributeInfo ai : this.attributeTable.values()) {
+			ts = ai.type().size();
+			res += (ts%4 == 0 ? ts : ts + (4 - (ts%4)));
+		}
+		return res;
+	}
+
   /**
    * Inherited abstract methods
    */
@@ -173,8 +250,27 @@ class Klass extends Type {
   }
 
   public boolean isCompatible(Type other) {
+		if (other instanceof Klass) {
+			Klass kother = (Klass)other;
+
+			if (kother.isEqualTo(this))
+				return true;
+			else if (this.parent != null)
+				return this.parent.isCompatible(kother);
+		}
+
     return false;
   }
+
+	@Override
+	public boolean isEqualTo(Type other) {
+		if (other instanceof Klass) {
+			Klass kother = (Klass)other;
+			return kother.id == this.id;
+		}
+
+		return false;
+	}
 
   public Object getDefault() {
     return null;
