@@ -1039,7 +1039,14 @@ end
 #attributs {
 local
 do
-
+  AFFX^machine := INST^machine;
+	AFFX^tvar := INST^tvar;
+	AFFX^tfun := INST^tfun;
+	AFFX^talias := INST^talias;
+	-- Une affectation est possible.
+	AFFX^affPossible := true;
+		-- Le type de cette affectationn doit être celui de TYPE.
+	AFFX^typeH := TYPE^type;
 end
 }
 
@@ -1079,14 +1086,10 @@ do
   end 
 	if !(AFFX^estVar) then
     -- On a une affectation.	
-		-- Verification de types.
-		if (AFFX^type != TYPE^type) then
-		  error(TYPE_NOT_EQUAL);
-		else
-		  -- On génère le code pour stocker la valeur du registre 
-		  -- de AFFX dans la variable qu'on vient de déclarer.
-      code := code + INST^machine.generateStoreVariable(tv.lookup(ident^txt), AFFX^reg);
-    end
+		-- Verification de types inutile, elle est faite dans AFFX.
+		-- On génère le code pour stocker la valeur du registre 
+		-- de AFFX dans la variable qu'on vient de déclarer.
+    code := code + INST^machine.generateStoreVariable(tv.lookup(ident^txt), AFFX^reg);
 	end
   INST^code := code;
 	INST^tvarS := tv;
@@ -1095,7 +1098,17 @@ end
 
 
 -- (29) : Instruction expression (affectation et appel de procedure)
-INST -> E pv #passCode ;
+INST -> #pass E pv #passCode ;
+
+#pass {
+local
+do
+  E^machine := INST^machine;
+	E^tvar := INST^tvar;
+	E^tfun := INST^tfun;
+	E^talias := INST^talias;
+end
+}
 
 #passCode {
 local
@@ -1147,7 +1160,17 @@ end
 }
 
 -- (31) : Conditionnelle
-INST -> si paro E parf #passFI #tdsFille BLOC #transTDS SIX #passAttributs #genCode;
+INST -> si paro #pass E parf #passFI #tdsFille BLOC #transTDS SIX #passAttributs #genCode;
+
+#pass {
+local
+do
+  E^machine := INST^machine;
+	E^tvar := INST^tvar;
+	E^tfun := INST^tfun;
+	E^talias := INST^talias;
+end
+}
 
 -- Passage de FunctionInfo.
 #passFI {
@@ -1252,7 +1275,17 @@ end
 
 
 -- (34) : Retour de fonction.
-INST ->  retour E pv #verifTypage #genCode ;
+INST ->  retour #pass E pv #verifTypage #genCode ;
+
+#pass {
+local
+do
+  E^machine := INST^machine;
+	E^tvar := INST^tvar;
+	E^tfun := INST^tfun;
+	E^talias := INST^talias;
+end
+}
 
 -- Vérification que E est du type retour de la fonction.
 #verifTypage {
@@ -1262,7 +1295,7 @@ do
   typeRet := INST^funInfoH.returnType();
   -- Si typeRet ne correspond pas à E^type
   -- alors erreur.
-  if not typeRet.isEqual(E^type) then
+  if not typeRet.isEqualTo(E^type) then
     error(TYPE_NOT_COMPATIBLE, typeRet.name(), E^type.name());  
   end
 end
@@ -1291,46 +1324,59 @@ end
 -----------------------------------------------------------------------
 
 -- (35)
-E -> A #affPossible AFFX #estVarEtVi #genCode;
+E -> A #pass AFFX #attSyn;
 
+-- Passage des attributs hérités de AFFX.
 -- Maj d'un attribut pour AFFX signalant si A est, ou non, une variable.
 -- Maj de l'attribut typeH de AFFX afin de tester que les types correspondent.
-#affPossible {
+#pass {
 local
 do
+  AFFX^machine := E^machine;
+	AFFX^tvar := E^tvar;
+	AFFX^tfun := E^tfun;
+	AFFX^talias := E^talias;
+  -- L'affectation est possible si A est une variable.
   AFFX^affPossible := A^estVar;
+	-- Le type de cette afectation doit être le même que A.
   AFFX^typeH := A^type;
 end
 }
 
--- Attribut estVar de E : E représente une variable si
--- AFFX est vide ce qui sera représenté par son attribut estVar
--- et si E est une variable.
--- Si l'expression représente une variable, on met la vi correspondant dans l'attribut vi.
-#estVarEtVi {
+-- Génération du code de l'affectation.
+-- Passage des attributs syn de E.
+#attSyn {
 local
+  code : String;
+	reg : Register;
+	estVar : boolean;
+	vi : VariableInfo;
 do
-  if (A^estVar) && (AFFX^estVar) then
-	  E^estVar := true ;
-		E^vi := A^vi ;
+  reg := new Register();
+  code := A^code + AFFX^code;
+  -- On n'a pas d'affectation à droite.
+  if ((A^estVar) && (AFFX^estVar)) then
+	  -- E peut dans ce cas représenter une variable.
+	  estVar := true ;
+		vi := A^vi ;
   else 
-	  E^estVar := false ;
-		E^vi := null ;
+	  -- E ne représente pas de variable.
+	  estVar := false ;
+		vi := null ;
+		-- On génère le code de l'affectation.
+		code := code + E^machine.generateStoreVariable(A^vi,reg);
 	end
+  E^type := A^type;
+	E^reg := reg;
+	E^estVar := estVar;
+	E^vi := vi;
+	E^code := code;
 end
 }
 
-#genCode {
-local
-do
-  if (A^estVar) && (not AFFX^estVar) then
-		E^machine.generateStoreVariable(A^vi,AFFX^reg);
-	end
-end
-}
 
 -- (36) : Affectation
-AFFX -> affect A #affValide #estVar ;
+AFFX -> affect A #affValide #att ;
 
 -- Vérifie que l'affectation est valide :
 --   - la partie à gauche du = doit être une variable,
@@ -1339,33 +1385,42 @@ AFFX -> affect A #affValide #estVar ;
 local
 do
   if !(AFFX^affPossible) then
-    error(LEFT_PART_NOT_VARIABLE ); --, AFFX^txt);	
+    error(LEFT_PART_NOT_VARIABLE );
   else
-    if (A^type.isCompatible(AFFX^type)) then
-     error(TYPE_NOT_COMPATIBLE); --, AFFX^typeH.name(), A^type.name());     
+	  -- Verification d'égalité des types.
+    if !(A^type.isEqualTo(AFFX^typeH)) then
+     error(TYPE_NOT_COMPATIBLE);    
 		end
 	end
 end
 }
 
 -- On met l'attribut estVar de AFFX à faux car la règle 
--- appelante ne pourra pas être une variable suit à cette RP.
-#estVar {
+-- appelante ne pourra pas être une variable suite à cette RP.
+-- Le registre et le type de AFFX sont ceux de A.
+#att {
 local
 do
   AFFX^estVar := false;
+  AFFX^reg := A^reg;
+  AFFX^type := A^type;
+	AFFX^code := A^code;
 end
 }
 
 
 -- (37)
-AFFX -> #estVar ;
+AFFX -> #att ;
 
 -- On met estVar à true car cette RP n'empeche pas la representation d'une var.
-#estVar {
+-- code est vide, reg est null, type aussi.
+#att {
 local
 do
   AFFX^estVar := true ;
+	AFFX^reg := null;
+	AFFX^type := null;
+	AFFX^code := "";
 end
 }
 
@@ -1961,7 +2016,17 @@ end
 
 -- (68) : Expression parenthesee
 -- TODO.
-F ->  paro E parf FX #estVarEtVi;
+F ->  paro #pass E parf FX #estVarEtVi;
+
+#pass {
+local
+do
+  E^machine := F^machine;
+	E^tvar := F^tvar;
+	E^tfun := F^tfun;
+	E^talias := F^talias;
+end
+}
 
 -- F est une variable si E l'est et FX ne l'empeche pas.
 -- Dans ce cas, vi de F prend celui de E. Dans le cas
@@ -2377,7 +2442,17 @@ end
 
 
 -- (77)
-ES -> E #typesEtPassListe ESX #genCode ;
+ES -> #pass E #typesEtPassListe ESX #genCode ;
+
+#pass {
+local
+do
+  E^machine := ES^machine;
+	E^tvar := ES^tvar;
+	E^tfun := ES^tfun;
+	E^talias := ES^talias;
+end
+}
 
 -- On vérifie que E est bien du type attendu pour ce paramètre.
 -- Egalité stricte entre les types, on pourrait améliorer en utilisant isEqual.
@@ -2438,7 +2513,17 @@ end
 
 
 -- (79)
-ESX -> virg E #typesEtPassListe ESX #genCode ;
+ESX -> virg #pass E #typesEtPassListe ESX #genCode ;
+
+#pass {
+local
+do
+  E^machine := ESX^machine;
+	E^tvar := ESX^tvar;
+	E^tfun := ESX^tfun;
+	E^talias := ESX^talias;
+end
+}
 
 -- On vérifie que E est bien du type attendu pour ce paramètre.
 -- Egalité stricte entre les types, on pourrait améliorer en utilisant isEqual.
