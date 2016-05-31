@@ -1324,7 +1324,17 @@ end
 -----------------------------------------------------------------------
 
 -- (35)
-E -> A #pass AFFX #attSyn;
+E -> #herit A #pass AFFX #attSyn;
+
+#herit {
+local
+do
+  A^machine := E^machine;
+	A^tvar := E^tvar;
+  A^tfun := E^tfun;
+	A^talias := E^talias;
+end
+}
 
 -- Passage des attributs hérités de AFFX.
 -- Maj d'un attribut pour AFFX signalant si A est, ou non, une variable.
@@ -1376,7 +1386,17 @@ end
 
 
 -- (36) : Affectation
-AFFX -> affect A #affValide #att ;
+AFFX -> affect #herit A #affValide #att ;
+
+#herit {
+local
+do
+  A^machine := AFFX^machine;
+	A^tvar := AFFX^tvar;
+  A^tfun := AFFX^tfun;
+	A^talias := AFFX^talias;
+end
+}
 
 -- Vérifie que l'affectation est valide :
 --   - la partie à gauche du = doit être une variable,
@@ -1426,83 +1446,123 @@ end
 
 
 -- (38) : Relation
-A -> R AX #oper #estVarEtVi ;
+A -> #attR R #attAX AX #attA ;
 
-#oper {
+#attR {
 local
-  reg : Register;
-	code : String;
 do
-  reg := new Register();
-	code := R^code +AX^code;
-	if !(AX^estVar) then
-		code := code + A^machine.generateOperation(AX^op,R^reg,AX^reg,reg);
-	end
-	A^reg := reg;
+  R^machine := A^machine;
+	R^tvar := A^tvar;
+	R^tfun := A^tfun;
+	R^talias := A^talias;
 end
 }
 
--- A représente une variable si AX ne l'empêche pas 
--- et R représente une variable, on fait alors passer
--- la vi de R à A. Sinon, vi est à null pour R.
-#estVarEtVi {
+#attAX{
 local
 do
-  if (R^estVar)&&(AX^estVar) then 
-    A^estVar := true;
-    A^vi := R^vi;
-	else
-	  A^estVar := false;
-    A^vi := null;
+  AX^machine := A^machine;
+	AX^tvar := A^tvar;
+	AX^tfun := A^tfun;
+	AX^talias := A^talias;
+end
+}
+
+-- Attributs syn pour A.
+#attA {
+local
+  reg : Register;
+	code : String;
+	vi : VariableInfo;
+	estVar : boolean;
+do
+  reg := new Register();
+	code := R^code + AX^code;
+	-- Si AX n'est pas une variable, on doit générer le code de l'opération.
+	if !(AX^estVar) then
+	  -- Le type de A doit être comparable, ie il doit s'agir d'un type simple.
+	  match A^type
+		with SimpleType then 
+		  -- Si le type est comparable :
+	    -- On vérifie que les types de R et AX sont bien compatibles.
+      if !(R^type.isCompatible(AX^type)) then 
+		    error(TYPE_NOT_EQUAL);
+		  else
+  	 		-- On génnère le code de l'opération.
+		    code := code + A^machine.generateOperation(AX^op,R^reg,AX^reg,reg);
+	    end
+		else
+		  -- Le type n'est pas simple : impossible de faire une comparaison.
+		  error(TYPE_NOT_COMPARABLE);
+		end
 	end
+	-- A représente une variable si AX ne l'empêche pas 
+  -- et R représente une variable, on fait alors passer
+  -- la vi de R à A. Sinon, vi est à null pour R.
+  if (R^estVar)&&(AX^estVar) then 
+    estVar := true;
+    vi := R^vi;
+	else
+	  estVar := false;
+    vi := null;
+	end
+	-- Le registre de A contient le résultat de l'opération.
+	A^reg := reg;
+  -- Passage des autres attributs.
+	A^type := new IntegerType();
+  A^code := code;
+  A^vi := vi;
+	A^estVar := estVar;
 end
 }
 
 
 -- (39)
-AX -> OPREL R #actuOp #estVarEtVi;
+AX -> OPREL #attR R #parSyn;
 
-#actuOp {
+-- Rien à faire passer à OPREL.
+#attR {
 local
 do
-  AX^oprel = OPREL^oprel;
+  R^machine := AX^machine;
+	R^tvar := AX^tvar;
+	R^tfun := AX^tfun;
+	R^talias := AX^talias;
 end
 }
 
--- La RP appelante ne represente pas une variable.
-#estVarEtVi {
+-- Paramètres syn de AX.
+#parSyn {
 local
 do
+  -- La RP appelante ne represente pas une variable.
   AX^estVar := false;
+	-- Les autres attributs font passer ceux de R.
+  AX^oprel = OPREL^oprel;
+	AX^reg := R^reg;
+	AX^type := R^type;
+	AX^code := R^code;
 end
 }
 
 
 -- (40)
-AX -> #oprel #estVarEtVi #code;
+AX -> #parSyn;
 
--- L'oprel de AX est null dans ce cas.
--- Il faut tout de même l'initialiser comme il s'agit d'un attribut synthétisé.
-#oprel {
+-- Paramètres syn de AX.
+#parSyn {
 local
 do
+  -- L'oprel de AX est null dans ce cas.
+  -- Il faut tout de même l'initialiser comme il s'agit d'un attribut synthétisé.
   AX^oprel := null;
-end
-}
-
--- La RP n'empeche pas d'etre une variable.
-#estVarEtVi {
-local
-do
+  -- La RP n'empeche pas d'etre une variable.
   AX^estVar := true;
-end
-}
-
--- Il faut init code.
-#code {
-local
-do
+  -- Il faut init code.
   AX^code =: "";
+	-- Registre à null, de même que type.
+	AX^reg := null;
+	AX^type := null;
 end
 }
 
@@ -1513,7 +1573,7 @@ OPREL -> #opr inf ;
 #opr {
 local
 do
-  OPREL^oprel := LT;
+  OPREL^oprel := IMachine.RelationalOperator.LT;
 end
 }
 
@@ -1524,7 +1584,7 @@ OPREL -> #opr sup ;
 #opr {
 local
 do
-  OPREL^oprel := GT;
+  OPREL^oprel := IMachine.RelationalOperator.GT;
 end
 }
 
@@ -1535,7 +1595,7 @@ OPREL -> #opr infeg ;
 #opr {
 local
 do
-  OPREL^oprel := LEQ;
+  OPREL^oprel := IMachine.RelationalOperator.LEQ;
 end
 }
 
@@ -1546,7 +1606,7 @@ OPREL -> #opr supeg ;
 #opr {
 local
 do
-  OPREL^oprel := GEQ;
+  OPREL^oprel := IMachine.RelationalOperator.GEQ;
 end
 }
 
@@ -1557,7 +1617,7 @@ OPREL -> #opr eg ;
 #opr {
 local
 do
-  OPREL^oprel := EQ;
+  OPREL^oprel := IMachine.RelationalOperator.EQ;
 end
 }
 
@@ -1568,36 +1628,54 @@ OPREL -> #opr neg ;
 #opr {
 local
 do
-  OPREL^oprel := NEQ;
+  OPREL^oprel := IMachine.RelationalOperator.NEQ;
 end
 }
 
 
 -- (47)
-R -> T RX #oper #estVarEtVi ;
+R -> T #attRX RX #attR ;
 
-#oper {
+-- Attributs inh de RX.
+#attRX {
+local
+do
+  RX^machine := R^machine;
+	RX^talias := R^talias;
+	RX^tfun := R^tfun;
+	RX^tvar := R^tvar;
+end
+}
+
+-- Attributs syn de R.
+#attR {
 local
   code : String;
 	reg : Register;
+	vi : VariableInfo;
+	estVar : boolean;
+	type : Type;
 do
   -- Init du registre dans lequel sera stocké le résultat de l'opération.
   reg := new Register();
   code := T^code + RX^code;
-  if (RX^op != NOP) then
-	  code := code + RX^machine.generateOperation(RX^op,T^reg,RX^reg,reg);
+	type := T^type
+  if (RX^op != IMachine.Operator.NOP) then
+	  -- Si il y a un opération : verif sur les types.
+		match type
+		with SimpleType then
+		  if !(type.isCompatible(RX^type)) then
+			  error(TYPE_NOT_COMPATIBLE);
+			else
+			  code := code + RX^machine.generateOperation(RX^op,T^reg,RX^reg,reg);
+	    end
+		else
+		  error(TYPE_NOT_SIMPLE);
+		end
 	end
-	R^reg := reg;
-	R^code := code;
-end
-}
-
--- R est variable si T l'est et RX ne l'empeche pas,
--- dans ce cas, on lui donne la vi de R. Dans le cas
--- contraire, l'attribut vi de R est à null.
-#estVarEtVi {
-local
-do
+  -- R est variable si T l'est et RX ne l'empeche pas,
+  -- dans ce cas, on lui donne la vi de R. Dans le cas
+  -- contraire, l'attribut vi de R est à null.
   if ((T^estVar)&&(RX^estVar)) then
 	  R^estVar := true;
 		R^vi := T^vi;
@@ -1605,64 +1683,79 @@ do
 	  R^estVar := false;
 		R^vi := null;
 	end
+	-- Passage des attributs.
+	R^reg := reg;
+	R^code := code;
+  R^estVar := estVar;
+	R^vi := vi;
+  R^type := type;
 end
 }
 
--- (48) : Additions ...
-RX -> OPADD T RX #actuOp #estVar ;
 
+-- (48) : Additions ...
+RX -> OPADD T #attRX1 RX #attRX ;
+
+-- Pas d'attribut inh pour OPADD.
+-- Attributs inh de RX1.
+#attRX1 {
+local
+do
+  RX^machine := RX1^machine;
+	RX^talias := RX1^talias;
+	RX^tfun := RX1^tfun;
+	RX^tvar := RX1^tvar;
+end
+}
+
+-- Attributs syn pour RX.
 -- Génération du code de T RX en fonction de RX.
--- Passage de l'operateur de OPADD à RX.
 #actuOp {
 local
   code : String;
 	reg : Register;
+	type : Type;
 do
-  reg := new Register ();
+  reg := new Register();
+	type := T^type;
   -- On met le code de T et RX1.
   code := T^code + RX1^code;
-	-- Si il y a une opération, on ajoute son code.
-  if (RX1^op != NOP) then
-	  code := code + RX^machine.generateOperation(RX1^op,T^reg,RX1^reg,reg);
+  if (RX1^op != IMachine.Operator.NOP) then
+	  -- Si il y a un opération : verif sur les types.
+		match type
+		with SimpleType then
+		  if !(type.isCompatible(RX1^type)) then
+			  error(TYPE_NOT_COMPATIBLE);
+			else
+        code := code + RX^machine.generateOperation(RX1^op,T^reg,RX1^reg,reg);
+	    end
+		else
+		  error(TYPE_NOT_SIMPLE);
+		end
 	end
+	    -- Passage de l'operateur de OPADD à RX.
 	RX^op := OPADD^op;
 	RX^reg := reg;
 	RX^code := code;
-end
-}
-
--- Si cette RP apparait dans l'expression, alors il ne s'agit pas d'une variable.
-#estVar {
-local
-do
+	RX^type := type;
+  -- Si cette RP apparait dans l'expression, alors il ne s'agit pas d'une variable.
   RX^estVar := false;
 end
 }
 
 
 -- (49)
-RX -> #nop #estVar #code;
+RX -> #attRX;
 
-#nop {
+#attRX {
 local
 do
-  RX^op := NOP;
-end
-}
-
--- N'empeche pas la représentation d'une variable.
-#estVar {
-local
-do
+  RX^op := IMachine.Operator.NOP;
+  -- N'empeche pas la représentation d'une variable.
   RX^estVar := true;
-end
-}
-
--- RX a un attribut synthétisé code. On doit donc l'initialisé dans TOUTES les RP.
-#code {
-local
-do
   RX^code := "";
+	RX^type := null;
+	RX^reg := null;
 end
 }
 
@@ -1673,7 +1766,7 @@ OPADD -> #op plus ;
 #op {
 local
 do
-  OPADD^op := ADD;
+  OPADD^op := IMachine.Operator.ADD;
 end
 }
 
@@ -1684,7 +1777,7 @@ OPADD -> #op moins ;
 #op {
 local
 do
-  OPADD^op := SUB;
+  OPADD^op := SIMachine.Operator.SUB;
 end
 }
 
@@ -1695,7 +1788,7 @@ OPADD -> #op ou ;
 #op {
 local
 do
-  OPADD^op := OR;
+  OPADD^op :=  SIMachine.Operator.OR;
 end
 }
 
