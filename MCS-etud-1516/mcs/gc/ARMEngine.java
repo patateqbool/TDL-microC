@@ -98,7 +98,7 @@ public class ARMEngine extends AbstractMachine {
     Register r = getNextUnusedRegister();
     Register raddr = new Register();
 
-    if (info.type() instanceof StructType) {
+    if (info.type() instanceof CompositeType) {
       code += generateLoadFromStack(info.displacement(), raddr);
 
       if (disp < 65536) {
@@ -138,7 +138,7 @@ public class ARMEngine extends AbstractMachine {
     String code = "", addr = "";
     Type t = info.type();
 
-    if (t instanceof StructType || t instanceof ArrayType) {
+    if (t instanceof CompositeType) {
       code += generateLoadFromStack(info.displacement(), raddr);
       addr = "[" + raddr + ", " + rdisp + "]";
     } else {
@@ -194,7 +194,7 @@ public class ARMEngine extends AbstractMachine {
     Register r = getNextUnusedRegister();
     Type t = info.type();
 
-    if (t instanceof IntegerType || t instanceof CharacterType || t instanceof PointerType) {
+    if (t instanceof SimpleType) {
       Integer val = (Integer)info.value();
 
       code +=
@@ -274,7 +274,7 @@ public class ARMEngine extends AbstractMachine {
     Type t = vinfo.type();
     String code = "";
 
-    if (t instanceof IntegerType || t instanceof CharacterType || t instanceof PointerType) {
+    if (t instanceof SimpleType) {
       code +=
         ARMEngine.Prefix + "STR\t" + rin + ", [SB, " + Integer.toString(-vinfo.displacement()) + "]\n";
     } else if (t instanceof StructType) {
@@ -298,7 +298,7 @@ public class ARMEngine extends AbstractMachine {
     String code = "", addr = "";
     Type t = vinfo.type();
 
-    if (t instanceof StructType) {
+    if (t instanceof CompositeType) {
       Register raddr = new Register();
       code +=
         generateLoadFromStack(vinfo.displacement(), raddr) +
@@ -321,7 +321,7 @@ public class ARMEngine extends AbstractMachine {
     String code = "";
     Type t = vinfo.type();
 
-    if (t instanceof StructType) {
+    if (t instanceof CompositeType) {
       Register raddr = new Register();
       code +=
         generateLoadFromStack(vinfo.displacement(), raddr) +
