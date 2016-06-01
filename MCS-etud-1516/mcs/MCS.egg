@@ -1892,6 +1892,7 @@ end
 -- (54)
 TX -> OPMUL #attF F #attTX1 TX #attTX;
 
+-- Pas d'attribut inh pour OPMUL.
 -- Attributs inh de F.
 #attF {
 local
@@ -1965,10 +1966,11 @@ end
 
 -- (56) : Operateurs multiplicatifs
 OPMUL -> #op mult ;
+
 #op {
 local
 do
-  OPMUL^op := MUL;
+  OPMUL^op := IMachine.Operator.MUL;
 end
 }
 
@@ -1979,7 +1981,7 @@ OPMUL -> #op div ;
 #op {
 local
 do
-  OPMUL^op := DIV;
+  OPMUL^op := IMachine.Operator.DIV;
 end
 }
 
@@ -1990,7 +1992,7 @@ OPMUL -> #op mod ;
 #op {
 local
 do
-  OPMUL^op := MOD;
+  OPMUL^op := IMachine.Operator.MOD;
 end
 }
 
@@ -2001,7 +2003,7 @@ OPMUL -> #op et ;
 #op {
 local
 do
-  OPMUL^op := AND;
+  OPMUL^op := IMachine.Operator.AND;
 end
 }
 
@@ -2105,6 +2107,7 @@ end
 -- (63) : Expression unaire
 F ->  OPUN  #attF1 F #attF ;
 
+-- Pas d'att inh pour OPUN.
 -- Attributs inh de F1.
 #attF1 {
 local
@@ -2149,7 +2152,7 @@ OPUN -> plus ;
 #op {
 local
 do
-  OPUN^op := PLS;
+  OPUN^op := IMachine.Operator.PLS;
 end
 }
 
@@ -2160,7 +2163,7 @@ OPUN -> moins ;
 #op {
 local
 do
-  OPUN^op := NEG;
+  OPUN^op := IMachine.Operator.NEG;
 end
 }
 
@@ -2171,7 +2174,7 @@ OPUN -> non;
 #op {
 local
 do
-  OPUN^op := NOT;
+  OPUN^op := IMachine.Operator.NOT;
 end
 }
 
@@ -2191,7 +2194,9 @@ end
 
 -- (68) : Expression parenthesee
 -- TODO.
-F ->  paro #attE E parf FX #estVarEtVi;
+F ->  paro #attE E parf #attFX FX #attF;
+global
+  chPossible : boolean;
 
 -- Attributs inh de E.
 #attE {
@@ -2204,19 +2209,68 @@ do
 end
 }
 
+-- Attributs inh de FX.
+#attFX {
+local
+  dl : DisplacementList;
+do
+  chPossible := E^estVar;
+	dl := new DisplacementList();
+	if (chPossible) then
+    dl.add(E^vi.displacement, false);
+	end
+  FX^machine := F^machine;
+	FX^tvar := F^tvar;
+	FX^tfun := F^tfun;
+	FX^talias := F^talias;
+	-- La partie avant FX n'est pas un appel de fonction.
+	FX^estFun := false;
+	-- La liste des déplacements de FX est initialisée ici.
+	FX^listeDisplacement := dl;
+	-- On met le nom à "", pas d'appel de fonction de cette manière. 
+	FX^nom := "";
+	-- On fait passer le type de E à FX pour d'éventuelles verifs.
+	FX^typeH := E^type;
+end
+}
+
+-- Attributs syn de F.
 -- F est une variable si E l'est et FX ne l'empeche pas.
 -- Dans ce cas, vi de F prend celui de E. Dans le cas
 -- contraire, il est null.
-#estVarEtVi {
+#attF {
 local
+  estVar : boolean;
+	vi : VariableInfo;
+	dl : DisplacementList;
 do
-  if ((E^estVar)&&(FX^estVar)) then
-	  F^estVar := true;
-		F^vi := E^vi;
+  dl := FX^listeDeplS;
+	if (chPossible) then
+	  if (dl.size()>1) then
+		  -- On a accédé à des champs de struct.
+		else
+		  -- E est une variable mais pasd'accès à des champs de struct.
+		end
 	else
-	  F^estVar := false;
-		F^vi := null;
+	  -- E n'est pas une variable.
+		if (dl.size()>0) then
+		-- On a essayé d'accéder à des champs. Erreur.
+		else
+		-- E est juste une expression parenthésée, suivie de rien.
+		end
 	end
+  if ((E^estVar)&&(FX^estVar)) then
+	  estVar := true;
+		vi := E^vi;
+	else
+	  estVar := false;
+		vi := null;
+	end
+  F^code := E^code + FX^code;
+	F^vi := vi;
+	F^estVar := estVar;
+	F^type := FX^type;
+	F^reg := --TODO
 end
 }
 
@@ -2298,7 +2352,7 @@ do
 	else
 	  error(SHOULD_BE_A_POINTER);
 	end
-	F^code := -- TODO
+	F^code := -- TODO LoadFromHeap
 	F^vi := -- TODO
 	F^estVar := true;
 	F^type := type;
@@ -2355,7 +2409,7 @@ do
 		type := varInfo.type();
 		-- On rajoute toujours le déplacement de a à la liste.
 		-- Le test pour savoir si a est bien un struct se fait dans les RP ,de FX.
-		listeDepl.add(varInfo.displacement, false);
+		listeDepl.add(varInfo.displacement(), false);
   end
 	-- On passe les attributs qui serviront à FX.
 	FX^listeDepl := listeDepl;
@@ -2390,11 +2444,11 @@ do
 		if (listeDepl.size() > 1) then
 	    -- Des déplacements ont été ajoutés à la liste en plus de celui de ident : on a accédé à des champs de struct !
 		  -- Le registre contient l'adresse de la variable accédée par FX dans le struct.
-      code := F^machine.generateMakeAddress(listeDepl.register(), reg);
+      code := F^machine.generateMakeAddress(listeDepl, reg);
 		else
       -- Accés direct à une variable.
       -- On ne génére pas de code directement ici, par contre on fait remonter la vi.
-			-- La VariableInfo est déjà dans varInfo (TODO : verif cette affirmation).
+			-- La VariableInfo est déjà dans varInfo.
       code := "";
 			vi := varInfo;
 			reg := null;
@@ -2580,9 +2634,13 @@ end
 local
   fi : functionInfo;
 do
-  fi := FX^tfun.lookup(FX^nom, ES^typesParamsS);
-	if (fi = null) then
-	  error(NO_FUN_WITH_SUCH_PARS, FX^nom);
+  if (FX^nom = "") then
+	  error(NO_PAR_CALL);
+	else
+    fi := FX^tfun.lookup(FX^nom, ES^typesParamsS);
+	  if (fi = null) then
+	    error(NO_FUN_WITH_SUCH_PARS, FX^nom);
+	  end
 	end
 end
 }
