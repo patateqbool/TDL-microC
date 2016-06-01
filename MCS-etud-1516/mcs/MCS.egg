@@ -28,31 +28,31 @@ inh machine : IMachine for
 --         -- fin extension MCS
          ;
 
--- TODO : Verifier que les attributs sont bien def.
+-- TODO : Verifier que les attributs sont bien def. (Dernier update: feuille rose complète, feuille blanche V1 (TO DO: modifs noires)
 
 inh tvar : VariableTable for
-         ENTITES, ENTITE, BLOC, F, INSTS, INST, SIX
+         ENTITES, ENTITE, BLOC, F, INSTS, INST, SIX, E, AFFX, A, AX, DECL, FONCTION, PARFS, PARF, PARFSX
          ;
 
 syn tvarS : VariableTable for 
-         PARFS, DECL, ENTITE, INST
+         PARFS, PARF, DECL, ENTITE, INST, INSTS
          ; -- Utilisée pour récupérer la TDS màj avec les paramètres de la fonction.
 
 inh talias : AliasTable for 
-         ENTITES, ENTITE, BLOC, STYPE, TYPE, F, INSTS, INST, SIX, CHAMP
+         ENTITES, ENTITE, BLOC, STYPE, TYPE, F, INSTS, INST, SIX, CHAMP, E, AFFX, A, AX, DECL, FONCTION, PARFS, PARF, PARFSX
          ; --Table des alias contenant les types propres au programme.
 
 
 inh tfun : FunctionTable for
-         ENTITES, ENTITE, BLOC, F, INSTS, INST, SIX
+         ENTITES, ENTITE, BLOC, F, INSTS, INST, SIX, E, AFFX, A, AX, DECL, FONCTION, PARFS, PARF, PARFSX
 	 ;
 
 syn tfunS : FunctionTable for 
-         DECL, ENTITE
+         DECL, ENTITE, FONCTION
          ;
 
 syn type : Type for
-         TYPE, STYPE, PTRS, DECL, FONCTION, F, CHAMP, E, A, AFFX
+         TYPE, STYPE, PTRS, DECL, FONCTION, F, CHAMP, E, A, AFFX, AX, PARF
          ;
  
 inh typeH : Type for
@@ -73,7 +73,7 @@ inh cParam : int for
 				 ;
 
 inh nom : String for 
-         DECL, FONCTION,
+         DECL, FONCTION
 				 ;
 
 syn nomS : String for 
@@ -99,7 +99,7 @@ syn oprel : RelationalOperator for
 				 ;
 
 syn reg : Register for
-				 F, T, TX, RX, E
+				 F, T, TX, RX, E, AFFX, A, AX
 				 ;
 
 syn estVar : boolean for
@@ -2795,7 +2795,15 @@ end
 ----------------- CS extension --------------------
 -- Decommenter les regles suivantes pour l'extension CS
 -------------------------------------------------
---TYPE -> bool;
+--TYPE -> bool #typage ;
+----TODO coté ARM: Ajouter un BooleanType
+--#typage {
+--local
+--do
+--  TYPE^type := new BooleanType();
+--end
+--}
+
 ---- definit un contenu d'un namespace
 --ENTITE -> namespace identc aco ENTITES acf ;
 ---- donne l acces au contenu du 'namespace'
@@ -2824,10 +2832,72 @@ end
 --PARF ->  MODE TYPE ident ;
 --MODE -> ref ;
 --MODE -> out ; 
---F -> true;
---F -> false;
+--F -> true #typeEtGenCode #estVarEtVi ;
+
+---- Set de l'attribut de type de F pour indiquer qu'il s'agit d'un booléen.
+---- Génération du code pour load la valeur du booléen dans la mémoire.
+--#typeEtGenCode {
+--local
+--  t : BooleanType;
+--  r : Registre;
+--do
+--  -- Creation du type et du registre.
+--  t := new BooleanType();
+--  r := new Register();
+--	-- Set de l'attribut type.
+--	F^type := t;
+--	-- Génération du code, et set de l'attribut le contenant.
+--	-- TODO : Gérer les booléens coté ConstantInfo
+--  F^code := F^machine.generateLoadConstant(new ConstantInfo(t, true), r); 
+--	-- Set de l'attribut registre de F, c'est le registre contenant l'entier.
+--	F^reg := r;
+--end
+--}
+
+---- Une expression de base ne peut representer une variable.
+---- Donc pas de vi.
+--#estVarEtVi {
+--local
+--do
+--  F^estVar := false;
+--	F^vi := null;
+--end
+--}
+--F -> false #typeEtGenCode #estVarEtVi ;
+
+---- Set de l'attribut de type de F pour indiquer qu'il s'agit d'un booléen.
+---- Génération du code pour load la valeur du booléen dans la mémoire.
+--#typeEtGenCode {
+--local
+--  t : BooleanType;
+--  r : Registre;
+--do
+--  -- Creation du type et du registre.
+--  t := new BooleanType();
+--  r := new Register();
+--	-- Set de l'attribut type.
+--	F^type := t;
+--	-- Génération du code, et set de l'attribut le contenant.
+--	-- TODO : Gérer les booléens coté ConstantInfo
+--  F^code := F^machine.generateLoadConstant(new ConstantInfo(t, false), r); 
+--	-- Set de l'attribut registre de F, c'est le registre contenant l'entier.
+--	F^reg := r;
+--end
+--}
+
+---- Une expression de base ne peut representer une variable.
+---- Donc pas de vi.
+--#estVarEtVi {
+--local
+--do
+--  F^estVar := false;
+--	F^vi := null;
+--end
+--}
 --F -> this FX;
+-- base = super
 --F -> base FX;
+----compatible avec null
 --F -> null2;
 --F -> new identc IDC paro ES parf ;
 end
