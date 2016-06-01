@@ -2193,10 +2193,7 @@ end
 }
 
 -- (68) : Expression parenthesee
--- TODO.
 F ->  paro #attE E parf #attFX FX #attF;
-global
-  chPossible : boolean;
 
 -- Attributs inh de E.
 #attE {
@@ -2214,11 +2211,7 @@ end
 local
   dl : DisplacementList;
 do
-  chPossible := E^estVar;
 	dl := new DisplacementList();
-	if (chPossible) then
-    dl.add(E^vi.displacement, false);
-	end
   FX^machine := F^machine;
 	FX^tvar := F^tvar;
 	FX^tfun := F^tfun;
@@ -2235,30 +2228,27 @@ end
 }
 
 -- Attributs syn de F.
--- F est une variable si E l'est et FX ne l'empeche pas.
--- Dans ce cas, vi de F prend celui de E. Dans le cas
--- contraire, il est null.
+-- On ne récupère pas le code de FX car il est vide sauf en cas d'appel de fonction, impossible ici.
 #attF {
 local
   estVar : boolean;
 	vi : VariableInfo;
 	dl : DisplacementList;
+  code : String;
+  reg : Register;
 do
   dl := FX^listeDeplS;
-	if (chPossible) then
-	  if (dl.size()>1) then
-		  -- On a accédé à des champs de struct.
-		else
-		  -- E est une variable mais pasd'accès à des champs de struct.
-		end
-	else
-	  -- E n'est pas une variable.
-		if (dl.size()>0) then
-		-- On a essayé d'accéder à des champs. Erreur.
-		else
-		-- E est juste une expression parenthésée, suivie de rien.
-		end
-	end
+  reg := new Register();
+  code := E^code;
+	if (dl.size()>0) then
+    -- On a accédé à des champs dans FX.
+    -- On génère le code correspondant, en prenant le registre de E comme base.
+    -- Les verification d'existence de champs ont été faites dans FX.
+    code := code + F^machine.generateMakeAddress(E^reg, dl, reg);
+  end
+  -- F est une variable si E l'est et FX ne l'empeche pas.
+  -- Dans ce cas, vi de F prend celui de E. Dans le cas
+  -- contraire, il est null.
   if ((E^estVar)&&(FX^estVar)) then
 	  estVar := true;
 		vi := E^vi;
@@ -2266,11 +2256,11 @@ do
 	  estVar := false;
 		vi := null;
 	end
-  F^code := E^code + FX^code;
+  F^code := code;
 	F^vi := vi;
 	F^estVar := estVar;
 	F^type := FX^type;
-	F^reg := --TODO
+	F^reg := reg;
 end
 }
 
@@ -2342,9 +2332,11 @@ end
 local
   t : Type;
 	type : Type;
+  reg : Register;
 do
 	t := F1^type;
 	type := null; 
+  reg := new Register();
 	-- On vérifie que ce qu'on deref' est un pointeur. 
   match t 
 	with PointerType then
@@ -2352,11 +2344,12 @@ do
 	else
 	  error(SHOULD_BE_A_POINTER);
 	end
-	F^code := -- TODO LoadFromHeap
+  -- A la suite du code généré par F1, on load le champ pointé.
+	F^code := F1^code + F^machine.generateLoadFromHeap(F1^reg, 0, reg);
 	F^vi := -- TODO
 	F^estVar := true;
 	F^type := type;
-	F^reg := -- TODO
+	F^reg := reg;
 end
 }
 
@@ -2364,7 +2357,7 @@ end
 -- LA REGLE OU C'EST REPARTI EN VRILLE. --
 -- TODO : code sur F et FX.
 -- (71)
-F -> ident #rechercheTables FX #attF ; 
+F -> ident #rechercheTables FX #attF ;
 
 global
   varInfo : VariableInfo;
@@ -2378,6 +2371,7 @@ local
   listeDepl : DisplacementList ;
 	type : Type;
   info : SymbolInfo; 
+  varInfo : VariableInfo;
 do
   
   --Initialisations.
@@ -2425,14 +2419,12 @@ local
   listeDepl : DisplacementList; 
   reg : Registre;
 	code : String;
-	vi : VariableInfo;
 do
   -- Génération du code.
   -- Traitements différents selon qu'on ait : - éffectué un appel de fonction.
   --																					- accédé simplement à une variable.
   --               														- accédé à un champ de struct.
   listeDepl := FX^listeDeplS;
-	vi := null;
   reg := new Registre();
 	if estFun then
     -- On a un appel de fonction, peut être suivi d'accés à des champs de struct.
@@ -2447,14 +2439,11 @@ do
       code := F^machine.generateMakeAddress(listeDepl, reg);
 		else
       -- Accés direct à une variable.
-      -- On ne génére pas de code directement ici, par contre on fait remonter la vi.
-			-- La VariableInfo est déjà dans varInfo.
-      code := "";
-			vi := varInfo;
-			reg := null;
+   		-- La VariableInfo est déjà dans varInfo.
+      code := F^machine.generateLoadValue(varInfo, reg);
 		end
   end
-	F^vi := vi;
+	F^vi := varInfo;
 	F^code := FX^code + code;
   F^estVar := true;
   F^type := FX^type;
