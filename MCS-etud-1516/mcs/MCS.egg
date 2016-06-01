@@ -28,31 +28,31 @@ inh machine : IMachine for
 --         -- fin extension MCS
          ;
 
--- TODO : Verifier que les attributs sont bien def.
+-- TODO : Verifier que les attributs sont bien def. (Dernier update: feuille rose complète, feuille blanche V1 (TO DO: modifs noires)
 
 inh tvar : VariableTable for
-         ENTITES, ENTITE, BLOC, F, INSTS, INST, SIX
+         ENTITES, ENTITE, BLOC, F, INSTS, INST, SIX, E, AFFX, A, AX, DECL, FONCTION, PARFS, PARF, PARFSX
          ;
 
 syn tvarS : VariableTable for 
-         PARFS, DECL, ENTITE, INST
+         PARFS, PARF, DECL, ENTITE, INST, INSTS
          ; -- Utilisée pour récupérer la TDS màj avec les paramètres de la fonction.
 
 inh talias : AliasTable for 
-         ENTITES, ENTITE, BLOC, STYPE, TYPE, F, INSTS, INST, SIX, CHAMP
+         ENTITES, ENTITE, BLOC, STYPE, TYPE, F, INSTS, INST, SIX, CHAMP, E, AFFX, A, AX, DECL, FONCTION, PARFS, PARF, PARFSX
          ; --Table des alias contenant les types propres au programme.
 
 
 inh tfun : FunctionTable for
-         ENTITES, ENTITE, BLOC, F, INSTS, INST, SIX
+         ENTITES, ENTITE, BLOC, F, INSTS, INST, SIX, E, AFFX, A, AX, DECL, FONCTION, PARFS, PARF, PARFSX
 	 ;
 
 syn tfunS : FunctionTable for 
-         DECL, ENTITE
+         DECL, ENTITE, FONCTION
          ;
 
 syn type : Type for
-         TYPE, STYPE, PTRS, DECL, FONCTION, F, CHAMP, E, A, AFFX
+         TYPE, STYPE, PTRS, DECL, FONCTION, F, CHAMP, E, A, AFFX, AX, PARF
          ;
  
 inh typeH : Type for
@@ -73,7 +73,7 @@ inh cParam : int for
 				 ;
 
 inh nom : String for 
-         DECL, FONCTION,
+         DECL, FONCTION
 				 ;
 
 syn nomS : String for 
@@ -99,7 +99,7 @@ syn oprel : RelationalOperator for
 				 ;
 
 syn reg : Register for
-				 F, T, TX, RX, E
+				 F, T, TX, RX, E, AFFX, A, AX
 				 ;
 
 syn estVar : boolean for
