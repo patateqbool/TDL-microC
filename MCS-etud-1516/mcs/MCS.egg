@@ -1,10 +1,6 @@
 ----------------------------------------------------
 -- Grammaires de MC  et MCS                       --
 ----------------------------------------------------
--- TODO : changements pour permettres à deux fonctions n'ayant pas le meme
---        type de parametres de porter le meme nom.
---            - Appel de fonction
---            - Declaration
 
 --options
 option auto = true;
@@ -337,47 +333,26 @@ end
 ---------------------------------------------------------
 
 -- (5)
-ENTITE -> #talias TYPE ident #idLibre DECL #majTDS #passCode; 
+ENTITE -> #attTYPE TYPE ident #attDECL DECL #attENTITE; 
 
 -- Passage de la table des alias.
-#talias {
+#attTYPE {
 local
 do
   TYPE^talias := ENTITE^talias;
 end
 }
 
--- Vérification que ident n'est pas déjà utilisé dans une TDS.
+-- Attributs inh de DECL.
 -- On n'ajoute pas encore la variable / fonction à la table car on ne sait pas encore la nature.
--- On fait par contre passer les infos (ident^txt et type) à DECL pour qu'il puisse effectuer lui même l'ajout.
--- On fait aussi passer les TDS pour qu'il puisse les màj et s'en servir.
-#idLibre {
+-- Passage du nom et du type retour pour la récursivité en cas de declaration de fonction.
+#attDECL {
 local
   info : SymbolInfo;
 	t : Type;
 do
-  info := ENTITE^tvar.lookup(ident^txt, true);
-  -- Si identc est une clef dans la TDSvar, erreur.
-  if info != null then
-     error(IDENT_TAKEN, ident^txt);
-  else
-	   -- TODO : changer ça pour permettre à deux fonctions de porter le même nom du moment quelles
-		 --        n'attendent pas des params de même type.
-     info := ENTITE^tfun.lookup(ident^txt, true);
-     -- De même si identc est déjà utilisé dans la TDSfun.
-    if info != null then
-        error(IDENT_TAKEN, ident^txt);
-     -- Sinon, on fait passer les infos utiles à DECL.
-    else
-		  -- Verification dans talias.
-			t := ENTITE^talias.lookup(ident^txt, true);
-			if (t!= null) then
-			  error(IDENT_TAKEN, ident^txt);
-      end
-		end
-  end  
-  DECL^typeH := TYPE^type;
   DECL^nom := ident^txt;
+  DECL^typeH := TYPE^type;
   DECL^tvar := ENTITE^tvar;
   DECL^tfun := ENTITE^tfun;
 	DECL^talias := ENTITE^talias;
@@ -385,58 +360,82 @@ do
 end
 }
 
--- On met à jour les TDS de ENTITE à l'aide de celles de DECL.
-#majTDS {
+-- Attributs syn de ENTITE.
+-- On effectue ici la vérification de disponibilité du nom,
+-- et on effectue l'ajout dans la TDS appropriée.
+#attENTITE {
 local
+  tv : VariableTable;
+	tf : FunctionTable;
+	fi : FunctionInfo;
+  info : SymbolInfo;
+	t : Type;
+	b : boolean;
 do
-  ENTITE^tvarS := DECL^tvarS ;
-  ENTITE^tfunS := DECL^tfunS ;
+  fi := DECL^funInfo;
+  tv := ENTITE^tvar;
+	tf := ENTITE^tfun;
+  -- Si l'ident apprait dans tvar ou talias, on a une erreur.
+	info := ENTITE^tvar.lookup(ident^txt, true);
+  if (info != null) then
+    error(IDENT_TAKEN, ident^txt);
+  else
+		t := ENTITE^talias.lookup(ident^txt, true);
+		if (t!= null) then
+		  error(IDENT_TAKEN, ident^txt);
+	  else
+		  info := ENTITE^tfun.lookup(ident^txt, true);
+      if (fi = null) then
+	      -- On a une variable.
+        if (info != null) then
+				  -- Dans ce cas, il ne faut pas que l'ident soit pris par une fonction.
+          error(IDENT_TAKEN, ident^txt);
+        else
+				  -- Si ce n'est pas le cas, on peut add la variable à la tvar.
+          tv.insert(ident^txt, TYPE^type);
+				end
+	    else
+        -- On a une fonction.
+				-- On ajoute la fonction à la tfun, 
+				-- si la valeur retour est false c'est qu'on avait déjà une fonction
+				-- avec la même signature. Dans ce cas, erreur.
+        b := f.insert(ident^txt, fi);
+				if (!b) then 
+				  error(ALREADY_A_FUN_WITH_THAT_SIGN, ident^txt);
+				end
+	    end
+    end
+	end
+	ENTITE^tvarS := tv ;
+  ENTITE^tfunS := tf ;
 	-- La talias n'est pas modifiée par cette RP.
 	ENTITE^taliasS := ENTITE^talias ;
-end
-}
-
--- Passage du code généré par DECL à ENTITE.
-#passCode {
-local
-do
+  -- Passage du code généré par DECL à ENTITE.
   ENTITE^code := DECL^code;
 end
 }
 
 
 -- (6) : VARIABLE
-DECL -> pv #ajoutDansTDS #genCode;
+DECL -> pv #attDECL;
 
--- Ajout de la variable (puisqu'on sait désormais que c'en est une) à la TDSvar (de DECL) la TDSfun reste inchangée.
--- DECL possède les attributs nécessaires à la création de la VariableInfo.
--- Les tds à jours sont mises dans des attributs spéciaux de manière à ce que la règle de prod précèdente puisse les récupérer.
-#ajoutDansTDS {
+-- Attributs syn de DECL.
+-- On génère le code d'allocation mémoire pour cette variable.
+-- funInfo est à null car il ne s'agit pas d'une fonction.
+#attDECL {
 local
-  tv : VariableTable ;
-do
-  tv := DECL^tvar;
-  tv.insert(DECL^nom, DECL^typeH);
-  DECL^tvarS := tv;
-  DECL^tfunS := DECL^tfun ; -- La TDS fun n'est pas affectée.
-end
-}
-
--- Génération du code pour la déclaration de la variable.
-#genCode {
-local
-do
   DECL^code := DECL^machine.generateAllocateInStack(DECL^typeH);
+	DECL^funInfo := null;
 end
 }
 
 
 -- FONCTION (7)
-DECL -> #transmission FONCTION #majTDS #passCode;
+DECL -> #attFONCTION FONCTION #attDECL;
 
--- L'ajout de la fonction dans la TDS nécessitant la connaissance des params, on ne peut pas le faire dans cette RP.
--- On fait passer le type retour ainsi que le nom de la fonction à FONCTION pour l'ajout.
-#transmission {
+-- Attributs inh de FONCTION.
+-- On fait passer typeH qui servira à créer le functionInfo.
+#attFONCTION {
 local
 do
   FONCTION^nom := DECL^nom;
@@ -449,27 +448,19 @@ end
 }
 
 -- "Mise à jour" des TDS de DECL.
-#majTDS {
+#attDECL {
 local
 do
- -- La nouvelle TDSfun contient les infos concernant la nouvelle fonction.
-  DECL^tfunS := FONCTION^tfunS;
- -- La TDSvar est inchangée.
-  DECL^tvarS := DECL^tvar;
-end
-}
-
---Passage du code de declaration de la fonction à DECL.
-#passCode {
-local
-do
+  -- Passage du code de declaration de la fonction à DECL.
   DECL^code := FONCTION^code;
+	-- Passage du functionInfo.
+	DECL^funInfo := FONCTION^funInfo;
 end
 }
 
 
 -- (8)
-FONCTION -> #attH paro PARFS parf #ajoutEtPassFI #creationTDSPetiteFille BLOC #declFonction ;
+FONCTION -> #attH paro PARFS parf #attBLOC BLOC #attFONCTION ;
 
 -- Init des attributs hérités pour PARFS.
 #attH {
@@ -487,18 +478,9 @@ do
 end
 }
 
--- Initialisation du compteur de parametres.
-#initC {
-local 
-do
-  PARFS^cParam := 0;
-end
-}
-
--- Ajout de la FunctionInfo à tfun.
--- Passage de tfun à FONCTION et BLOC.
+-- Ajout de la FunctionInfo à la tfun de BLOC.
 -- Passage de la FunctionInfo à BLOC.
-#ajoutEtPassFI {
+#attBLOC {
 local
   tf : FunctionTable;
   fi : funInfo;
@@ -506,18 +488,8 @@ do
   tf := PARFS^tfun;
   fi := PARFS^funInfo;
   tf.insert(FONCTION^nom, fi);
-  -- Passage de tfun à FONCTION et à BLOC.
-  FONCTION^tfunS := tf;
   BLOC^tfun := tf;
-  -- Passage de funInfo à BLOC.
-  BLOC^funInfoH := fi;
-end
-}
-
--- Creation d'une TDS fille de la Tvar de PARFS et passage en tant que tvar de BLOC.
-#creationTDSPetiteFille {
-local
-do
+	BLOC^funInfoH := fi;
   BLOC^tvar := new VariableTable(PARFS^tvarS);
 	BLOC^talias := FONCTION^talias;
 	BLOC^machine := FONCTION^machine;
@@ -525,10 +497,11 @@ end
 }
 
 -- Generation du code de la declaration de la fonction.
-#declFonction {
+#attFONCTION {
 local
 do
   FONCTION^code := FONCTION^machine.generateFunctionDeclaration(PARFS^funInfo , BLOC^code);
+	FONCTION^funInfo := PARFS^funInfo;
 end
 }
 
