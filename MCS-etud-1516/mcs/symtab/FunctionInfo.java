@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.ArrayList;
 import mcs.gc.Register;
 
-public class FunctionInfo implements SymbolInfo {
+public class FunctionInfo extends SymbolInfo {
   // Attributes
   private Type retType; // Return type
   private List<Type> parameters; // Parameters
@@ -22,13 +22,17 @@ public class FunctionInfo implements SymbolInfo {
    * @param ret return type of the function
    * @param params list of parameters of the function
    */
-  public FunctionInfo(String name, Type ret) {
+  public FunctionInfo(String name, Type ret, NamespaceInfo ns) {
+    super(ns);
+    this.namespace = ns;
     this.name = name;
     this.retType = ret;
     this.parameters = new ArrayList<Type>();
   }
 
-	public FunctionInfo(String name, Type ret, List<Type> params) {
+	public FunctionInfo(String name, Type ret, List<Type> params, NamespaceInfo ns) {
+                super(ns);
+                this.namespace = ns;
     this.name = name;
 		this.parameters = params;
 		this.retType = ret;
@@ -56,6 +60,10 @@ public class FunctionInfo implements SymbolInfo {
    */
   public String name() {
     return this.name;
+  }
+
+  public NamespaceInfo namespace() {
+    return this.namespace;
   }
 
   /**

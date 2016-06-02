@@ -7,7 +7,7 @@
 
 package mcs.symtab;
 
-public class NamespaceInfo implements SymbolInfo {
+public class NamespaceInfo {
     // Attributes
     public String name; // Name of the namespace
     public Namespace parent; // The parent of the namespace
