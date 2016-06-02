@@ -49,10 +49,10 @@ syn tfunS : FunctionTable for
 
 inh tklass : KlassTable for
 				 ;	
-
+-- TODO: on aura besoin de tklassS
 inh tns : NamespaceTable for
 				 ;	
-
+-- TODO: on aura besoin de tnsS
 inh ns : Namespace for
 				 ;
 
@@ -116,7 +116,10 @@ syn oprel : RelationalOperator for
 syn reg : Register for
 				 F, T, TX, RX, E, AFFX, A, AX, R, F
 				 ;
-
+syn acc : AccessSpecifier for
+				 ACCES
+				 ;
+				 
 syn estVar : boolean for
          R, RX, FX, T, TX, E, A, AFFX, AX
 				 ;
@@ -269,9 +272,9 @@ ENTITES -> #attENTITE ENTITE #attENTITES1 ENTITES #attENTITES ;
 local
 do
   ENTITE^machine := ENTITES^machine;
-	ENTITE^tvar : =ENTITE^tvar;
-	ENTITE^tfun := ENTITE^tfun;
-	ENTITE^talias := ENTITE^talias;
+	ENTITE^tvar : =ENTITES^tvar;
+	ENTITE^tfun := ENTITES^tfun;
+	ENTITE^talias := ENTITES^talias;
 end
 }
 
@@ -2765,7 +2768,6 @@ end
 }
 
 -- definit un contenu d'un namespace
--- TODO : gérer les ENTITES (faire remonter des t?) + GC
 ENTITE -> namespace #ajout identc aco ENTITES acf ;
 
 -- Ajout de identc à la table des namespaces.
@@ -2773,21 +2775,35 @@ ENTITE -> namespace #ajout identc aco ENTITES acf ;
 #ajout {
 local
 -- TODO: vérifier tout ca quand Namespace & co seront finis
+	tns : NamespaceTable;
 do
+  tns := ENTITE^tns;
   -- Si identc est une clef dans la TDSKlass, erreur.
   if ENTITE^tklass.lookup(identc^txt) != null then
      error(IDENT_TAKEN, identc^txt);
   else
   -- Si identc est une clef dans la TDSNamespace, erreur.	
-    if  ENTITE^tns.lookup(identc^txt) != null then
-        error(IDENT_TAKEN, identc^txt);
+    if tns.lookup(identc^txt) != null then
+      error(IDENT_TAKEN, identc^txt);
     else
      -- Sinon, on peut ajouter le nouveau namespace à la TDS.
 			tns.insert(identc^txt, ENTITE^ns);
     end
   end  
+  -- Pas de code pour cette RP.	
+	ENTITE^code := "";
+	ENTITES^machine := ENTITE^machine;
+	ENTITES^tvar : =ENTITE^tvar;
+	ENTITES^tfun := ENTITE^tfun;
+	ENTITES^talias := ENTITE^talias;
+  ENTITES^tns := ENTITE^tns;
+	ENTITES^tklass := ENTITE^tklass;
+	ENTITE^tnsS := tns;
+	--TODO: Faire remonter les tns avec des tnsS au sein du prog µC
 end
 }
+
+ENTITE -> typedef #attTYPE TYPE #attENTITE identc pv ;
 
 -- donne l acces au contenu du 'namespace'
 ENTITE -> using identc IDC pv ;
@@ -2802,71 +2818,98 @@ ENTITE -> ACCES class #ajout identc HERITAGE aco DEFS acf ;
 #ajout {
 local
 -- TODO: vérifier tout ca quand KlassTable & co seront finis
+	tklass : KlassTable;
 do
+  tklass := ENTITE^tklass;
   -- Si identc est une clef dans la TDSKlass, erreur.
-  if ENTITE^tklass.lookup(identc^txt) != null then
+  if tklass.lookup(identc^txt) != null then
      error(IDENT_TAKEN, identc^txt);
   else
-    if  ENTITE^tns.lookup(identc^txt) != null then
-        error(IDENT_TAKEN, identc^txt);
+    if ENTITE^tns.lookup(identc^txt) != null then
+      error(IDENT_TAKEN, identc^txt);
     else
      -- Sinon, on peut ajouter la nouvelle classe à la TDS.
-			tklass.insert(identc^txt,ENTITE^klass,attributAcces);
+			tklass.insert(identc^txt,ENTITE^klass,ACCES^acc);
     end
   end  
+  -- Pas de code pour cette RP.	
+	ENTITE^code := "";
+	DEFS^machine := ENTITE^machine;
+	DEFS^tvar : =ENTITE^tvar;
+	DEFS^tfun := ENTITE^tfun;
+	DEFS^talias := ENTITE^talias;
+  DEFS^tns := ENTITE^tns;
+	DEFS^tklass := ENTITE^tklass;
+	ENTITE^tklassS := tklass;
+	--TODO: Faire remonter les tklass avec des tklassS au sein du prog µC
 end
 }
 
 -- acces 
 ACCES -> #acc public;
 
---TODO: définir l'énum accès: ou?
 #acc {
 local
 do
-  ACCES^acc := public;
+  ACCES^acc := Klass.AccessSpecifier.APublic;
 end
 }
 
 ACCES -> #acc private;
 
---TODO: définir l'énum accès: ou?
 #acc {
 local
 do
-  ACCES^acc := private;
+  ACCES^acc := Klass.AccessSpecifier.APrivate;
 end
 }
 
 ACCES -> #acc;
 
---TODO: définir l'énum accès: ou?
 #acc {
 local
 do
-  ACCES^acc := def;
+  ACCES^acc := Klass.AccessSpecifier.AProtected;
 end
 }
+
 -- heritage
+
 HERITAGE -> ;
+
 HERITAGE -> dpts identc IDC ;
+
 -- membres d'une classe
+
 DEFS -> ;
+
 DEFS ->  ACCES DEF DEFS ;
+
 DEF  ->  TYPE ident DECL ;
+
 -- constructeur
+
 DEF  ->  identc paro PARFS parf BASE BLOC;
+
 -- appel eventuel au constructeur de la classe parente.
+
 BASE -> ;
+
 BASE -> dpts base paro ES parf  ;
+
 -- Mode de passage pour les fonctions et méthodes : rien : D, ref : D/R, out : R
+
 PARF ->  MODE TYPE ident ;
+
 MODE -> ref ;
+
 MODE -> out ; 
+
 F -> true #typeEtGenCode #estVarEtVi ;
 
 -- Set de l'attribut de type de F pour indiquer qu'il s'agit d'un booléen.
 -- Génération du code pour load la valeur du booléen dans la mémoire.
+
 #typeEtGenCode {
 local
   t : BooleanType;
@@ -2886,6 +2929,7 @@ end
 
 -- Une expression de base ne peut representer une variable.
 -- Donc pas de vi.
+
 #estVarEtVi {
 local
 do
@@ -2897,6 +2941,7 @@ F -> false #typeEtGenCode #estVarEtVi ;
 
 -- Set de l'attribut de type de F pour indiquer qu'il s'agit d'un booléen.
 -- Génération du code pour load la valeur du booléen dans la mémoire.
+
 #typeEtGenCode {
 local
   t : BooleanType;
@@ -2916,6 +2961,7 @@ end
 
 -- Une expression de base ne peut representer une variable.
 -- Donc pas de vi.
+
 #estVarEtVi {
 local
 do
@@ -2923,10 +2969,17 @@ do
 	F^vi := null;
 end
 }
+
 F -> this FX;
- base = super
+
+-- base = super
+
 F -> base FX;
+
 --compatible avec null
+
 F -> null2;
+
 F -> new identc IDC paro ES parf ;
+
 end
