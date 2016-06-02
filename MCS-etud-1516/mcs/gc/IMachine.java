@@ -244,6 +244,14 @@ public interface IMachine {
    */
   String generateMethodDeclaration(MethodInfo info, String code) throws MCSException;
 
+  /**
+   * Generate the code for the call of a method
+   * @param info info of the method
+   * @param robj register containing the address of the object on which we call the method
+   * @return the generated code
+   */
+  String generateMethodCall(MethodInfo info, Register robj) throws MCSException;
+
   ////////////////////////////// MISC ///////////////////////////////
   /**
    * Generate the code for making an address from a list of displacement pair; the 

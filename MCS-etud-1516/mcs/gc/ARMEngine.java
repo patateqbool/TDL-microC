@@ -503,9 +503,14 @@ public class ARMEngine extends AbstractMachine {
 	public String generateFunctionDeclaration(FunctionInfo info, String blockcode) throws MCSException {
 		Register r = getNextUnusedRegister();
 		info.assignRegister(r);
+
+    String label = info.label();
+
+    if (info instanceof MethodInfo)
+      label = ((MethodInfo)info).parent().name() + label;
 		
 		String code =
-			info.label() + ":\n" +
+			label + ":\n" +
 			ARMEngine.Prefix + "; Push link register, stack base and stack pointer\n" +
 			ARMEngine.Prefix + "PUSH\t" + lr + "\n" +
 			ARMEngine.Prefix + "PUSH\t" + sb + "\n" + 
@@ -524,7 +529,7 @@ public class ARMEngine extends AbstractMachine {
 		}
 
 		code +=
-			info.label() + "_end:\n" +
+			label + "_end:\n" +
 			ARMEngine.Prefix + "; Pop registers \n" +
 			ARMEngine.Prefix + "POP\t" + sp + "\n" +
 			ARMEngine.Prefix + "POP\t" + sb + "\n" +
@@ -552,7 +557,10 @@ public class ARMEngine extends AbstractMachine {
 	 * @return the generated code
 	 */
 	public String generateFunctionReturn(FunctionInfo info, Register rval) {
-		String code = "";
+		String code = "", label = info.label();
+
+    if (info instanceof MethodInfo)
+      label = ((MethodInfo)info).parent().name() + label;
 
 		if (!(info.returnType() instanceof VoidType)) {
 			code +=
@@ -564,7 +572,7 @@ public class ARMEngine extends AbstractMachine {
 		}
 
 		code +=
-			ARMEngine.Prefix + "B\t" + info.label() + "_end\n\n";
+			ARMEngine.Prefix + "B\t" + label + "_end\n\n";
 
 		return code;
 	}
@@ -597,12 +605,41 @@ public class ARMEngine extends AbstractMachine {
   /**
    * Generate the code for the declaration of a method
    * @param info info of the method
+   * @param blockcode code of the content of the method
    * @return the generated code
    */
   public String generateMethodDeclaration(MethodInfo info, String blockcode) throws MCSException {
+    Klass kmeth = info.parent();
     String code =
       ARMEngine.Prefix + "; Vtable redirection\n" +
-      ARMEngine.Prefix + 
+      // We need to retrieve the object's id. First, we get the address of the object,
+      // which is just below the context, so with a displacement of -16
+      ARMEngine.Prefix + "LDR\t" + oi + ", [" + sb + ", #-16]\n" + 
+      // Then we load the very first field of the object (displacement 0)
+      ARMEngine.Prefix + "LDR\t" + oi + ", [" + oi + "]\n" +
+      // We then compare the id of the retrieved object to the id of the class
+      ARMEngine.Prefix + "CMP\t" + oi + ", #" + kmeth.classId() + "\n" +
+      // Then we branch to the vtable if needed
+      ARMEngine.Prefix + "BEQ\t" + info.label() + ".vtable\n" +
+      "\n" +
+      // Next part is the "real code" that we labellize with .body
+      kmeth.name() + info.label() + ":\n"
+      + blockcode;
+
+    return generateFunctionDeclaration(info, code);
+  }
+
+  /**
+   * Generate the code for the call of a method
+   * @param info info of the method
+   * @param robj register containing the address of the object on which we call the method
+   * @return the generated code
+   */
+  public String generateMethodCall(MethodInfo info, Register robj) throws MCSException {
+    String code =
+      generateFunctionPushArgument(robj) +
+      generateFunctionCall(info);
+    return code;
   }
 
 	////////////////////////////// MISC ///////////////////////////////
