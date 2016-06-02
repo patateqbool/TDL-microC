@@ -1,11 +1,8 @@
 package mcs.gc;
 
 import mcs.compiler.MCSException;
-import mcs.symtab.VariableInfo;
-import mcs.symtab.FunctionInfo;
-import mcs.symtab.SymbolTable;
-import mcs.symtab.ConstantInfo;
-import mcs.symtab.Type;
+import mcs.symtab.*;
+import mcs.obj.*;
 import mcs.compiler.MCSException;
 
 /**
@@ -15,61 +12,61 @@ import mcs.compiler.MCSException;
  * 
  */
 public interface IMachine {
-	/**
-	 * Enumeration that define possible arithmetic operations
-	 */
-	public enum Operator {
-		ADD, // Addition
-		SUB, // Substraction
-		MUL, // Multiplication
-		DIV, // Division
-		NEG, // Arithmetic inversion (that is : minus)
-    		NOP,  // Syntaxic stuff only
-		AND, // And bitwise
-		OR, // Or bitwise
-    		MOD, // Modulo operator
-    		PLS, // Unary plus
-    		NOT // Not operator
-	}
-	
-	public enum RelationalOperator {
-		EQ,  // Equal
-		NEQ, // Non equal
-		LT,  // Lesser
-		LEQ, // Strict Inferior
-		GT,  // Superior
-		GEQ, // Strict Superior
-		AND, // And 
-		OR,  // Or
-		NOT, // Not
-	}
+  /**
+   * Enumeration that define possible arithmetic operations
+   */
+  public enum Operator {
+    ADD, // Addition
+    SUB, // Substraction
+    MUL, // Multiplication
+    DIV, // Division
+    NEG, // Arithmetic inversion (that is : minus)
+    NOP,  // Syntaxic stuff only
+    AND, // And bitwise
+    OR, // Or bitwise
+    MOD, // Modulo operator
+    PLS, // Unary plus
+    NOT // Not operator
+  }
 
-	/**
-	 * Suffixe du fichier cible (.tam par exemple)
-	 * 
-	 * @return
-	 */
-	String getSuffix();
+  public enum RelationalOperator {
+    EQ,  // Equal
+    NEQ, // Non equal
+    LT,  // Lesser
+    LEQ, // Strict Inferior
+    GT,  // Superior
+    GEQ, // Strict Superior
+    AND, // And 
+    OR,  // Or
+    NOT, // Not
+  }
 
-	/**
-	 * Ecrit le code dans un fichier à partir du nom du fichier source et du
-	 * suffixe
-	 * 
-	 * @param fileName
-	 * @param code
-	 * @throws MCSException
-	 */
+  /**
+   * Suffixe du fichier cible (.tam par exemple)
+   * 
+   * @return
+   */
+  String getSuffix();
 
-	void writeCode(String fileName, String code) throws MCSException;
+  /**
+   * Ecrit le code dans un fichier à partir du nom du fichier source et du
+   * suffixe
+   * 
+   * @param fileName
+   * @param code
+   * @throws MCSException
+   */
 
-	/**********************************************************
-	 * Generation function
-	 **********************************************************/
+  void writeCode(String fileName, String code) throws MCSException;
 
-	/////////////////////// MEMORY INSTRUCTIONS ///////////////////////
-  
+  /**********************************************************
+   * Generation function
+   **********************************************************/
+
+  /////////////////////// MEMORY INSTRUCTIONS ///////////////////////
+
   ///////////// LOAD /////////////
- 
+
   /**
    * Generate the code for loading a variable into a register
    * @param info info of the variable to load
@@ -105,12 +102,12 @@ public interface IMachine {
   String generateLoadFromStack(int disp, Register rout) throws MCSException;
 
   /**
-	 * Generate the code for loading a constant itneger into a register.
-	 * @param info info of the constant to load
-	 * @param rout register where the value is put, for later referencing
-	 * @return the generated code
-	 */
-	String generateLoadConstant(ConstantInfo info, Register rout) throws MCSException;
+   * Generate the code for loading a constant itneger into a register.
+   * @param info info of the constant to load
+   * @param rout register where the value is put, for later referencing
+   * @return the generated code
+   */
+  String generateLoadConstant(ConstantInfo info, Register rout) throws MCSException;
 
   /**
    * Generate the code for loading a variable from the heap into a register
@@ -175,7 +172,7 @@ public interface IMachine {
    * @return the generated code
    */
   String generateStoreInHeap(Register raddr, Register rdisp, Register rin) throws MCSException;
-  
+
   /////// MEMORY MANAGEMENT ///////
   /**
    * Generate the code for allocating a variable in the stack
@@ -200,13 +197,13 @@ public interface IMachine {
    */
   String generateFlushVariable(Type type) throws MCSException;
 
-	/**
-	 * Generate the code for flushing every variable of a symbol table
-	 * Note: used when going out from a block
-	 * @param symtab the symbol table
-	 * @return the generated code
-	 */
-	String generateFlush(SymbolTable symtab) throws MCSException;
+  /**
+   * Generate the code for flushing every variable of a symbol table
+   * Note: used when going out from a block
+   * @param symtab the symbol table
+   * @return the generated code
+   */
+  String generateFlush(SymbolTable symtab) throws MCSException;
 
   /////////////////////// FUNCTION MANAGEMENT ///////////////////////
 
@@ -240,32 +237,39 @@ public interface IMachine {
    */
   String generateFunctionCall(FunctionInfo info) throws MCSException;
 
-	////////////////////////////// MISC ///////////////////////////////
-	/**
-	 * Generate the code for making an address from a list of displacement pair; the 
-	 * base register is stack base.
-	 * The principle is to get into a register the addres of, let us say, the field
-	 * of a structure. The thing is that we can chain struct fields calls, thus
-	 * making the address calculation quite complex.
-	 * To achieve this calculation, we first create a displacement list, storing
-	 * displacement of each fields one by one (as welle as a boolean indicating
-	 * if should dereference the field (arrow) or not (point).
-	 * Then, we can create the addres by a succession of LDR
-	 * @param dlist displacement list
-	 * @param raddr (out) register that will contain the address
-	 * @return the generated code
-	 */
-	String generateMakeAddress(DisplacementList dlist, Register raddr) throws MCSException;
+  /**
+   * Generate the code for the declaration of a method
+   * @param info info of the method
+   * @return the generated code
+   */
+  String generateMethodDeclaration(MethodInfo info, String code) throws MCSException;
 
-	/**
-	 * Generate the code for making an address from a list of displacement pair,
-	 * using the specified register as base register.
-	 * @param dlist displacement list
-	 * @param rbaseaddr base address register
-	 * @param raddr (out) register that will contain the address
-	 * @return the generated code
-	 */
-	String generateMakeAddress(DisplacementList dlist, Register rbaseaddr, Register raddr) throws MCSException;
+  ////////////////////////////// MISC ///////////////////////////////
+  /**
+   * Generate the code for making an address from a list of displacement pair; the 
+   * base register is stack base.
+   * The principle is to get into a register the addres of, let us say, the field
+   * of a structure. The thing is that we can chain struct fields calls, thus
+   * making the address calculation quite complex.
+   * To achieve this calculation, we first create a displacement list, storing
+   * displacement of each fields one by one (as welle as a boolean indicating
+   * if should dereference the field (arrow) or not (point).
+   * Then, we can create the addres by a succession of LDR
+   * @param dlist displacement list
+   * @param raddr (out) register that will contain the address
+   * @return the generated code
+   */
+  String generateMakeAddress(DisplacementList dlist, Register raddr) throws MCSException;
+
+  /**
+   * Generate the code for making an address from a list of displacement pair,
+   * using the specified register as base register.
+   * @param dlist displacement list
+   * @param rbaseaddr base address register
+   * @param raddr (out) register that will contain the address
+   * @return the generated code
+   */
+  String generateMakeAddress(DisplacementList dlist, Register rbaseaddr, Register raddr) throws MCSException;
 
   /**
    * Generate the code for an if-then-else structure
@@ -277,39 +281,39 @@ public interface IMachine {
   String generateIfThenElse(Register rcond, String cif, String celse) throws MCSException;
 
 
-	//////////////////////////// CALCULUS /////////////////////////////
+  //////////////////////////// CALCULUS /////////////////////////////
 
-	/**
-	 * Generate an arithmetic binary operation
-	 * @param r1 first register
-	 * @param r2 second register
-	 * @param rout output register
-	 * @return the generated code
-	 */
-	String generateOperation(Operator op, Register r1, Register r2, Register rout) throws MCSException;
+  /**
+   * Generate an arithmetic binary operation
+   * @param r1 first register
+   * @param r2 second register
+   * @param rout output register
+   * @return the generated code
+   */
+  String generateOperation(Operator op, Register r1, Register r2, Register rout) throws MCSException;
 
-	/**
-	 * Generate an arithmetic unary operation
-	 * @param rin source register
-	 * @param rout destination register
-	 * @return the generated code
-	 */
-	String generateOperation(Operator op, Register rin, Register rout) throws MCSException;
+  /**
+   * Generate an arithmetic unary operation
+   * @param rin source register
+   * @param rout destination register
+   * @return the generated code
+   */
+  String generateOperation(Operator op, Register rin, Register rout) throws MCSException;
 
-	/**
-	 * Generate a relational binary operation
-	 * @param r1 first register
-	 * @param r2 second register
-	 * @param rout output register
-	 * @return the generated code
-	 */
-	String generateOperation(RelationalOperator op, Register r1, Register r2, Register rout) throws MCSException;
+  /**
+   * Generate a relational binary operation
+   * @param r1 first register
+   * @param r2 second register
+   * @param rout output register
+   * @return the generated code
+   */
+  String generateOperation(RelationalOperator op, Register r1, Register r2, Register rout) throws MCSException;
 
-	/**
-	 * Generate a relational unary operation
-	 * @param rin source register
-	 * @param rout destination register
-	 * @return the generated code
-	 */
-	String generateOperation(RelationalOperator op, Register rin, Register rout) throws MCSException;
+  /**
+   * Generate a relational unary operation
+   * @param rin source register
+   * @param rout destination register
+   * @return the generated code
+   */
+  String generateOperation(RelationalOperator op, Register rin, Register rout) throws MCSException;
 }

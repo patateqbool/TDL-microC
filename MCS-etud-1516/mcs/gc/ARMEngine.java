@@ -17,12 +17,13 @@ public class ARMEngine extends AbstractMachine {
 	/**
 	 * Number of registers.
 	 * ARM has in fact 15 "multi-purpose registers", but three of them is used for stack, link and program counter.
-	 * Plus, we decided to use R12 as the heap top, as it is not implemented directly into ARM
+	 * Plus, we decided to use R12 as the heap top and R11 as the stack base, as they are not implemented directly into ARM.
+   * Moreover, we use R10 as a register for storing the object's class id when we jump from methods to vtables.
 	 */
-	static private final int NUM_REGISTER = 11;
+	static private final int NUM_REGISTER = 10;
 	static private final String Prefix = "\t\t";
 	private List<Register> registers;
-	private Register sp, lr, pc, ht, sb;
+	private Register sp, lr, pc, ht, sb, oi;
 	private int heapbase = 0;
   private int condition_nb = 0;
 
@@ -40,6 +41,7 @@ public class ARMEngine extends AbstractMachine {
 		pc = new Register("PC", -1);
 		ht = new Register("R", 12);
 		sb = new Register("R", 11);
+    oi = new Register("R", 10);
 	}
 
 	/**
@@ -591,6 +593,17 @@ public class ARMEngine extends AbstractMachine {
 			ARMEngine.Prefix + "BL\t" + info.label() + "\n";
 		return code;
 	}
+
+  /**
+   * Generate the code for the declaration of a method
+   * @param info info of the method
+   * @return the generated code
+   */
+  public String generateMethodDeclaration(MethodInfo info, String blockcode) throws MCSException {
+    String code =
+      ARMEngine.Prefix + "; Vtable redirection\n" +
+      ARMEngine.Prefix + 
+  }
 
 	////////////////////////////// MISC ///////////////////////////////
 	/**
