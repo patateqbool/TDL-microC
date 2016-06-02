@@ -21,6 +21,7 @@ inh machine : IMachine for
          ;
 
 -- TODO : Verifier que les attributs sont bien def. (Dernier update: feuille rose complète, feuille blanche V1 (TO DO: modifs noires)
+-- TODO : attributs objet
 
 inh tvar : VariableTable for
          ENTITES, ENTITE, BLOC, F, INSTS, INST, SIX, E, AFFX, A, AX, DECL, FONCTION, PARFS, PARF, PARFSX
@@ -42,6 +43,16 @@ inh tfun : FunctionTable for
 syn tfunS : FunctionTable for 
          DECL, ENTITE, FONCTION
          ;
+
+inh tklass : KlassTable for
+				 ;	
+
+inh tns : NamespaceTable for
+				 ;	
+
+inh ns : Namespace for
+				 ;
+
 
 syn type : Type for
          TYPE, STYPE, PTRS, DECL, FONCTION, F, CHAMP, E, A, AFFX, AX, PARF
@@ -2118,7 +2129,7 @@ end
 
 
 -- (64) : Operateurs unaires
-OPUN -> plus ;
+OPUN -> #op plus ;
 
 #op {
 local
@@ -2129,7 +2140,7 @@ end
 
 
 -- (65)
-OPUN -> moins ;
+OPUN -> #op moins ;
 
 #op {
 local
@@ -2140,7 +2151,7 @@ end
 
 
 -- (66)
-OPUN -> non;
+OPUN -> #op non;
 
 #op {
 local
@@ -2792,112 +2803,181 @@ do
 end
 }
 
------------------ CS extension --------------------
+--------------- CS extension --------------------
 -- Decommenter les regles suivantes pour l'extension CS
 -------------------------------------------------
---TYPE -> bool #typage ;
-----TODO coté ARM: Ajouter un BooleanType
---#typage {
---local
---do
---  TYPE^type := new BooleanType();
---end
---}
+TYPE -> bool #typage ;
 
----- definit un contenu d'un namespace
---ENTITE -> namespace identc aco ENTITES acf ;
----- donne l acces au contenu du 'namespace'
---ENTITE -> using identc IDC pv ;
---IDC -> ;
---IDC -> pt identc IDC ;
----- definition d'une classe (peut etre en dehors d'un namespace)
---ENTITE -> ACCES class identc HERITAGE aco DEFS acf ;
----- acces 
---ACCES -> public;
---ACCES -> private;
---ACCES -> ;
----- heritage
---HERITAGE -> ;
---HERITAGE -> dpts identc IDC ;
----- membres d'une classe
---DEFS -> ;
---DEFS ->  ACCES DEF DEFS ;
---DEF  ->  TYPE ident DECL ;
----- constructeur
---DEF  ->  identc paro PARFS parf BASE BLOC;
----- appel eventuel au constructeur de la classe parente.
---BASE -> ;
---BASE -> dpts base paro ES parf  ;
----- Mode de passage pour les fonctions et méthodes : rien : D, ref : D/R, out : R
---PARF ->  MODE TYPE ident ;
---MODE -> ref ;
---MODE -> out ; 
---F -> true #typeEtGenCode #estVarEtVi ;
+#typage {
+local
+do
+  TYPE^type := new BooleanType();
+end
+}
 
----- Set de l'attribut de type de F pour indiquer qu'il s'agit d'un booléen.
----- Génération du code pour load la valeur du booléen dans la mémoire.
---#typeEtGenCode {
---local
---  t : BooleanType;
---  r : Registre;
---do
---  -- Creation du type et du registre.
---  t := new BooleanType();
---  r := new Register();
---	-- Set de l'attribut type.
---	F^type := t;
---	-- Génération du code, et set de l'attribut le contenant.
---	-- TODO : Gérer les booléens coté ConstantInfo
---  F^code := F^machine.generateLoadConstant(new ConstantInfo(t, true), r); 
---	-- Set de l'attribut registre de F, c'est le registre contenant l'entier.
---	F^reg := r;
---end
---}
+-- definit un contenu d'un namespace
+-- TODO : gérer les ENTITES (faire remonter des t?) + GC
+ENTITE -> namespace #ajout identc aco ENTITES acf ;
 
----- Une expression de base ne peut representer une variable.
----- Donc pas de vi.
---#estVarEtVi {
---local
---do
---  F^estVar := false;
---	F^vi := null;
---end
---}
---F -> false #typeEtGenCode #estVarEtVi ;
+-- Ajout de identc à la table des namespaces.
+-- Vérifie que identc n'est pas déjà utilisé (par une classe ou un namespace).
+#ajout {
+local
+-- TODO: vérifier tout ca quand Namespace & co seront finis
+do
+  -- Si identc est une clef dans la TDSKlass, erreur.
+  if ENTITE^tklass.lookup(identc^txt) != null then
+     error(IDENT_TAKEN, identc^txt);
+  else
+  -- Si identc est une clef dans la TDSNamespace, erreur.	
+    if  ENTITE^tns.lookup(identc^txt) != null then
+        error(IDENT_TAKEN, identc^txt);
+    else
+     -- Sinon, on peut ajouter le nouveau namespace à la TDS.
+			tns.insert(identc^txt, ENTITE^ns);
+    end
+  end  
+end
+}
 
----- Set de l'attribut de type de F pour indiquer qu'il s'agit d'un booléen.
----- Génération du code pour load la valeur du booléen dans la mémoire.
---#typeEtGenCode {
---local
---  t : BooleanType;
---  r : Registre;
---do
---  -- Creation du type et du registre.
---  t := new BooleanType();
---  r := new Register();
---	-- Set de l'attribut type.
---	F^type := t;
---	-- Génération du code, et set de l'attribut le contenant.
---	-- TODO : Gérer les booléens coté ConstantInfo
---  F^code := F^machine.generateLoadConstant(new ConstantInfo(t, false), r); 
---	-- Set de l'attribut registre de F, c'est le registre contenant l'entier.
---	F^reg := r;
---end
---}
+-- donne l acces au contenu du 'namespace'
+ENTITE -> using identc IDC pv ;
+IDC -> ;
+IDC -> pt identc IDC ;
+-- definition d'une classe (peut etre en dehors d'un namespace)
 
----- Une expression de base ne peut representer une variable.
----- Donc pas de vi.
---#estVarEtVi {
---local
---do
---  F^estVar := false;
---	F^vi := null;
---end
---}
---F -> this FX;
--- base = super
---F -> base FX;
-----compatible avec null
---F -> null2;
---F -> new identc IDC paro ES parf ;
+ENTITE -> ACCES class #ajout identc HERITAGE aco DEFS acf ;
+
+-- Ajout de identc à la table des classes.
+-- Vérifie que identc n'est pas déjà utilisé (par une classe ou un namespace).
+#ajout {
+local
+-- TODO: vérifier tout ca quand KlassTable & co seront finis
+do
+  -- Si identc est une clef dans la TDSKlass, erreur.
+  if ENTITE^tklass.lookup(identc^txt) != null then
+     error(IDENT_TAKEN, identc^txt);
+  else
+    if  ENTITE^tns.lookup(identc^txt) != null then
+        error(IDENT_TAKEN, identc^txt);
+    else
+     -- Sinon, on peut ajouter la nouvelle classe à la TDS.
+			tklass.insert(identc^txt,ENTITE^klass,attributAcces);
+    end
+  end  
+end
+}
+
+-- acces 
+ACCES -> #acc public;
+
+--TODO: définir l'énum accès: ou?
+#acc {
+local
+do
+  ACCES^acc := public;
+end
+}
+
+ACCES -> #acc private;
+
+--TODO: définir l'énum accès: ou?
+#acc {
+local
+do
+  ACCES^acc := private;
+end
+}
+
+ACCES -> #acc;
+
+--TODO: définir l'énum accès: ou?
+#acc {
+local
+do
+  ACCES^acc := def;
+end
+}
+-- heritage
+HERITAGE -> ;
+HERITAGE -> dpts identc IDC ;
+-- membres d'une classe
+DEFS -> ;
+DEFS ->  ACCES DEF DEFS ;
+DEF  ->  TYPE ident DECL ;
+-- constructeur
+DEF  ->  identc paro PARFS parf BASE BLOC;
+-- appel eventuel au constructeur de la classe parente.
+BASE -> ;
+BASE -> dpts base paro ES parf  ;
+-- Mode de passage pour les fonctions et méthodes : rien : D, ref : D/R, out : R
+PARF ->  MODE TYPE ident ;
+MODE -> ref ;
+MODE -> out ; 
+F -> true #typeEtGenCode #estVarEtVi ;
+
+-- Set de l'attribut de type de F pour indiquer qu'il s'agit d'un booléen.
+-- Génération du code pour load la valeur du booléen dans la mémoire.
+#typeEtGenCode {
+local
+  t : BooleanType;
+  r : Registre;
+do
+  -- Creation du type et du registre.
+  t := new BooleanType();
+  r := new Register();
+	-- Set de l'attribut type.
+	F^type := t;
+	-- Génération du code, et set de l'attribut le contenant.
+  F^code := F^machine.generateLoadConstant(new ConstantInfo(t, true), r); 
+	-- Set de l'attribut registre de F, c'est le registre contenant l'entier.
+	F^reg := r;
+end
+}
+
+-- Une expression de base ne peut representer une variable.
+-- Donc pas de vi.
+#estVarEtVi {
+local
+do
+  F^estVar := false;
+	F^vi := null;
+end
+}
+F -> false #typeEtGenCode #estVarEtVi ;
+
+-- Set de l'attribut de type de F pour indiquer qu'il s'agit d'un booléen.
+-- Génération du code pour load la valeur du booléen dans la mémoire.
+#typeEtGenCode {
+local
+  t : BooleanType;
+  r : Registre;
+do
+  -- Creation du type et du registre.
+  t := new BooleanType();
+  r := new Register();
+	-- Set de l'attribut type.
+	F^type := t;
+	-- Génération du code, et set de l'attribut le contenant.
+  F^code := F^machine.generateLoadConstant(new ConstantInfo(t, false), r); 
+	-- Set de l'attribut registre de F, c'est le registre contenant l'entier.
+	F^reg := r;
+end
+}
+
+-- Une expression de base ne peut representer une variable.
+-- Donc pas de vi.
+#estVarEtVi {
+local
+do
+  F^estVar := false;
+	F^vi := null;
+end
+}
+F -> this FX;
+ base = super
+F -> base FX;
+--compatible avec null
+F -> null2;
+F -> new identc IDC paro ES parf ;
 end
