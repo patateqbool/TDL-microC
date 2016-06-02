@@ -8,7 +8,7 @@ package mcs.symtab;
 
 import mcs.gc.Register;
 
-public class VariableInfo implements SymbolInfo {
+public class VariableInfo extends SymbolInfo {
   // Attributes
   private Type type; // Type of the variable
   private int displacement; // Displacement of the variable in the memory
@@ -19,7 +19,9 @@ public class VariableInfo implements SymbolInfo {
    * @param t type of the variable
    * @param disp displacement of the variable
    */
-  public VariableInfo(Type t, int disp) {
+  public VariableInfo(Type t, int disp, NamspaceInfo ns) {
+    super(ns);
+    this.namespace = ns;
     this.type = t;
     this.displacement = disp;
   }

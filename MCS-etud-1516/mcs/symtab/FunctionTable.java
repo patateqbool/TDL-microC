@@ -22,19 +22,23 @@ public class FunctionTable implements SymbolTable
 		this.content = new ArrayList<FunctionInfo>();
   }
 
-	public boolean exists(String name, SymbolInfo si) {
+	public boolean exists(String name, NamespaceInfo namespace, SymbolInfo si) {
 		for (FunctionInfo csi : this.content) {
-			if (csi.similar(name, ((FunctionInfo)si).parameters()))
+			if (csi.similar(name, ((FunctionInfo)si).parameters())) {
+                            if csi.namespace() == namespace
 				return true;
+                        }
 		}
 
 		return false;
 	}
 
-	public boolean exists(SymbolInfo si) {
+	public boolean exists(SymbolInfo si, NamespaceInfo namespace) {
 		for (FunctionInfo csi : this.content) {
-			if (csi.equals(si))
+			if (csi.equals(si)) {
+                            if csi.namespace() == namespace
 				return true;
+                        }
 		}
 
 		return false;
@@ -46,25 +50,28 @@ public class FunctionTable implements SymbolTable
 	 * Retrieving the actual function must be done with a complete
 	 * set of parameters
 	 */
-  public SymbolInfo lookup(String name, boolean local) {
+  public SymbolInfo lookup(String name, NamespaceInfo namespace, boolean local) {
 		for (FunctionInfo fi : this.content)
-			if (fi.name().equals(name))
+			if (fi.name().equals(name)) {
+                            if fi.namespace() == namespace
 				return fi;
-
+                        }
     return new SymbolInfoNotFound();
   }
 
-	public SymbolInfo lookup(String name, List<Type> params) {
+	public SymbolInfo lookup(String name,  NamespaceInfo namespace, List<Type> params) {
 		for (FunctionInfo fi : this.content) {
-			if (fi.similar(name, params))
+			if (fi.similar(name, params)) {
+                            if (fi.namespace() == namespace)
 				return fi;
+                        }
 		}
 
 		return new SymbolInfoNotFound();
-	}
+        	}
 
-  public boolean insert(String name, SymbolInfo info) {
-		if (exists(name, info))
+  public boolean insert(String name, NamespaceInfo namespace, SymbolInfo info) {
+		if (exists(name, namespace, info))
 			return false;
 
 		FunctionInfo fi = (FunctionInfo)info;

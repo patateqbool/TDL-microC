@@ -6,12 +6,23 @@
  */
 package mcs.symtab;
 
-interface SymbolInfo {
+public abstract class SymbolInfo {
+
+  private NamespaceInfo namespace;
+
+  public SymbolInfo(NamespaceInfo namespace) {
+      this.namespace = namespace;
+  }
+
   /**
    * Convert the information of the symbol into a string.
    * This allows for easy debugging.
    */
-  String toString();
+  abstract public String toString();
+
+  public NamespaceInfo getNamespace() {
+      return namespace;
+  }
 }
 
 

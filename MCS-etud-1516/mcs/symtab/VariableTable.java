@@ -44,7 +44,7 @@ public class VariableTable implements SymbolTable {
 	/**
 	 * Get the current displacement of the table
 	 */
-	public int offset() {
+	p       ublic int offset() {
 		return this.displacement;
 	}
 
@@ -52,21 +52,27 @@ public class VariableTable implements SymbolTable {
 		return this.symbols;
 	}
 
-	public boolean exists(String name, SymbolInfo si) {
-		return (this.content.get(name) != null);
-	}
+	public boolean exists(String name, NamespaceInfo namespace, SymbolInfo si) {
+                if this.content.get(name) != null {
+                  if this.content.get(name).namespace() == namespace
+                    return true
+                }
+                return false;
+        }
 
   /**
    * Look up into the table
    */
-  public SymbolInfo lookup(String name, boolean local) {
+  public SymbolInfo lookup(String name, Namespace ns, boolean local) {
 		SymbolInfo si = this.content.get(name);
-
-		if (si != null)
+                
+		if (si != null) {
+                    if si.namespace() == ns
 			return si;
+                }
 
-    if (!local && this.parent != null)
-      return parent().lookup(name, false);
+                if (!local && this.parent != null)
+                        return parent().lookup(name, false);
 
     return new SymbolInfoNotFound();
   }
