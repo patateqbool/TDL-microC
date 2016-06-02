@@ -1,10 +1,6 @@
 ----------------------------------------------------
 -- Grammaires de MC  et MCS                       --
 ----------------------------------------------------
-
--- TODO : - lors de déclarations, on doit aussi vérifier dans talias.
---        - finir avec vi dans les expressions
-
 -- TODO : changements pour permettres à deux fonctions n'ayant pas le meme
 --        type de parametres de porter le meme nom.
 --            - Appel de fonction
@@ -29,6 +25,7 @@ inh machine : IMachine for
          ;
 
 -- TODO : Verifier que les attributs sont bien def. (Dernier update: feuille rose complète, feuille blanche V1 (TO DO: modifs noires)
+-- TODO : attributs objet
 
 inh tvar : VariableTable for
          ENTITES, ENTITE, BLOC, F, INSTS, INST, SIX, E, AFFX, A, AX, DECL, FONCTION, PARFS, PARF, PARFSX
@@ -50,6 +47,16 @@ inh tfun : FunctionTable for
 syn tfunS : FunctionTable for 
          DECL, ENTITE, FONCTION
          ;
+
+inh tklass : KlassTable for
+				 ;	
+
+inh tns : NamespaceTable for
+				 ;	
+
+inh ns : Namespace for
+				 ;
+
 
 syn type : Type for
          TYPE, STYPE, PTRS, DECL, FONCTION, F, CHAMP, E, A, AFFX, AX, PARF
@@ -254,10 +261,10 @@ end
 }
 
 -- (3)
-ENTITES -> #passAH ENTITE #transmissionTDS ENTITES #passCode ;
+ENTITES -> #attENTITE ENTITE #transmissionTDS ENTITES #passCode ;
 
 -- Passage des attributs hérités.
-#passAH {
+#attENTITE {
 local
 do
   ENTITE^machine := ENTITES^machine;
@@ -361,12 +368,14 @@ local
 	t : Type;
 do
   info := ENTITE^tvar.lookup(ident^txt, true);
-  -- Si identc est une clef dans la TDSvar, erreur.
+  -- Si ident est une clef dans la TDSvar, erreur.
   if info != null then
      error(IDENT_TAKEN, ident^txt);
   else
+	   -- TODO : changer ça pour permettre à deux fonctions de porter le même nom du moment quelles
+		 --        n'attendent pas des params de même type.
      info := ENTITE^tfun.lookup(ident^txt, true);
-     -- De même si identc est déjà utilisé dans la TDSfun.
+     -- De même si ident est déjà utilisé dans la TDSfun.
     if info != null then
         error(IDENT_TAKEN, ident^txt);
      -- Sinon, on fait passer les infos utiles à DECL.
@@ -2355,15 +2364,15 @@ end
 
 
 -- LA REGLE OU C'EST REPARTI EN VRILLE. --
--- TODO : code sur F et FX.
 -- (71)
-F -> ident #rechercheTables FX #attF ;
+F -> ident #attFX FX #attF ;
 
 global
   varInfo : VariableInfo;
   funInfo : FunctionInfo;
 	estFun : boolean;
 
+-- Attributs inh de FX.
 -- On cherche ident dans les TDS.
 -- Instenciation des attributs nécessaires.
 #rechercheTables {
@@ -2410,6 +2419,10 @@ do
 	FX^estFun := estFun;
 	FX^typeH := type;
 	FX^nom := ident^txt;
+	FX^tvar := F^tvar;
+	FX^tfun := F^tfun;
+	FX^talias := F^talias;
+	FX^machine := F^machine;
 end
 }
 
@@ -2453,24 +2466,16 @@ end
 
 
 -- (72)
-FX -> #verifFonction #typeEtDepl ;
+FX -> #attFX ;
 
--- Vérifie qu'on n'attendait pas une liste d'argument pour un appel de fonction.
-#verifFonction {
+-- Attributs syn de FX. 
+#attFX {
 local
 do
+  -- Vérifie qu'on n'attendait pas une liste d'argument pour un appel de fonction.
   if FX^estFun then
 	  error(FUNCTION_CALL_WITHOUT_PARS);
 	end
-end
-}
-
--- On fait remonter le type.
--- Et la liste de déplacements.
--- Et une chaine vide comme code.
-#typeEtDepl {
-local
-do
   FX^code := "";
   FX^type := FX^typeH;
   FX^listeDeplS := FX^listeDepl;
@@ -2478,10 +2483,10 @@ end
 }
 
 -- (73) : Acces champ
-FX -> pt ident #rechChamp FX #typeEtPileDepl;
+FX -> pt ident #attFX1 FX #attFX;
 
--- Recherche du champ. 
-#rechChamp {
+-- Attributs inh de FX1. 
+#attFX1 {
 local
   typeStruct : StructType; 
 	type : Type;
@@ -2515,11 +2520,16 @@ do
 	FX1^estFun := false;
 	FX1^typeH := type;
   FX1^nom := ident^txt;	
+	FX1^tvar := FX^tvar;
+	FX1^tfun := FX^tfun;
+	FX1^talias := FX^talias;
+	FX1^machine := FX^machine;
 end
 }
 
+-- Attributs syn de FX.
 -- On fait remonter le code, le type et la liste de deplacement.
-#typeEtPileDepl{
+#attFX{
 local
 do
   FX^code := FX1^code;
@@ -2530,12 +2540,13 @@ end
 
 
 -- (74) : Acces champ pointeur
-FX -> arrow ident #rechChamp FX #typeEtPileDepl;
+FX -> arrow ident #attFX1 FX #attFX;
 
+-- Attributs inh de FX1.
 -- Comme dans la RP precedent, on doit vérifier que la règle est applicable.
 -- Le type passé à FX doit etre celui d'un pointeur et le type pointé un struct.
 -- La champ doit exister dans le type pointé.
-#rechChamp {
+#attFX1 {
 local
   type : Type;
 	typeP : PointerType;
@@ -2578,11 +2589,16 @@ do
 	FX1^typeH := type;
 	FX1^listeDepl := listeDepl;
   FX1^nom := ident^txt;
+	FX1^tvar := FX^tvar;
+	FX1^tfun := FX^tfun;
+	FX1^talias := FX^talias;
+	FX1^machine := FX^machine;
 end
 }
 
+-- Attributs syn de FX.
 -- On fait remonter le code, le type et la liste de deplacement.
-#typeEtPileDepl{
+#attFX{
 local
 do
   FX^code := FX1^code;
@@ -2595,31 +2611,30 @@ end
 -- (75) : Appel de sous-programme
 -- La verification des paramètres ainsi que la generation des pushs
 -- se font dans ES.
-FX -> #estFun #passParams paro ES parf #verifFun #attributs FX #genCode #attributs2;
+FX -> #attES paro ES parf #attFX1 FX #attFX;
 global
   codeAppel : String
 
+-- Attributs inh de ES.
 -- Verification que l'appelant est une fonction.
-#estFun {
+#attES {
 local
 do
   if !(FX^estFun) then
 	  error(NOT_A_FUN);
 	end
-end
-}
-
--- Init de la liste des types des params et du code des pops. 
-#passParams {
-local
-do
   ES^typesParams := new List<Type>;
   ES^codeH := "";
+	ES^tvar := FX^tvar;
+	ES^tfun := FX^tfun;
+	ES^talias := FX^talias;
+	ES^machine := FX^machine;
 end
 }
 
+-- Attributs inh de FX1.
 -- Verification qu'il existe bien une fonction avec cette signature.
-#verifFun {
+#attFX1 {
 local
   fi : functionInfo;
 do
@@ -2631,13 +2646,6 @@ do
 	    error(NO_FUN_WITH_SUCH_PARS, FX^nom);
 	  end
 	end
-end
-}
-
--- Instenciation des arguments hérités de FX.
-#attributs {
-local
-do
   -- La liste des deplacements n'a pas été modifié par le parcours des arguments.
   FX1^listeDepl := FX^listeDepl;
 	-- L'appel de fonction n'est pas une fonction.
@@ -2646,23 +2654,20 @@ do
 	FX1^typeH := FX^typeH;
 	-- Pas de nom pour FX ici.
 	FX1^nom := "";
+	FX1^tvar := FX^tvar;
+	FX1^tfun := FX^tfun;
+	FX1^talias := FX^talias;
+	FX1^machine := FX^machine;
 end
 }
 
+-- Attributs syn de FX.
 -- On push les arguments, le code est dans ES^code.
--- Puis on appel la fonction.
--- Et on met le code de FX1.
-#genCode {
+-- Puis on appel la fonction. Et on met le code de FX1.
+#attFX {
 local
 do
-  FX^code := ES^code + generateFunctionCall(FX^funInfoH) + FX1^code; 
-end
-}
-
--- On fait remonter les attributs hérités.
-#attributs2 {
-local
-do
+  FX^code := ES^code + generateFunctionCall(FX^funInfoH) + FX1^code;
   FX^type := FX1^type;
 	FX^listeDeplS := FX1^listeDeplS;
 end
@@ -2670,30 +2675,26 @@ end
 
 
 -- (76) : Arguments appel de sous-programme
-ES -> #tparams #genCode ;
+ES -> #attES ;
 
--- Passage de la liste des types des params de l'appel.
+-- Attributs syn de ES
 #tparams {
 local
 do
+  -- Passage de la liste des types des params de l'appel.
   ES^typesParamsS := ES^typesParams;
-end
-}
-
--- On n'a rien à ajouter comme code à cette RP.
--- On fait remonter le code des paramètres précédents.
-#genCode {
-local
-do
+  -- On n'a rien à ajouter comme code à cette RP.
+  -- On fait remonter le code des paramètres précédents.
   ES^code := ES^codeH;
 end
 }
 
 
 -- (77)
-ES -> #pass E #typesEtPassListe ESX #genCode ;
+ES -> #attE E #attESX ESX #attES ;
 
-#pass {
+-- Attributs inh de E
+#attE {
 local
 do
   E^machine := ES^machine;
@@ -2703,10 +2704,8 @@ do
 end
 }
 
--- On vérifie que E est bien du type attendu pour ce paramètre.
--- Egalité stricte entre les types, on pourrait améliorer en utilisant isEqual.
--- Et on fait passer le reste de la liste des paramètres.
-#typesEtPassListe {
+-- Attributs inh de ESX et ajout du type du paramètre.
+#attESX {
 local
   l : List<Types>;
   code : String;
@@ -2718,20 +2717,16 @@ do
   code := code + E^code + ES^machine.generateFunctionPushArgument(E^reg);
   ESX^typesParams := l;
   ESX^codeH := code;
-end
-}
-
--- Passage de la liste des types des params.
-#tparams {
-local
-do
-  ES^typesParamsS := ESX^typesParamsS;
+	ESX^machine := ES^machine;
+	ESX^tvar := ES^tvar;
+	ESX^tfun := ES^tfun;
+	ESX^talias := ES^talias;
 end
 }
 
 -- Passage du code de ESX à ES.
 -- Et remontée de la liste des types.
-#gencode {
+#attES {
 local
 do
   ES^code := ESX^code;
@@ -2741,30 +2736,23 @@ end
 
 
 -- (78)
-ESX -> #tparams #genCode ;
+ESX -> #attESX ;
 
--- Passage des types des params.
-#tparams {
+-- Attributs syn de ESX.
+#attESX {
 local
 do
   ESX^typesParamsS := ESX^typesParams;
-end
-}
-
--- On n'a rien à ajouter comme code à cette RP.
--- On fait remonter le code des paramètres précédents.
-#genCode {
-local
-do
   ESX^code := ESX^codeH;
 end
 }
 
 
 -- (79)
-ESX -> virg #pass E #typesEtPassListe ESX #genCode ;
+ESX -> virg #attE E #attESX1 ESX #attESX ;
 
-#pass {
+-- Attributs inh de E.
+#attE {
 local
 do
   E^machine := ESX^machine;
@@ -2774,10 +2762,8 @@ do
 end
 }
 
--- On vérifie que E est bien du type attendu pour ce paramètre.
--- Egalité stricte entre les types, on pourrait améliorer en utilisant isEqual.
--- Et on fait passer le reste de la liste des paramètres.
-#typesEtPassListe {
+-- Attributs inh de ESX1, ajout du type du param.
+#attESX1 {
 local
   l : List<Types>;
 	code : String;
@@ -2787,12 +2773,17 @@ do
   code := ESX^codeH + E^code + ESX^machine.generateFunctionPushArgument(E^reg);
   ESX1^typesParams := l;
   ESX1^codeH := code;
+	ESX1^machine := ESX^machine;
+	ESX1^tvar := ESX^tvar;
+	ESX1^tfun := ESX^tfun;
+	ESX1^talias := ESX^talias;
 end
 }
 
+-- Attributs syn de ESX.
 -- Passage du code de ESX à ES.
 -- Et remontée de la liste des types.
-#gencode {
+#attESX {
 local
 do
   ESX^code := ESX1^code;
@@ -2839,112 +2830,132 @@ do
 end
 }
 
------------------ CS extension --------------------
+--------------- CS extension --------------------
 -- Decommenter les regles suivantes pour l'extension CS
 -------------------------------------------------
---TYPE -> bool #typage ;
-----TODO coté ARM: Ajouter un BooleanType
---#typage {
---local
---do
---  TYPE^type := new BooleanType();
---end
---}
+TYPE -> bool #typage ;
 
----- definit un contenu d'un namespace
---ENTITE -> namespace identc aco ENTITES acf ;
----- donne l acces au contenu du 'namespace'
---ENTITE -> using identc IDC pv ;
---IDC -> ;
---IDC -> pt identc IDC ;
----- definition d'une classe (peut etre en dehors d'un namespace)
---ENTITE -> ACCES class identc HERITAGE aco DEFS acf ;
----- acces 
---ACCES -> public;
---ACCES -> private;
---ACCES -> ;
----- heritage
---HERITAGE -> ;
---HERITAGE -> dpts identc IDC ;
----- membres d'une classe
---DEFS -> ;
---DEFS ->  ACCES DEF DEFS ;
---DEF  ->  TYPE ident DECL ;
----- constructeur
---DEF  ->  identc paro PARFS parf BASE BLOC;
----- appel eventuel au constructeur de la classe parente.
---BASE -> ;
---BASE -> dpts base paro ES parf  ;
----- Mode de passage pour les fonctions et méthodes : rien : D, ref : D/R, out : R
---PARF ->  MODE TYPE ident ;
---MODE -> ref ;
---MODE -> out ; 
---F -> true #typeEtGenCode #estVarEtVi ;
+#typage {
+local
+do
+  TYPE^type := new BooleanType();
+end
+}
 
----- Set de l'attribut de type de F pour indiquer qu'il s'agit d'un booléen.
----- Génération du code pour load la valeur du booléen dans la mémoire.
---#typeEtGenCode {
---local
---  t : BooleanType;
---  r : Registre;
---do
---  -- Creation du type et du registre.
---  t := new BooleanType();
---  r := new Register();
---	-- Set de l'attribut type.
---	F^type := t;
---	-- Génération du code, et set de l'attribut le contenant.
---	-- TODO : Gérer les booléens coté ConstantInfo
---  F^code := F^machine.generateLoadConstant(new ConstantInfo(t, true), r); 
---	-- Set de l'attribut registre de F, c'est le registre contenant l'entier.
---	F^reg := r;
---end
---}
+-- definit un contenu d'un namespace
+-- TODO : gérer les ENTITES (faire remonter des t?) + GC
+ENTITE -> namespace #ajout identc aco ENTITES acf ;
 
----- Une expression de base ne peut representer une variable.
----- Donc pas de vi.
---#estVarEtVi {
---local
---do
---  F^estVar := false;
---	F^vi := null;
---end
---}
---F -> false #typeEtGenCode #estVarEtVi ;
+-- Ajout de identc à la table des namespaces.
+-- Vérifie que identc n'est pas déjà utilisé (par une classe ou un namespace).
+#ajout {
+local
+-- TODO: vérifier tout ca quand Namespace & co seront finis
+do
+  -- Si identc est une clef dans la TDSKlass, erreur.
+  if ENTITE^tklass.lookup(identc^txt) != null then
+     error(IDENT_TAKEN, identc^txt);
+  else
+    if  ENTITE^tns.lookup(identc^txt) != null then
+        error(IDENT_TAKEN, identc^txt);
+    else
+     -- Sinon, on peut ajouter le nouveau namespace à la TDS.
+			tns.insert(identc^txt, ENTITE^ns);
+    end
+  end  
+end
+}
 
----- Set de l'attribut de type de F pour indiquer qu'il s'agit d'un booléen.
----- Génération du code pour load la valeur du booléen dans la mémoire.
---#typeEtGenCode {
---local
---  t : BooleanType;
---  r : Registre;
---do
---  -- Creation du type et du registre.
---  t := new BooleanType();
---  r := new Register();
---	-- Set de l'attribut type.
---	F^type := t;
---	-- Génération du code, et set de l'attribut le contenant.
---	-- TODO : Gérer les booléens coté ConstantInfo
---  F^code := F^machine.generateLoadConstant(new ConstantInfo(t, false), r); 
---	-- Set de l'attribut registre de F, c'est le registre contenant l'entier.
---	F^reg := r;
---end
---}
+-- donne l acces au contenu du 'namespace'
+ENTITE -> using identc IDC pv ;
+IDC -> ;
+IDC -> pt identc IDC ;
+-- definition d'une classe (peut etre en dehors d'un namespace)
+ENTITE -> ACCES class identc HERITAGE aco DEFS acf ;
+-- acces 
+ACCES -> public;
+ACCES -> private;
+ACCES -> ;
+-- heritage
+HERITAGE -> ;
+HERITAGE -> dpts identc IDC ;
+-- membres d'une classe
+DEFS -> ;
+DEFS ->  ACCES DEF DEFS ;
+DEF  ->  TYPE ident DECL ;
+-- constructeur
+DEF  ->  identc paro PARFS parf BASE BLOC;
+-- appel eventuel au constructeur de la classe parente.
+BASE -> ;
+BASE -> dpts base paro ES parf  ;
+-- Mode de passage pour les fonctions et méthodes : rien : D, ref : D/R, out : R
+PARF ->  MODE TYPE ident ;
+MODE -> ref ;
+MODE -> out ; 
+F -> true #typeEtGenCode #estVarEtVi ;
 
----- Une expression de base ne peut representer une variable.
----- Donc pas de vi.
---#estVarEtVi {
---local
---do
---  F^estVar := false;
---	F^vi := null;
---end
---}
---F -> this FX;
--- base = super
---F -> base FX;
-----compatible avec null
---F -> null2;
---F -> new identc IDC paro ES parf ;
+-- Set de l'attribut de type de F pour indiquer qu'il s'agit d'un booléen.
+-- Génération du code pour load la valeur du booléen dans la mémoire.
+#typeEtGenCode {
+local
+  t : BooleanType;
+  r : Registre;
+do
+  -- Creation du type et du registre.
+  t := new BooleanType();
+  r := new Register();
+	-- Set de l'attribut type.
+	F^type := t;
+	-- Génération du code, et set de l'attribut le contenant.
+  F^code := F^machine.generateLoadConstant(new ConstantInfo(t, true), r); 
+	-- Set de l'attribut registre de F, c'est le registre contenant l'entier.
+	F^reg := r;
+end
+}
+
+-- Une expression de base ne peut representer une variable.
+-- Donc pas de vi.
+#estVarEtVi {
+local
+do
+  F^estVar := false;
+	F^vi := null;
+end
+}
+F -> false #typeEtGenCode #estVarEtVi ;
+
+-- Set de l'attribut de type de F pour indiquer qu'il s'agit d'un booléen.
+-- Génération du code pour load la valeur du booléen dans la mémoire.
+#typeEtGenCode {
+local
+  t : BooleanType;
+  r : Registre;
+do
+  -- Creation du type et du registre.
+  t := new BooleanType();
+  r := new Register();
+	-- Set de l'attribut type.
+	F^type := t;
+	-- Génération du code, et set de l'attribut le contenant.
+  F^code := F^machine.generateLoadConstant(new ConstantInfo(t, false), r); 
+	-- Set de l'attribut registre de F, c'est le registre contenant l'entier.
+	F^reg := r;
+end
+}
+
+-- Une expression de base ne peut representer une variable.
+-- Donc pas de vi.
+#estVarEtVi {
+local
+do
+  F^estVar := false;
+	F^vi := null;
+end
+}
+F -> this FX;
+ base = super
+F -> base FX;
+--compatible avec null
+F -> null2;
+F -> new identc IDC paro ES parf ;
 end
