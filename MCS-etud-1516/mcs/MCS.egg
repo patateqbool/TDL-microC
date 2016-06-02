@@ -2156,7 +2156,7 @@ end
 
 
 -- (64) : Operateurs unaires
-OPUN -> plus ;
+OPUN -> #op plus ;
 
 #op {
 local
@@ -2167,7 +2167,7 @@ end
 
 
 -- (65)
-OPUN -> moins ;
+OPUN -> #op moins ;
 
 #op {
 local
@@ -2178,7 +2178,7 @@ end
 
 
 -- (66)
-OPUN -> non;
+OPUN -> #op non;
 
 #op {
 local
@@ -2856,6 +2856,7 @@ do
   if ENTITE^tklass.lookup(identc^txt) != null then
      error(IDENT_TAKEN, identc^txt);
   else
+  -- Si identc est une clef dans la TDSNamespace, erreur.	
     if  ENTITE^tns.lookup(identc^txt) != null then
         error(IDENT_TAKEN, identc^txt);
     else
@@ -2871,11 +2872,59 @@ ENTITE -> using identc IDC pv ;
 IDC -> ;
 IDC -> pt identc IDC ;
 -- definition d'une classe (peut etre en dehors d'un namespace)
-ENTITE -> ACCES class identc HERITAGE aco DEFS acf ;
+
+ENTITE -> ACCES class #ajout identc HERITAGE aco DEFS acf ;
+
+-- Ajout de identc à la table des classes.
+-- Vérifie que identc n'est pas déjà utilisé (par une classe ou un namespace).
+#ajout {
+local
+-- TODO: vérifier tout ca quand KlassTable & co seront finis
+do
+  -- Si identc est une clef dans la TDSKlass, erreur.
+  if ENTITE^tklass.lookup(identc^txt) != null then
+     error(IDENT_TAKEN, identc^txt);
+  else
+    if  ENTITE^tns.lookup(identc^txt) != null then
+        error(IDENT_TAKEN, identc^txt);
+    else
+     -- Sinon, on peut ajouter la nouvelle classe à la TDS.
+			tklass.insert(identc^txt,ENTITE^klass,attributAcces);
+    end
+  end  
+end
+}
+
 -- acces 
-ACCES -> public;
-ACCES -> private;
-ACCES -> ;
+ACCES -> #acc public;
+
+--TODO: définir l'énum accès: ou?
+#acc {
+local
+do
+  ACCES^acc := public;
+end
+}
+
+ACCES -> #acc private;
+
+--TODO: définir l'énum accès: ou?
+#acc {
+local
+do
+  ACCES^acc := private;
+end
+}
+
+ACCES -> #acc;
+
+--TODO: définir l'énum accès: ou?
+#acc {
+local
+do
+  ACCES^acc := def;
+end
+}
 -- heritage
 HERITAGE -> ;
 HERITAGE -> dpts identc IDC ;
