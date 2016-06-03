@@ -28,15 +28,18 @@ inh tvar : VariableTable for
          ;
 
 syn tvarS : VariableTable for 
-         PARFS, PARF, ENTITE, INST, INSTS
+         PARFS, PARF, PARFSX, ENTITE, INST, INSTS
          ; -- Utilisée pour récupérer la TDS màj avec les paramètres de la fonction.
 
 inh talias : AliasTable for 
-         ENTITES, ENTITE, BLOC, STYPE, TYPE, F, INSTS, INST, SIX, CHAMP, E,
+         ENTITES, ENTITE, BLOC, STYPE, TYPE, F, INSTS, INST, SIX, CHAMPS, CHAMP, E,
 				 AFFX, A, AX, DECL, FONCTION, PARFS, PARF, PARFSX,
          R, RX, T, TX, FX, ES, ESX
          ; --Table des alias contenant les types propres au programme.
 
+syn taliasS : AliasTable for
+         ENTITE
+				 ;
 
 inh tfun : FunctionTable for
          ENTITES, ENTITE, BLOC, F, INSTS, INST, SIX, E, AFFX, A, AX, DECL, FONCTION, PARFS, PARF, PARFSX,
@@ -48,8 +51,8 @@ syn tfunS : FunctionTable for
          ;
 
 syn type : Type for
-         TYPE, STYPE, PTRS, DECL, FONCTION, F, CHAMP, E, A, AFFX, AX, PARF,
-				 R, RX, T, TX, 
+         TYPE, STYPE, PTRS, F, CHAMP, E, A, AFFX, AX,
+				 R, RX, T, TX 
          ;
 
 inh typesParams : List<Type> for
@@ -61,15 +64,15 @@ syn typesParamS : List<Type> for
 				 ;
 
 inh typeH : Type for
-         PTRS, INSTS, INST, DECL, FONCTION, SIX, FX, AFFX
+         PTRS, DECL, FONCTION, FX, AFFX
          ;
 
 inh funInfoH : FunctionInfo for
-         PARFS, PARFSX, BLOC, INSTS, INST, SIX
+         PARFS, PARFSX, BLOC, INSTS, INST, SIX, PARF
 				 ;
 
 syn funInfo : FunctionInfo for
-         PARFS, PARFSX, FX, DECL, FONCTION
+         PARF, PARFS, PARFSX, FX, DECL, FONCTION
 	       ;
 
 -- Attribut servant à savoir du quantième paramètre il s'agit. 
@@ -87,7 +90,7 @@ syn nomS : String for
 
 syn code : String for
          ENTITES, ENTITE, DECL, FONCTION, INST, BLOC, INSTS, SIX,
-         PARFS, PARF, PARFSX, ES, ESX, 
+         ES, ESX, 
          E, AFFX, A, AX, R, RX, T, TX, F,FX
 				 ;
 
@@ -104,7 +107,7 @@ syn oprel : RelationalOperator for
 				 ;
 
 syn reg : Register for
-				 F, T, TX, RX, E, AFFX, A, AX, R, F
+				 F, T, TX, RX, E, AFFX, A, AX, R
 				 ;
 				 
 syn estVar : boolean for
@@ -258,7 +261,7 @@ do
   ENTITES^tvar := new VariableTable();
   ENTITES^tfun := new FunctionTable();
   ENTITES^talias := new AliasTable();
-	ENTITES^machine := PROGRAMME^machine;
+	ENTITES^machine := machine;
 end
 }
 -- Ecrit le code dans un fichier
@@ -288,7 +291,7 @@ ENTITES -> #attENTITE ENTITE #attENTITES1 ENTITES #attENTITES ;
 local
 do
   ENTITE^machine := ENTITES^machine;
-	ENTITE^tvar : =ENTITES^tvar;
+	ENTITE^tvar := ENTITES^tvar;
 	ENTITE^tfun := ENTITES^tfun;
 	ENTITE^talias := ENTITES^talias;
 end
@@ -320,7 +323,7 @@ end
 ---------------------------------------------
 
 -- (4)
-ENTITE -> typedef #attTYPE TYPE #attENTITE identc pv ;
+ENTITE -> typedef #attTYPE TYPE identc pv #attENTITE ;
 
 #attTYPE {
 local
@@ -441,7 +444,7 @@ do
 				-- On ajoute la fonction à la tfun, 
 				-- si la valeur retour est false c'est qu'on avait déjà une fonction
 				-- avec la même signature. Dans ce cas, erreur.
-        b := f.insert(ident^txt, fi);
+        b := tf.insert(ident^txt, fi);
 				if (!b) then 
 				  error(ALREADY_A_FUN_WITH_THAT_SIGN, ident^txt);
 				end
@@ -466,6 +469,7 @@ DECL -> pv #attDECL;
 -- funInfo est à null car il ne s'agit pas d'une fonction.
 #attDECL {
 local
+do
   DECL^code := DECL^machine.generateAllocateInStack(DECL^typeH);
 	DECL^funInfo := null;
 end
@@ -502,10 +506,10 @@ end
 
 
 -- (8)
-FONCTION -> #attH paro PARFS parf #attBLOC BLOC #attFONCTION ;
+FONCTION -> #attPARFS paro PARFS parf #attBLOC BLOC #attFONCTION ;
 
 -- Init des attributs hérités pour PARFS.
-#attH {
+#attPARFS {
 local
 do
   -- On crée la TDSvar fille pour la passer à PARFS.
@@ -527,7 +531,7 @@ local
   tf : FunctionTable;
   fi : funInfo;
 do
-  tf := PARFS^tfun;
+  tf := FONCTION^tfun;
   fi := PARFS^funInfo;
   tf.insert(FONCTION^nom, fi);
   BLOC^tfun := tf;
@@ -592,10 +596,7 @@ end
 local
   fi : functionInfo ; 
 do
-  fi := PARFS^funInfoH ;
-  -- On ajoute le type de PARF à la variable FunctionInfo.
-  fi.add(PARF^type);
-  PARFSX^funInfoH := fi;
+  PARFSX^funInfoH := PARF^funInfo;
   PARFSX^tvar := PARF^tvarS;
 	PARFSX^tfun := PARFS^tfun;
 	PARFSX^talias := PARFS^talias;
@@ -620,6 +621,7 @@ PARFSX -> #attPARFSX ;
 local
 do
   PARFSX^funInfo := PARFSX^funInfoH ;
+	PARFSX^tvarS := PARFSX^tvar;
 end
 }
 
@@ -650,11 +652,8 @@ end
 -- Passage des tds.
 #attPARFSX1 {
 local
-  fi : functionInfo;
 do
-  fi := PARFSX^funInfoH;
-  fi.add(PARF^type);
-  PARFSX1^funInfoH := fi;
+  PARFSX1^funInfoH := PARF^funInfo;
 	PARFSX1^tvar := PARF^tvarS;
 	PARFSX1^tfun := PARFSX^tfun;
 	PARFSX1^talias := PARFSX^talias;
@@ -666,19 +665,20 @@ end
 local
 do
   PARFSX^funInfo := PARFSX1^funInfo ;
+	PARFSX^tvarS := PARFSX1^tvarS;
 end
 }
 
 
 -- (13)
-PARF -> #attTYPE TYPE #attPARF ident ;
+PARF -> #attTYPE TYPE ident #attPARF; 
 
 -- Passage de la table des alias.
 #attTYPE {
 local
 do
   TYPE^talias := PARF^talias;
-enXd
+end
 }
 
 
@@ -689,17 +689,20 @@ enXd
 local
   tv : VariableTable;
 	t : Type;
+	info : SymbolInfo;
+  fi : functionInfo;
 do
   tv := PARF^tvar;
+  fi := PARF^funInfoH;
   -- Vérifications concernant ident.
   info := tv.lookup(ident^txt, false);
   -- Si identc est une clef dans la TDSvar, erreur.
-  if info != null then
+  if (info != null) then
     error(IDENT_TAKEN, ident^txt);
   else
     info := PARF^tfun.lookup(ident^txt, false);
     -- De même si identc est déjà utilisé dans la TDSfun.
-    if info != null then
+    if (info != null) then
       error(IDENT_TAKEN, ident^txt);
     else
 		  t := PARF^talias.lookup(ident^txt, false);
@@ -707,13 +710,14 @@ do
 			if (t != null) then
 			  error(IDENT_TAKEN, ident^txt);
 			else
-			  -- Ajout de ident à la TDS locale.
-        tv.insert(ident^txt, new VariableInfo(TYPE^type, PARF^funInfo.displacement(PARF^cParam)));
+			  -- Ajout de ident à la TDS locale et au fi.
+			  fi.add(TYPE^type);
+        tv.insert(ident^txt, new VariableInfo(TYPE^type, fi.displacement(PARF^cParam)));
       end
 		end
   end
 	PARF^tvarS := tv;
-  PARF^type := TYPE^type;
+	PARF^funInfo := fi;
 end
 }
 
@@ -843,6 +847,7 @@ STYPE -> struct aco #attCHAMPS CHAMPS acf #attSTYPE ;
 local
 do
   CHAMPS^champs := new StructFields();
+	CHAMPS^talias := STYPE^talias;
 end
 }
 
@@ -880,7 +885,7 @@ end
 
 #attCHAMPS1 {
 local
-  c : StructFields
+  c : StructFields;
 do
   c := CHAMPS^champs;
   if c.exist(CHAMP^nomS) then
@@ -905,7 +910,7 @@ end
 
 
 -- (24) 
-CHAMP -> #attTYPE TYPE #attCHAMP ident pv;
+CHAMP -> #attTYPE TYPE ident pv #attCHAMP ;
 
 -- Passage de la table des alias.
 #attTYPE {
@@ -919,8 +924,8 @@ end
 #attCHAMP {
 local
 do
-  CHAMP^nomS = ident^txt;
-  CHAMP^type = TYPE^type;
+  CHAMP^nomS := ident^txt;
+  CHAMP^type := TYPE^type;
 end
 }
 
@@ -947,7 +952,7 @@ end
 
 -- Generation du flush de fin de bloc.
 -- Passage du code généré par les INSTS (et le flush) à BLOC.
-#attBLOC {
+#attBLOC {
 local
   code : String;
 do
@@ -1020,7 +1025,7 @@ INST -> #attTYPE TYPE ident #attAFFX AFFX pv #attINST;
 #attTYPE {
 local
 do
-  TYPE^talias := ENTITE^talias;
+  TYPE^talias := INST^talias;
 end
 }
 
@@ -1252,13 +1257,13 @@ end
 -- Vérification que E est du type retour de la fonction.
 #attINST {
 local
-  typeRet : Type;
+  typeRet : Type;
   code : String;
 do
   typeRet := INST^funInfoH.returnType();
   -- Si typeRet ne correspond pas à E^type
   -- alors erreur.
-  if not typeRet.isEqualTo(E^type) then
+  if !(typeRet.isEqualTo(E^type)) then
     error(TYPE_NOT_COMPATIBLE);  
   end
 	--Génération du code de retour de la fonction et du flush.
@@ -1359,7 +1364,7 @@ end
 -- Vérifie que l'affectation est valide :
 --   - la partie à gauche du = doit être une variable,
 --   - le type de A doit être compatible avec celui de AFFX.
-#affAFFX {
+#attAFFX {
 local
 do
   if !(AFFX^affPossible) then
@@ -1443,7 +1448,7 @@ do
 		    error(TYPE_NOT_EQUAL);
 		  else
   	 		-- On génnère le code de l'opération.
-		    code := code + A^machine.generateOperation(AX^op,R^reg,AX^reg,reg);
+		    code := code + A^machine.generateOperation(AX^oprel,R^reg,AX^reg,reg);
 	    end
 		else
 		  -- Le type n'est pas simple : impossible de faire une comparaison.
@@ -1492,7 +1497,7 @@ do
   -- La RP appelante ne represente pas une variable.
   AX^estVar := false;
 	-- Les autres attributs font passer ceux de R.
-  AX^oprel = OPREL^oprel;
+  AX^oprel := OPREL^oprel;
 	AX^reg := R^reg;
 	AX^type := R^type;
 	AX^code := R^code;
@@ -1513,7 +1518,7 @@ do
   -- La RP n'empeche pas d'etre une variable.
   AX^estVar := true;
   -- Il faut init code.
-  AX^code =: "";
+  AX^code := "";
 	-- Registre à null, de même que type.
 	AX^reg := null;
 	AX^type := null;
@@ -2300,7 +2305,7 @@ do
 	-- TODO : gérer ça suivant qu'on veuille l'addrese pour changer la valeur pointée
 	--        ou la valeur pointée directement.
 	F^code := F1^code + F^machine.generateLoadFromHeap(F1^reg, 0, reg);
-	F^vi := -- TODO
+	F^vi := null; --TODO
 	F^estVar := true;
 	F^type := type;
 	F^reg := reg;
