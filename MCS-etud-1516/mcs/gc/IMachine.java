@@ -288,6 +288,22 @@ public interface IMachine {
    */
   String generateIfThenElse(Register rcond, String cif, String celse) throws MCSException;
 
+  /**
+   * Generate a comment
+   * @param com comment to print
+   * @param ident indenting to apply
+   * @return the generated code
+   */
+  String generateComment(String comm, String indent) throws MCSException;
+
+  /**
+   * Generate a multiline comment (utility)
+   * @param com list of '\n' separated comments
+   * @param indent indent to apply
+   * @return the generated code
+   */
+  String generateMultiComments(String com, String indent) throws MCSException;
+
 
   //////////////////////////// CALCULUS /////////////////////////////
 

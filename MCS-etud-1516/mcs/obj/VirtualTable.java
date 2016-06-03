@@ -17,6 +17,7 @@
  */
 package mcs.obj;
 
+import java.util.Set;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -24,10 +25,10 @@ public class VirtualTable {
   // The actual trick is that the method corresponding to a class has always the
   // same signature, except for the prefix class name.
   // So we just need to store the class's id and the method's class id
-  private Map<Integer,Integer> content;
+  private Map<Integer,String> content;
 
   public VirtualTable() {
-    this.content = new HashMap<Integer,Integer>();
+    this.content = new HashMap<Integer,String>();
   }
 
   /*
@@ -36,16 +37,16 @@ public class VirtualTable {
     this.content.put(classid, methodclassid);
   }*/
 
-  public void set(int classid, int methodclassid) {
-    this.content.put(classid, methodclassid);
+  public void set(int classid, String classname) {
+    this.content.put(classid, classname);
   }
 
-  public int get(int classid) {
-    Integer r = this.content.get(classid);
-    if (r == null)
-      return -1;
-    else
-      return r;
+  public String get(int classid) {
+    return this.content.get(classid);
+  }
+
+  public Set<Integer> allKeys() {
+    return this.content.keySet();
   }
 }
 

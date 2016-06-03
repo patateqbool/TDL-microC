@@ -137,11 +137,11 @@ public class Klass extends CompositeType {
 			// Inserting a method that already exists is fine, it
       // is called overriding !
       // This causes a change in the vtable
-      lookupMethod(name, mi.parameters()).vtable().set(this.id, this.id);
+      lookupMethod(name, mi.parameters()).vtable().set(this.id, this.name);
 		} else {
       // This method does not exists; we must create a vtable for it
       VirtualTable vt = new VirtualTable();
-      vt.set(this.id, this.id);
+      vt.set(this.id, this.name);
       mi.assignVtable(vt);
 			mi.setName(name);
 		  this.methodTable.add(mi);

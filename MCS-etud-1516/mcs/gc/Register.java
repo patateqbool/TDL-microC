@@ -10,7 +10,7 @@ public class Register {
 		Empty, Loaded, Used
 	};
 
-	private String name;
+	private String name, alias;
 	private int num;
 	private Status status;
 
@@ -18,11 +18,15 @@ public class Register {
 	 * @param name
 	 * @param num
 	 */
-	public Register(String name, int num) {
-		super();
-		this.name = name;
+  public Register(String name, int num, String alias) {
+    this.name = name;
 		this.num = num;
 		this.status = Status.Empty;
+    this.alias = alias;
+  }
+
+	public Register(String name, int num) {
+    this(name, num, "");
 	}
 
 	public Register() {
@@ -35,11 +39,15 @@ public class Register {
 		this.status = other.status;
 	}
 
-	public String getName() {
+  public String alias() {
+    return alias;
+  }
+
+	public String name() {
 		return name;
 	}
 
-	public int getNum() {
+	public int num() {
 		return num;
 	}
 
@@ -53,11 +61,14 @@ public class Register {
 
 	@Override
 	public String toString() {
-		return name + (num >= 0 ? num : "");
+		return (alias.length() == 0 ? name + (num >= 0 ? num : "") : alias);
 	}
 
 	public String debug() {
-		return "Register [name=" + name + ", num=" + num + "]";
+		return "Register [name=" + name + "(" + alias + "), num=" + num + "]<" +
+      (status == Status.Empty ? "E" :
+       (status == Status.Loaded ? "L" :
+        "U")) + ">";
 	}
 
 }
