@@ -93,5 +93,9 @@ public class FunctionTable implements SymbolTable {
       l.add(fi.name());
     return l;
   }
+
+  public List<String> symbolsTypes() {
+    return null;
+  }
 }
 

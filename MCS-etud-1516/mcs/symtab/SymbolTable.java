@@ -44,6 +44,11 @@ public interface SymbolTable {
 	 * @return a SET of symbols
 	 */
 	List<String> symbols();
+
+  /**
+   * Get the list of symbols' types in this table
+   */
+  List<Type> symbolsTypes();
 }
 
 
