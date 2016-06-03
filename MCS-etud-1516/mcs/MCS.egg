@@ -51,7 +51,7 @@ syn tfunS : FunctionTable for
          ;
 
 syn type : Type for
-         TYPE, STYPE, PTRS, F, CHAMP, E, A, AFFX, AX,
+         TYPE, STYPE, PTRS, F, CHAMP, E, A, AFFX, AX, FX,
 				 R, RX, T, TX 
          ;
 
@@ -59,7 +59,7 @@ inh typesParams : List<Type> for
          ES, ESX
 				 ;
  
-syn typesParamS : List<Type> for
+syn typesParamsS : List<Type> for
          ES, ESX
 				 ;
 
@@ -68,11 +68,11 @@ inh typeH : Type for
          ;
 
 inh funInfoH : FunctionInfo for
-         PARFS, PARFSX, BLOC, INSTS, INST, SIX, PARF
+         PARFS, PARFSX, BLOC, INSTS, INST, SIX, PARF, FX
 				 ;
 
 syn funInfo : FunctionInfo for
-         PARF, PARFS, PARFSX, FX, DECL, FONCTION
+         PARF, PARFS, PARFSX, DECL, FONCTION
 	       ;
 
 -- Attribut servant à savoir du quantième paramètre il s'agit. 
@@ -81,7 +81,7 @@ inh cParam : int for
 				 ;
 
 inh nom : String for 
-         DECL, FONCTION
+         DECL, FONCTION, FX
 				 ;
 
 syn nomS : String for 
@@ -98,11 +98,11 @@ inh codeH : String for
 				 ES, ESX
 				 ;
 
-syn op : Operator for
-				 OPADD, OPMULT, OPUN, RX, TX
+syn op : Integer for -- Operator for
+				 OPADD, OPMUL, OPUN, RX, TX
 				 ;
 
-syn oprel : RelationalOperator for
+syn oprel : Integer for -- : RelationalOperator for
 				 OPREL, AX
 				 ;
 
@@ -111,7 +111,7 @@ syn reg : Register for
 				 ;
 				 
 syn estVar : boolean for
-         R, RX, FX, T, TX, E, A, AFFX, AX
+         R, RX, FX, T, TX, E, A, AFFX, AX, F
 				 ;
 
 
@@ -129,10 +129,6 @@ inh listeDepl : DisplacementList for
 
 syn listeDeplS : DisplacementList for
 				 FX
-				 ;
-
-inh typeAttendus : List<Type> for
-				 ES
 				 ;
 
 syn vi : VariableInfo for
@@ -1532,7 +1528,7 @@ OPREL -> inf #attOPREL ;
 #attOPREL {
 local
 do
-  OPREL^oprel := IMachine.RelationalOperator.LT;
+  OPREL^oprel := 13; -- RelationalOperator.LT;
 end
 }
 
@@ -1543,7 +1539,7 @@ OPREL -> sup #attOPREL ;
 #attOPREL {
 local
 do
-  OPREL^oprel := IMachine.RelationalOperator.GT;
+  OPREL^oprel := 15; --IMachine.RelationalOperator.GT;
 end
 }
 
@@ -1554,7 +1550,7 @@ OPREL -> infeg #attOPREL ;
 #attOPREL {
 local
 do
-  OPREL^oprel := IMachine.RelationalOperator.LEQ;
+  OPREL^oprel := 14; --IMachine.RelationalOperator.LEQ;
 end
 }
 
@@ -1565,7 +1561,7 @@ OPREL -> supeg #attOPREL ;
 #attOPREL {
 local
 do
-  OPREL^oprel := IMachine.RelationalOperator.GEQ;
+  OPREL^oprel := 16; --IMachine.RelationalOperator.GEQ;
 end
 }
 
@@ -1576,7 +1572,7 @@ OPREL -> eg #attOPREL ;
 #attOPREL {
 local
 do
-  OPREL^oprel := IMachine.RelationalOperator.EQ;
+  OPREL^oprel := 11; --IMachine.RelationalOperator.EQ;
 end
 }
 
@@ -1587,7 +1583,7 @@ OPREL -> neg #attOPREL ;
 #attOPREL {
 local
 do
-  OPREL^oprel := IMachine.RelationalOperator.NEQ;
+  OPREL^oprel := 12;--IMachine.RelationalOperator.NEQ;
 end
 }
 
@@ -1630,15 +1626,15 @@ do
   -- Init du registre dans lequel sera stocké le résultat de l'opération.
   reg := new Register();
   code := T^code + RX^code;
-	type := T^type
-  if (RX^op != IMachine.Operator.NOP) then
+	type := T^type;
+  if (RX^op != 0) then -- IMachine.Operator.NOP) then
 	  -- Si il y a un opération : verif sur les types.
 		match type
 		with SimpleType then
 		  if !(type.isCompatible(RX^type)) then
 			  error(TYPE_NOT_COMPATIBLE);
 			else
-			  code := code + RX^machine.generateOperation(RX^op,T^reg,RX^reg,reg);
+			  code := code + R^machine.generateOperation(RX^op,T^reg,RX^reg,reg);
 	    end
 		else
 		  error(TYPE_NOT_SIMPLE);
@@ -1648,11 +1644,11 @@ do
   -- dans ce cas, on lui donne la vi de R. Dans le cas
   -- contraire, l'attribut vi de R est à null.
   if ((T^estVar)&&(RX^estVar)) then
-	  R^estVar := true;
-		R^vi := T^vi;
+	  estVar := true;
+		vi := T^vi;
 	else
-	  R^estVar := false;
-		R^vi := null;
+	  estVar := false;
+		vi := null;
 	end
 	-- Passage des attributs.
 	R^reg := reg;
@@ -1684,10 +1680,10 @@ end
 #attRX1 {
 local
 do
-  RX^machine := RX1^machine;
-	RX^talias := RX1^talias;
-	RX^tfun := RX1^tfun;
-	RX^tvar := RX1^tvar;
+  RX1^machine := RX^machine;
+	RX1^talias := RX^talias;
+	RX1^tfun := RX^tfun;
+	RX1^tvar := RX^tvar;
 end
 }
 
@@ -1703,7 +1699,7 @@ do
 	type := T^type;
   -- On met le code de T et RX1.
   code := T^code + RX1^code;
-  if (RX1^op != IMachine.Operator.NOP) then
+  if (RX1^op != 0) then -- IMachine.Operator.NOP) then
 	  -- Si il y a un opération : verif sur les types.
 		match type
 		with SimpleType then
@@ -1733,7 +1729,7 @@ RX -> #attRX;
 #attRX {
 local
 do
-  RX^op := IMachine.Operator.NOP;
+  RX^op := 0; --IMachine.Operator.NOP;
   -- N'empeche pas la représentation d'une variable.
   RX^estVar := true;
   RX^code := "";
@@ -1749,7 +1745,7 @@ OPADD -> plus #attOPADD ;
 #attOPADD {
 local
 do
-  OPADD^op := IMachine.Operator.ADD;
+  OPADD^op := 1; --IMachine.Operator.ADD;
 end
 }
 
@@ -1760,7 +1756,7 @@ OPADD -> moins #attOPADD ;
 #attOPADD {
 local
 do
-  OPADD^op := SIMachine.Operator.SUB;
+  OPADD^op := 2; --IMachine.Operator.SUB;
 end
 }
 
@@ -1771,7 +1767,7 @@ OPADD -> ou #attOPADD ;
 #attOPADD {
 local
 do
-  OPADD^op :=  SIMachine.Operator.OR;
+  OPADD^op :=  6; --IMachine.Operator.OR;
 end
 }
 
@@ -1813,14 +1809,14 @@ do
   reg := new Register();
   code := F^code + TX^code;
 	t := F^type;
-  if (TX^op != IMachine.Operator.NOP) then
+  if (TX^op != 0) then --IMachine.Operator.NOP) then
 	  -- Si il y a un opération : verif sur les types.
 		match t
 		with SimpleType then
 		  if !(t.isCompatible(TX^type)) then
 			  error(TYPE_NOT_COMPATIBLE);
 			else
-        code := code + TX^machine.generateOperation(TX^op,F^reg,TX^reg,reg);
+        code := code + T^machine.generateOperation(TX^op,F^reg,TX^reg,reg);
 	    end
 		else
 		  error(TYPE_NOT_SIMPLE);
@@ -1877,18 +1873,19 @@ end
 local
   code : String;
 	reg : Register;
+	type : Type;
 do
   reg := new Register();
 	code := F^code + TX1^code;
 	type := F^type;
-  if (TX1^op != IMachine.Operator.NOP) then
+  if (TX1^op != 0) then --IMachine.Operator.NOP) then
 	  -- Si il y a un opération : verif sur les types.
 		match type
 		with SimpleType then
-		  if !(t.isCompatible(TX1^type)) then
+		  if !(type.isCompatible(TX1^type)) then
 			  error(TYPE_NOT_COMPATIBLE);
 			else
-        code := code + TX1^machine.generateOperation(TX1^op,F^reg,TX1^reg,reg);
+        code := code + TX^machine.generateOperation(TX1^op,F^reg,TX1^reg,reg);
 	    end
 		else
 		  error(TYPE_NOT_SIMPLE);
@@ -1899,7 +1896,7 @@ do
 	TX^reg := reg;
   --Cette RP empeche l'expression d'etre une variable.
   TX^estVar := false;
-	TX^type := t;
+	TX^type := type;
 end
 }
 
@@ -1911,7 +1908,7 @@ TX -> #attTX ;
 #attTX {
 local
 do
-  TX^op := IMachine.Operator.NOP;
+  TX^op := 0; --IMachine.Operator.NOP;
   TX^code := "";
 	TX^reg := null;
   -- N'empeche pas l'espression de rpz une var.
@@ -1927,7 +1924,7 @@ OPMUL -> mult #attOPMUL ;
 #attOPMUL {
 local
 do
-  OPMUL^op := IMachine.Operator.MUL;
+  OPMUL^op := 3; --IMachine.Operator.MUL;
 end
 }
 
@@ -1938,7 +1935,7 @@ OPMUL -> div #attOPMUL;
 #attOPMUL {
 local
 do
-  OPMUL^op := IMachine.Operator.DIV;
+  OPMUL^op := 4; --IMachine.Operator.DIV;
 end
 }
 
@@ -1949,7 +1946,7 @@ OPMUL -> mod #attOPMUL ;
 #attOPMUL {
 local
 do
-  OPMUL^op := IMachine.Operator.MOD;
+  OPMUL^op := 7; --IMachine.Operator.MOD;
 end
 }
 
@@ -1960,7 +1957,7 @@ OPMUL -> et #attOPMUL ;
 #attOPMUL {
 local
 do
-  OPMUL^op := IMachine.Operator.AND;
+  OPMUL^op := 17; --IMachine.Operator.AND;
 end
 }
 
@@ -1978,15 +1975,13 @@ F -> entier #attF ;
 local
   t : IntegerType;
   r : Registre;
-	n : int;
 do
   -- Creation du type et du registre.
   t := new IntegerType();
   r := new Register();
 	-- Récup de l'entier et conversion au bon format.
-	n := Integer.parseInt(entier^txt);
 	-- Génération du code, et set de l'attribut le contenant.
-  F^code := F^machine.generateLoadConstant(new ConstantInfo(t, n), r); 
+  F^code := F^machine.generateLoadConstant(new ConstantInfo(t, entier^txt), r); 
   -- Une expression de base ne peut representer une variable.
   -- Donc pas de vi.
 	F^vi := null;
@@ -2022,13 +2017,13 @@ do
   -- Création du registre.
 	r := new Register();
 	-- Génération du code et set des attributs de F.
-	F^code := F^machine.generateLoadConstant(ConstantInfo.fromString(s), r);
+	F^code := F^machine.generateLoadConstant(new ConstantInfo(t, s), r);
   -- Une expression de base ne peut representer une variable.
   -- Donc pas de vi.
   F^vi := null;
   F^estVar := false;
 	F^type := t;
-	F^reg =: r;
+	F^reg := r;
 end
 }
 
@@ -2043,6 +2038,8 @@ local
   c : CharacterType;
 	r : Register;
 	s : String;
+	t : Type;
+	reg : Register;
 do
   -- Récup du caractère.
 	c := caractere^txt.charAt(1);
@@ -2050,13 +2047,13 @@ do
 	t := new CharacterType();
 	reg := new Register();
 	-- Gen du code et set des attributs de F.
-	F^code := F^machine.generateLoadConstant(new ConstantInfo(t, c), r);
+	F^code := F^machine.generateLoadConstant(new ConstantInfo(t, c), reg);
   -- Une expression de base ne peut representer une variable.
   -- Donc pas de vi.
   F^vi := null;
   F^estVar := false;
 	F^type := t;
-	F^reg := r;
+	F^reg := reg;
 end
 }
 
@@ -2087,8 +2084,8 @@ do
   reg := new Register();
 	t := F1^type;
 	match t
-	with SimpleType
-		code:= F1^code + F^machine.generateOperation(OPUN^op,F1^reg,reg);
+	with SimpleType then
+		code := F1^code + F^machine.generateOperation(OPUN^op,F1^reg,reg);
 	else 
 	  error(TYPE_NOT_SIMPLE);
 	end
@@ -2109,7 +2106,7 @@ OPUN -> plus #attOPUN ;
 #attOPUN {
 local
 do
-  OPUN^op := IMachine.Operator.PLS;
+  OPUN^op := 10; --IMachine.Operator.PLS;
 end
 }
 
@@ -2120,7 +2117,7 @@ OPUN -> moins #attOPUN ;
 #attOPUN {
 local
 do
-  OPUN^op := IMachine.Operator.NEG;
+  OPUN^op := 8; --IMachine.Operator.NEG;
 end
 }
 
@@ -2131,7 +2128,7 @@ OPUN -> non #attOPUN ;
 #attOPUN {
 local
 do
-  OPUN^op := IMachine.Operator.NOT;
+  OPUN^op := 9; --IMachine.Operator.NOT;
 end
 }
 
@@ -2146,6 +2143,9 @@ local
 do
   F^estVar := false;
   F^vi := null;
+	F^code := "";
+	F^type := null;
+	F^reg := null; -- TODO
 end
 }
 
@@ -2175,8 +2175,9 @@ do
 	FX^talias := F^talias;
 	-- La partie avant FX n'est pas un appel de fonction.
 	FX^estFun := false;
+	FX^funInfoH := null;
 	-- La liste des déplacements de FX est initialisée ici.
-	FX^listeDisplacement := dl;
+	FX^listeDepl := dl;
 	-- On met le nom à "", pas d'appel de fonction de cette manière. 
 	FX^nom := "";
 	-- On fait passer le type de E à FX pour d'éventuelles verifs.
@@ -2197,7 +2198,7 @@ do
   dl := FX^listeDeplS;
   reg := new Register();
   code := E^code;
-	if (dl.size()>0) then
+	if ((dl.size()) != 0) then -- TODO : > 0) then
     -- On a accédé à des champs dans FX.
     -- On génère le code correspondant, en prenant le registre de E comme base.
     -- Les verification d'existence de champs ont été faites dans FX.
@@ -2229,7 +2230,7 @@ F ->  paro #attTYPE TYPE parf #attF1 F #attF;
 #attTYPE {
 local
 do
-  TYPE^talias := ENTITE^talias;
+  TYPE^talias := F^talias;
 end
 }
 
@@ -2306,7 +2307,7 @@ do
 	--        ou la valeur pointée directement.
 	F^code := F1^code + F^machine.generateLoadFromHeap(F1^reg, 0, reg);
 	F^vi := null; --TODO
-	F^estVar := true;
+	F^estVar := true;
 	F^type := type;
 	F^reg := reg;
 end
@@ -2329,7 +2330,6 @@ local
   listeDepl : DisplacementList ;
 	type : Type;
   info : SymbolInfo; 
-  varInfo : VariableInfo;
 do
   
   --Initialisations.
@@ -2344,7 +2344,7 @@ do
   if (info = null) then
 	  -- ident n'est pas dans la TVar, F n'est pas une variable.
 		-- On regarde dans la TFun s'il s'agit de l'identifiant d'une fonction.
-		info := F^tfun(lookup(ident^txt);
+		info := F^tfun.lookup(ident^txt);
     if (info = null) then
 		  -- On n'a pas trouvé le symbole dans les TDS : erreur.
 			error(IDENT_UNDEFINED, ident^txt);
@@ -2357,7 +2357,7 @@ do
     end
   else
 		-- On peut passer le type.
-		varInfo := (VariableInfo)info;
+		varInfo := F^tvar.lookup(ident^txt); -- TODO cast (VariableInfo)info;
 		type := varInfo.type();
 		-- On rajoute toujours le déplacement de a à la liste.
 		-- Le test pour savoir si a est bien un struct se fait dans les RP ,de FX.
@@ -2366,6 +2366,7 @@ do
 	-- On passe les attributs qui serviront à FX.
 	FX^listeDepl := listeDepl;
 	FX^estFun := estFun;
+	FX^funInfoH := funInfo;
 	FX^typeH := type;
 	FX^nom := ident^txt;
 	FX^tvar := F^tvar;
@@ -2395,7 +2396,7 @@ do
     code := F^machine.generateMakeAddress(funInfo.register(), listeDepl, reg);
 	else 
 	  -- On n'a pas d'appel de fonction. 
-		if (listeDepl.size() > 1) then
+		if ((listeDepl.size() != 0 )&&(listeDepl.size() != 1)) then --> 1) then
 	    -- Des déplacements ont été ajoutés à la liste en plus de celui de ident : on a accédé à des champs de struct !
 		  -- Le registre contient l'adresse de la variable accédée par FX dans le struct.
       code := F^machine.generateMakeAddress(listeDepl, reg);
@@ -2422,14 +2423,16 @@ FX -> #attFX ;
 local
 do
   -- Vérifie qu'on n'attendait pas une liste d'argument pour un appel de fonction.
-  if FX^estFun then
+  if (FX^estFun) then
 	  error(FUNCTION_CALL_WITHOUT_PARS);
 	end
   FX^code := "";
   FX^type := FX^typeH;
   FX^listeDeplS := FX^listeDepl;
+	FX^estVar := true;
 end
 }
+
 
 -- (73) : Acces champ
 FX -> pt ident #attFX1 FX #attFX;
@@ -2440,6 +2443,7 @@ local
   typeStruct : StructType; 
 	type : Type;
 	listeDepl : DisplacementList;
+	fields : List<String>;
 do
   -- On vérifie qu'on était pas dans un appel de fonction.
 	if FX^estFun then
@@ -2451,8 +2455,9 @@ do
   match type
 	with StructType then  
 		-- On vérifie que le champ existe et on y accède.
-    typeStruct := (StructType)type;
-		if (typeStruct.fields().instanceOf(ident^txt) = -1) then
+    typeStruct := type; -- TODO cast lel (StructType)type;
+		fields := typeStruct.fields();
+		if (fields.instanceOf(ident^txt) = (-1)) then
 		  -- Si le instanceOf renvoie -1, c'est que l'identifiant n'apparait pas dans les champs : erreur.
 		  error(CHAMP_INEXISTANT, ident^txt);
 		else
@@ -2467,6 +2472,7 @@ do
   end
 	FX1^listeDepl := listeDepl;
 	FX1^estFun := false;
+	FX1^funInfoH := null;
 	FX1^typeH := type;
   FX1^nom := ident^txt;	
 	FX1^tvar := FX^tvar;
@@ -2484,6 +2490,7 @@ do
   FX^code := FX1^code;
   FX^type := FX1^type;
 	FX^listeDeplS := FX1^listeDeplS;
+	FX^estVar := FX1^estVar;
 end
 }
 
@@ -2501,6 +2508,7 @@ local
 	typeP : PointerType;
 	typeS : StructType;
 	listeDepl : DisplacementList;
+	fields : List<String>;
 do
   -- On vérifie qu'on était pas dans un appel de fonction.
 	if FX^estFun then
@@ -2511,13 +2519,14 @@ do
 	match type
 	with PointerType then
 	-- Si type est un pointeur on va vérifier qu'il s'agit d'un pointeur sur struct.
-    typeP := (PointerType)type;
+    typeP := type; -- TODO cest lal (PointerType)type;
 		type := typeP.getType();
 		-- Si le type pointé est struct, on va vérifier que le champ existe.
     match type
-		with StructType
-		  typeS := (StructType)type;
-      if (typeS.fields().instanceOf(ident^txt) = -1) then
+		with StructType then
+		  typeS := type ; -- TODO (StructType)type;
+			fields := typeS.fields();
+      if (fields.instanceOf(ident^txt) = -1) then
 		    -- Si le instanceOf renvoie -1, c'est que l'identifiant n'apparait pas dans les champs : erreur.
 		    error(CHAMP_INEXISTANT, ident^txt);
 		  else
@@ -2535,6 +2544,7 @@ do
 	  error(NOT_A_POINTEUR);
   end
 	FX1^estFun := false;
+	FX1^funInfoH := null;
 	FX1^typeH := type;
 	FX1^listeDepl := listeDepl;
   FX1^nom := ident^txt;
@@ -2553,6 +2563,7 @@ do
   FX^code := FX1^code;
   FX^type := FX1^type;
 	FX^listeDeplS := FX1^listeDeplS;
+	FX^estVar := FX1^estVar;
 end
 }
 
@@ -2561,8 +2572,6 @@ end
 -- La verification des paramètres ainsi que la generation des pushs
 -- se font dans ES.
 FX -> #attES paro ES parf #attFX1 FX #attFX;
-global
-  codeAppel : String
 
 -- Attributs inh de ES.
 -- Verification que l'appelant est une fonction.
@@ -2572,7 +2581,7 @@ do
   if !(FX^estFun) then
 	  error(NOT_A_FUN);
 	end
-  ES^typesParams := new List<Type>;
+  ES^typesParams := new List<Type>();
   ES^codeH := "";
 	ES^tvar := FX^tvar;
 	ES^tfun := FX^tfun;
@@ -2599,6 +2608,7 @@ do
   FX1^listeDepl := FX^listeDepl;
 	-- L'appel de fonction n'est pas une fonction.
 	FX1^estFun := false; 
+	FX1^funInfoH := null;
 	-- Le type de l'appel est le type de retour de la fonction.
 	FX1^typeH := FX^typeH;
 	-- Pas de nom pour FX ici.
@@ -2616,9 +2626,10 @@ end
 #attFX {
 local
 do
-  FX^code := ES^code + generateFunctionCall(FX^funInfoH) + FX1^code;
+  FX^code := ES^code + FX^machine.generateFunctionCall(FX^funInfoH) + FX1^code;
   FX^type := FX1^type;
 	FX^listeDeplS := FX1^listeDeplS;
+	FX^estVar := false;
 end
 }
 
@@ -2663,7 +2674,7 @@ do
   l := ES^typesParams;
 	l.add(E^type);
   -- Ajout du code du push pour ce param.
-  code := code + E^code + ES^machine.generateFunctionPushArgument(E^reg);
+  code := E^code + ES^machine.generateFunctionPushArgument(E^reg);
   ESX^typesParams := l;
   ESX^codeH := code;
 	ESX^machine := ES^machine;
@@ -2740,44 +2751,44 @@ do
 end
 }
 
------------------------------------------
-------------- INLINE ASM ----------------
------------------------------------------
-
--- (80)
-ENTITE -> asm #tds ASM #gen; 
-#tds {
-do 
-  -- A faire : Remplacer 'null' par la table courante pour que
-  -- le code ASM puisse acceder aux variables de MC ou MCS
-  ASM^tds_asm := null; 
-end
-}
-
-#gen {
-do
-  -- On recupere le code assembleur 'inline' dans : ASM^code_asm ;
-end
-}
-
-
--- (81)
-INST ->  asm   #tds ASM #gen ;
-#tds {
-do
-  -- A remplacer par la table courante pour que
-  -- l'assembleur puisse acceder aux variables
-  ASM^tds_asm := null; 
-end
-}
-
-#gen {
-do
-  -- ASM^code_asm contient le code assembleur inline
-  -- dans lequel les noms de variables ont ete remplaces
-  -- par leurs adresses.
-end
-}
+-------------------------------------------
+--------------- INLINE ASM ----------------
+-------------------------------------------
+--
+---- (80)
+--ENTITE -> asm #tds ASM #gen; 
+--#tds {
+--do 
+--  -- A faire : Remplacer 'null' par la table courante pour que
+--  -- le code ASM puisse acceder aux variables de MC ou MCS
+--  ASM^tds_asm := null; 
+--end
+--}
+--
+--#gen {
+--do
+--  -- On recupere le code assembleur 'inline' dans : ASM^code_asm ;
+--end
+--}
+--
+--
+---- (81)
+--INST ->  asm   #tds ASM #gen ;
+--#tds {
+--do
+--  -- A remplacer par la table courante pour que
+--  -- l'assembleur puisse acceder aux variables
+--  ASM^tds_asm := null; 
+--end
+--}
+--
+--#gen {
+--do
+--  -- ASM^code_asm contient le code assembleur inline
+--  -- dans lequel les noms de variables ont ete remplaces
+--  -- par leurs adresses.
+--end
+--}
 
 ----------------- CS extension --------------------
 ---- Decommenter les regles suivantes pour l'extension CS
