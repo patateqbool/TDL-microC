@@ -7,15 +7,15 @@
 
 package mcs.symtab;
 
-public class NamespaceInfo implements SymbolInfo {
+public class NamespaceInfo {
     // Attributes
     public String name; // Name of the namespace
-    public Namespace parent; // The parent of the namespace
+    public NamespaceInfo parent; // The parent of the namespace
     
     /**
      * @param n name of the namespace
      */
-    public Namespace(String n) {
+    public NamespaceInfo(String n) {
         this.name = n;
         this.parent = null;
     }
@@ -24,7 +24,7 @@ public class NamespaceInfo implements SymbolInfo {
      * @param n name of the namespace
      * @param ns Parent of the namespace
      */
-    public Namespace(String n, Namespace ns) {
+    public NamespaceInfo(String n, NamespaceInfo ns) {
         this.name = n;
         this.parent = ns;
     }
@@ -41,7 +41,7 @@ public class NamespaceInfo implements SymbolInfo {
      * Get the parent of the namespace
      * @return the parent
      */
-    public Namespace parent() {
+    public NamespaceInfo parent() {
         return this.parent;
     }
 
