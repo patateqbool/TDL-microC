@@ -163,6 +163,10 @@ inh tns : NamespaceTable for
 inh ns : Namespace for
 				 ;
 
+syn nsS : Namespace for
+				 IDC
+				 ;
+
 syn acc : AccessSpecifier for
 				 ACCES
 				 ;
@@ -2816,12 +2820,39 @@ end
 }
 
 -- donne l acces au contenu du 'namespace'
-ENTITE -> using identc IDC pv ;
+ENTITE -> using #passIdentc identc IDC #trait pv ;
+
+#passIdentc {
+local 
+do
+  -- On commence la recherche du namespace
+  -- TODO: changer exists avec le vrai contrat (i.e avec le ns actuel)
+	if (ENTITE^tns.exists(identc^txt)) then 
+		-- S'il est possible de continuer (i.e. identc namespace) on le fait dans IDC
+	  IDC^rechKlass := false;
+	  IDC^machine := ENTITE^machine;
+    IDC^tns := ENTITE^tns;
+  	IDC^tklass := ENTITE^tklass;
+		IDC^nomIDC := identc^txt;
+		IDC^ns := ENTITEns;
+	else
+		error(IDENT_UNDEFINED, identc^txt);
+	end
+end
+}
+
+#trait {
+local 
+do
+  -- TODO: vérif meth
+	ENTITE^ns := ENTITE^ns.add(IDC^nsS);
+end
+}
 
 IDC -> #verifRetour ;
 
-#verifRetour
-local {
+#verifRetour {
+local 
 do
   -- On verifie si on cherche à obtenir une classe ou un namespace
 	if IDC^rechKlass then
@@ -2834,15 +2865,22 @@ do
 		  error(IDENT_UNDEFINED, IDC^nomIDC);
 	  end
 	else
-	--autre traitement
+	  -- On cherche si on a bien obtenu un namespace
+	  if IDC^tns.exists(IDC^nomIDC, IDC^ns) then
+	    -- Si c'est le cas, on la renvoie
+		  IDC^nsS := IDC^tns.lookup(IDC^nomIDC, IDC^ns);
+		else
+		  -- Sinon, on renvoie une erreur
+		  error(IDENT_UNDEFINED, IDC^nomIDC);
+	  end
 	end
 end
 }
 
 IDC -> pt #passIdentc identc IDC #retour ;
 
-#passIdentc
-local {
+#passIdentc {
+local 
 do
   -- On cherche si on a bien obtenu un namespace précédemment
 	-- Comme on n'a pas de classe interne, on doit avoir ns.ns.ns.X
@@ -2868,25 +2906,24 @@ do
 end
 }
 
-#retour
-local {
+#retour {
+local 
 do
   -- On propage ce qu'il y a à propager
 	if IDC^rechKlass then
-		IDC^klassHerit := IDC^klassHerit;
+		IDC^klassHerit := IDC1^klassHerit;
 	else
-	--autre traitement
+		IDC^nsS := IDC1^nsS;
 	end
 end
 }
 
 -- definition d'une classe (peut etre en dehors d'un namespace)
 
-ENTITE -> ACCES class #ajout identc HERITAGE aco DEFS acf ;
+ENTITE -> ACCES class #verif identc HERITAGE #ajout aco DEFS acf ;
 
--- Ajout de identc à la table des classes.
 -- Vérifie que identc n'est pas déjà utilisé (par une classe ou un namespace).
-#ajout {
+#verif {
 local
 -- TODO: vérifier tout ca quand KlassTable & co seront finis
 	tklass : KlassTable;
@@ -2899,28 +2936,32 @@ do
     if ENTITE^tns.lookup(identc^txt) != null then
       error(IDENT_TAKEN, identc^txt);
     else
-     -- Sinon, on peut ajouter la nouvelle classe à la TDS.
-			tklass.insert(identc^txt,ENTITE^klass,ACCES^acc, HERITAGE^klassHerit); --TODO :clairement faux, a faire après HERITAGE
+		  -- Pas de code pour cette RP.	
+		  ENTITE^code := "";
+			HERITAGE^machine := ENTITE^machine;
+ 		  HERITAGE^tns := ENTITE^tns;
+			HERITAGE^tklass := tklass;
+			HERITAGE^ns := ENTITE^ns;
     end
   end  
-  -- Pas de code pour cette RP.	
-	ENTITE^code := "";
-	HERITAGE^machine := ENTITE^machine;
-  HERITAGE^tns := ENTITE^tns;
-	HERITAGE^tklass := tklass;
-	HERITAGE^ns := ENTITE^ns;
-	-- TODO : corriger ca, c'est faux... à faire dans une autre regle entre HERIT et DEFS
+	ENTITE^tklassS := tklass;
+	--TODO: Faire remonter les tklass avec des tklassS au sein du prog µC
+end
+}
+
+#ajout {
+local
+do
+  -- On peut enfin ajouter la nouvelle classe à la TDS, maintenant qu'on a la classe héritée.
+	ENTITE^tklass.insert(identc^txt,ENTITE^klass,ACCES^acc, HERITAGE^klassHerit); 
 	DEFS^machine := ENTITE^machine;
 	DEFS^tvar : =ENTITE^tvar;
 	DEFS^tfun := ENTITE^tfun;
 	DEFS^talias := ENTITE^talias;
   DEFS^tns := ENTITE^tns;
 	DEFS^tklass := tklass;
-	ENTITE^tklassS := tklass;
-	--TODO: Faire remonter les tklass avec des tklassS au sein du prog µC
 end
 }
-
 -- acces 
 ACCES -> #acc public;
 
