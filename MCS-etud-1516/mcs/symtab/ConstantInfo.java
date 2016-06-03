@@ -19,7 +19,7 @@ public class ConstantInfo extends VariableInfo {
    * @param v value of the constant
    */
   public ConstantInfo(Type t, Object v) {
-    super(t, -1);
+    super(t, -1, null);
     this.value = v;
   }
 

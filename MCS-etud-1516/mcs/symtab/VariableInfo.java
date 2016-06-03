@@ -18,10 +18,10 @@ public class VariableInfo extends SymbolInfo {
    * Constructor.
    * @param t type of the variable
    * @param disp displacement of the variable
+   * @param ns namespace of the variable
    */
-  public VariableInfo(Type t, int disp, NamspaceInfo ns) {
+  public VariableInfo(Type t, int disp, NamespaceInfo ns) {
     super(ns);
-    this.namespace = ns;
     this.type = t;
     this.displacement = disp;
   }

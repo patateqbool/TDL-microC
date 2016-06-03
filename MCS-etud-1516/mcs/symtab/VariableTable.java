@@ -13,10 +13,10 @@ import java.util.ArrayList;
 
 public class VariableTable implements SymbolTable {
   // Attributes
-	private Map<String, SymbolInfo> content;
+  private Map<String, SymbolInfo> content;
   private List<String> symbols; // we need to store an ordered list of symbols (for pop/push eg)
   private SymbolTable parent; // Parent of this table
-	private int displacement;
+  private int displacement;
 
   /**
    * Constructor
@@ -24,62 +24,62 @@ public class VariableTable implements SymbolTable {
    */
   public VariableTable(VariableTable p) {
     this.parent = p;
-		this.content = new HashMap<String, SymbolInfo>();
+    this.content = new HashMap<String, SymbolInfo>();
     this.symbols = new ArrayList<String>();
 
-		if (p != null)
-			this.displacement = p.offset();
-		else
-			this.displacement = 0;
+    if (p != null)
+      this.displacement = p.offset();
+    else
+      this.displacement = 0;
   }
 
-	/**
-	 * Constructor
-	 * Create a table from a null parent table
-	 */
-	public VariableTable() {
-		this(null);
-	}
+  /**
+   * Constructor
+   * Create a table from a null parent table
+   */
+  public VariableTable() {
+    this(null);
+  }
 
-	/**
-	 * Get the current displacement of the table
-	 */
-	p       ublic int offset() {
-		return this.displacement;
-	}
+  /**
+   * Get the current displacement of the table
+   */
+  public int offset() {
+    return this.displacement;
+  }
 
-	public List<String> symbols() {
-		return this.symbols;
-	}
+  public List<String> symbols() {
+    return this.symbols;
+  }
 
-	public boolean exists(String name, NamespaceInfo namespace, SymbolInfo si) {
-                if this.content.get(name) != null {
-                  if this.content.get(name).namespace() == namespace
-                    return true
-                }
-                return false;
-        }
+  public boolean exists(String name, NamespaceInfo namespace, SymbolInfo si) {
+    if (this.content.get(name) != null) {
+      if (this.content.get(name).namespace() == namespace)
+        return true;
+    }
+    return false;
+  }
 
   /**
    * Look up into the table
    */
-  public SymbolInfo lookup(String name, Namespace ns, boolean local) {
-		SymbolInfo si = this.content.get(name);
-                
-		if (si != null) {
-                    if si.namespace() == ns
-			return si;
-                }
+  public SymbolInfo lookup(String name, NamespaceInfo ns, boolean local) {
+    SymbolInfo si = this.content.get(name);
 
-                if (!local && this.parent != null)
-                        return parent().lookup(name, false);
+    if (si != null) {
+      if (si.namespace() == ns)
+        return si;
+    }
+
+    if (!local && this.parent != null)
+      return this.parent.lookup(name, ns, false);
 
     return new SymbolInfoNotFound();
   }
 
-	/**
-	 * Insert a symbol into the table
-	 */
+  /**
+   * Insert a symbol into the table
+   */
   public boolean insert(String name, SymbolInfo info) {
     VariableInfo vi = (VariableInfo)info;
     if (this.content.containsKey(name))
@@ -99,14 +99,14 @@ public class VariableTable implements SymbolTable {
    * @param type type of the symbol
    * @return true if it is possible
    */
-  public boolean insert(String name, Type type) {
-    VariableInfo vi = new VariableInfo(type, this.displacement);
+  public boolean insert(String name, Type type, NamespaceInfo ns) {
+    VariableInfo vi = new VariableInfo(type, this.displacement, ns);
     return this.insert(name, vi);
   }
 
-	/**
-	 * Get the parent of this table
-	 */
+  /**
+   * Get the parent of this table
+   */
   public SymbolTable parent() {
     return this.parent;
   }
