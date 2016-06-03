@@ -1312,6 +1312,7 @@ do
 	  estVar := false ;
 		vi := null ;
 		-- On génère le code de l'affectation.
+		-- La compatibilité des types est effectuée dans AFFX.
 		code := code + E^machine.generateStoreVariable(A^vi,AFFX^reg);
 	end
   E^type := A^type;
@@ -2277,6 +2278,8 @@ do
 	  error(SHOULD_BE_A_POINTER);
 	end
   -- A la suite du code généré par F1, on load le champ pointé.
+	-- TODO : gérer ça suivant qu'on veuille l'addrese pour changer la valeur pointée
+	--        ou la valeur pointée directement.
 	F^code := F1^code + F^machine.generateLoadFromHeap(F1^reg, 0, reg);
 	F^vi := -- TODO
 	F^estVar := true;
