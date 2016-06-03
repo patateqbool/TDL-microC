@@ -16,30 +16,42 @@ public interface IMachine {
    * Enumeration that define possible arithmetic operations
    */
   public enum Operator {
-    ADD, // Addition
-    SUB, // Substraction
-    MUL, // Multiplication
-    DIV, // Division
-    NEG, // Arithmetic inversion (that is : minus)
-    NOP,  // Syntaxic stuff only
-    AND, // And bitwise
-    OR, // Or bitwise
-    MOD, // Modulo operator
-    PLS, // Unary plus
-    NOT // Not operator
+    NOP(0), // Syntaxic stuff
+    // Arithmetics
+    ADD(1), // Addition
+    SUB(2), // Substraction
+    MUL(3), // Multiplication
+    DIV(4), // Division
+    NEG(8), // Arithmetic inversion (that is : minus)
+    AND(5), // And bitwise
+    OR(6), // Or bitwise
+    MOD(7), // Modulo operator
+    PLS(10), // Unary plus
+    NOT(9), // Not operator
+    // Relationnal
+    EQ(11),  // Equal
+    NEQ(12), // Non equal
+    LT(13),  // Lesser
+    LEQ(14), // Strict Inferior
+    GT(15),  // Superior
+    GEQ(16), // Strict Superior
+    RAND(17), // And 
+    ROR(18),  // Or
+    RNOT(19); // Not
+
+    private final int value;
+    private Operator(int value) {
+      this.value = value;
+    }
+    public int value() {
+      return this.value;
+    }
+    public boolean isArithmetic() {
+      return this.value > 0 && this.value < 11;
+    }
   }
 
-  public enum RelationalOperator {
-    EQ,  // Equal
-    NEQ, // Non equal
-    LT,  // Lesser
-    LEQ, // Strict Inferior
-    GT,  // Superior
-    GEQ, // Strict Superior
-    AND, // And 
-    OR,  // Or
-    NOT, // Not
-  }
+  public static final Operator[] IntToOperator = {Operator.NOP,Operator.ADD,Operator.SUB,Operator.MUL,Operator.DIV,Operator.AND,Operator.OR,Operator.MOD,Operator.NEG,Operator.NOT,Operator.PLS,Operator.EQ,Operator.NEQ,Operator.LT,Operator.LEQ,Operator.GT,Operator.GEQ,Operator.RAND,Operator.ROR,Operator.RNOT};
 
   /**
    * Suffixe du fichier cible (.tam par exemple)
@@ -314,7 +326,7 @@ public interface IMachine {
    * @param rout output register
    * @return the generated code
    */
-  String generateOperation(Operator op, Register r1, Register r2, Register rout) throws MCSException;
+  String generateOperation(int op, Register r1, Register r2, Register rout) throws MCSException;
 
   /**
    * Generate an arithmetic unary operation
@@ -322,22 +334,5 @@ public interface IMachine {
    * @param rout destination register
    * @return the generated code
    */
-  String generateOperation(Operator op, Register rin, Register rout) throws MCSException;
-
-  /**
-   * Generate a relational binary operation
-   * @param r1 first register
-   * @param r2 second register
-   * @param rout output register
-   * @return the generated code
-   */
-  String generateOperation(RelationalOperator op, Register r1, Register r2, Register rout) throws MCSException;
-
-  /**
-   * Generate a relational unary operation
-   * @param rin source register
-   * @param rout destination register
-   * @return the generated code
-   */
-  String generateOperation(RelationalOperator op, Register rin, Register rout) throws MCSException;
+  String generateOperation(int op, Register rin, Register rout) throws MCSException;
 }
