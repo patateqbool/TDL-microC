@@ -33,6 +33,7 @@ public class Klass extends CompositeType {
   private List<MethodInfo> methodTable;
   private Map<String,AttributeInfo> attributeTable;
   private Map<String,Integer> daughters;
+  private NamespaceInfo namespace;
  
   // public Klass(String name, List<Klass> parents) {
   /**
@@ -42,11 +43,12 @@ public class Klass extends CompositeType {
    * @param name name of the class
    * @param parent parent class (can be null)
    */
-  public Klass(String name, Klass parent) {
+  public Klass(String name, Klass parent, NamespaceInfo ns) {
     super(4);
 
     this.name = name;
     this.parent = parent;
+    this.namespace = ns;
 
     // Class id
     this.id = Klass.nextID;
@@ -79,6 +81,13 @@ public class Klass extends CompositeType {
         }
       }
     }
+  }
+
+  /**
+   * Get the namespace
+   */
+  public NamespaceInfo namespace() {
+    return this.namespace();
   }
 
   /**
