@@ -39,15 +39,15 @@ public class Register {
 		this.status = other.status;
 	}
 
-  public String getAlias() {
+  public String alias() {
     return alias;
   }
 
-	public String getName() {
+	public String name() {
 		return name;
 	}
 
-	public int getNum() {
+	public int num() {
 		return num;
 	}
 
