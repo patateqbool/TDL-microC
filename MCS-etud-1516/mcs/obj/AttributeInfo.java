@@ -13,14 +13,14 @@ public class AttributeInfo extends VariableInfo {
   private Klass parent;
   private Klass.AccessSpecifier accSpec;
 
-  public AttributeInfo(Klass.AccessSpecifier as, Type t, int d, Klass parent) {
-    super(t, d);
+  public AttributeInfo(Klass.AccessSpecifier as, Type t, int d, Klass parent, NamespaceInfo ns) {
+    super(t, d, ns);
     this.accSpec = as;
     this.parent = parent;
   }
 
 	public AttributeInfo(Klass.AccessSpecifier as, Klass parent, VariableInfo vi) {
-		this(as, vi.type(), vi.displacement(), parent);
+		this(as, vi.type(), vi.displacement(), parent, vi.namespace());
 	}
 
   public Klass.AccessSpecifier accessSpecifier() {
