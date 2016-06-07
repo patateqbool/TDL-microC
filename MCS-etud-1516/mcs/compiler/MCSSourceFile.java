@@ -1,7 +1,7 @@
 package mcs.compiler;
 
 import mcs.gc.AbstractMachine;
-import mcs.gc.MTAM;
+import mcs.gc.ARMEngine;
 import mg.egg.eggc.runtime.libjava.SourceUnit;
 
 /**
@@ -46,7 +46,7 @@ public class MCSSourceFile extends SourceUnit {
 		// machine cible ?
 		if (argc == 1) {
 			// machine tam par defaut
-			setMachine("tam");
+			setMachine("arm");
 		} else {
 			// nom de la machine ?
 			for (int i = 1; i < argc; i++) {
@@ -73,8 +73,10 @@ public class MCSSourceFile extends SourceUnit {
 		// System.err.println("mach " + mach);
 		machName = mach;
 		if ("tam".equals(mach)) {
-			machine = new MTAM();
-		} else {
+			//machine = new MTAM();
+		} else if (mach.equals("arm")) {
+      machine = new ARMEngine();
+    } else {
 			// TODO si la machine n'est pas tam
 			// machine = new ???();
 		}
