@@ -13,14 +13,14 @@ public class MethodInfo extends FunctionInfo {
   private Klass.AccessSpecifier accSpec;
   private VirtualTable vtable;
 
-	public MethodInfo(String name, Klass.AccessSpecifier as, Type ret, Klass parent, NamespaceInfo ns) {
-		super(name, ret, ns);
+	public MethodInfo(String name, Klass.AccessSpecifier as, Type ret, Klass parent) {
+		super(name, ret, null);
 		this.parent = parent;
     this.accSpec = as;
 	}
 
 	public MethodInfo(Klass.AccessSpecifier as, Klass parent, FunctionInfo other) {
-		super(other.name(), other.returnType(), other.parameters(), other.namespace());
+		super(other.name(), other.returnType(), other.parameters(), null);
 		this.parent = parent;
 		this.accSpec = as;
 	}
