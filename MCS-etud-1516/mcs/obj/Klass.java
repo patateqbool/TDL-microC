@@ -19,7 +19,7 @@ import java.util.Map;
 import mcs.util.OrderedMap;
 import mcs.symtab.*;
 
-class Klass extends CompositeType {
+public class Klass extends CompositeType {
   enum AccessSpecifier {
     APublic, APrivate, AProtected, AHidden
   };
@@ -33,6 +33,7 @@ class Klass extends CompositeType {
   private List<MethodInfo> methodTable;
   private Map<String,AttributeInfo> attributeTable;
   private Map<String,Integer> daughters;
+  private NamespaceInfo namespace;
  
   // public Klass(String name, List<Klass> parents) {
   /**
@@ -42,11 +43,12 @@ class Klass extends CompositeType {
    * @param name name of the class
    * @param parent parent class (can be null)
    */
-  public Klass(String name, Klass parent) {
+  public Klass(String name, Klass parent, NamespaceInfo ns) {
     super(4);
 
     this.name = name;
     this.parent = parent;
+    this.namespace = ns;
 
     // Class id
     this.id = Klass.nextID;
@@ -82,6 +84,13 @@ class Klass extends CompositeType {
   }
 
   /**
+   * Get the namespace
+   */
+  public NamespaceInfo namespace() {
+    return this.namespace();
+  }
+
+  /**
    * Append an id to the daughters.
    * This method is called only by daughters classes
    * @param cclass name of the class
@@ -114,6 +123,10 @@ class Klass extends CompositeType {
 		return false;
 	}
 
+  public boolean attributeExists(String name) {
+    return (this.attributeTable.get(name) != null);
+  }
+
   /**
    * Append a method to the class's function table
 	 * @param name name of the symbol
@@ -124,11 +137,11 @@ class Klass extends CompositeType {
 			// Inserting a method that already exists is fine, it
       // is called overriding !
       // This causes a change in the vtable
-      lookupMethod(name, mi.parameters()).vtable().set(this.id, this.id);
+      lookupMethod(name, mi.parameters()).vtable().set(this.id, this.name);
 		} else {
       // This method does not exists; we must create a vtable for it
       VirtualTable vt = new VirtualTable();
-      vt.set(this.id, this.id);
+      vt.set(this.id, this.name);
       mi.assignVtable(vt);
 			mi.setName(name);
 		  this.methodTable.add(mi);
@@ -176,7 +189,7 @@ class Klass extends CompositeType {
 		 *
 		 * Solution : rearranging the attribute of A in PUBLIC, then PRIVATE.
 		 */
-		addAttribute(name, new AttributeInfo(as, t, currentDisp, this));
+		addAttribute(name, new AttributeInfo(as, t, this.currentDisp, this));
 	}
 
 	public MethodInfo lookupMethod(String name, List<Type> params) {
@@ -205,6 +218,14 @@ class Klass extends CompositeType {
 	public String name() {
 		return this.name();
 	}
+
+  public List<Type> attributeTypes() {
+    List<Type> res = new ArrayList<Type>();
+    for (AttributeInfo ai : this.attributeTable.values()) {
+      res.add(ai.type());
+    }
+    return res;
+  }
 
 
 	/**

@@ -30,6 +30,10 @@ public class VirtualTableCentral {
 		return vt;
 	}
 
+  public Map<MethodInfo,VirtualTable> vtables() {
+    return this.vtables;
+  }
+
 	static public VirtualTableCentral instance() {
 		if (VirtualTableCentral.vtc == null)
 			VirtualTableCentral.vtc = new VirtualTableCentral();

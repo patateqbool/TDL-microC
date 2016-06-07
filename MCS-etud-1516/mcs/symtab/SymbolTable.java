@@ -15,7 +15,7 @@ public interface SymbolTable {
 	 * @param si symbol to test
 	 * @return true if the symbol exists
 	 */
-	boolean exists(String name, SymbolInfo si);
+	boolean exists(String name, NamespaceInfo namespace, SymbolInfo si);
 
   /**
    * Globally look up into the table.
@@ -23,7 +23,7 @@ public interface SymbolTable {
    * @param local whether or not to search locally or globally
    * @return the symbol info, or the special variable SymbolInfoNotFound
    */
-  SymbolInfo lookup(String name, boolean local);
+  SymbolInfo lookup(String name, NamespaceInfo namespace, boolean local);
 
   /**
    * Insert a symbol into the table
@@ -44,6 +44,11 @@ public interface SymbolTable {
 	 * @return a SET of symbols
 	 */
 	List<String> symbols();
+
+  /**
+   * Get the list of symbols' types in this table
+   */
+  List<Type> symbolsTypes();
 }
 
 

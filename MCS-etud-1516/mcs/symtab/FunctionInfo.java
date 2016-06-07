@@ -10,29 +10,31 @@ import java.util.List;
 import java.util.ArrayList;
 import mcs.gc.Register;
 
-public class FunctionInfo implements SymbolInfo {
+public class FunctionInfo extends SymbolInfo {
   // Attributes
   private Type retType; // Return type
   private List<Type> parameters; // Parameters
   private String name;
-	private Register reg;
+  private Register reg;
 
   /**
    * Create a function symbol from a return type and a list of parameters
    * @param ret return type of the function
    * @param params list of parameters of the function
    */
-  public FunctionInfo(String name, Type ret) {
+  public FunctionInfo(String name, Type ret, NamespaceInfo ns) {
+    super(ns);
     this.name = name;
     this.retType = ret;
     this.parameters = new ArrayList<Type>();
   }
 
-	public FunctionInfo(String name, Type ret, List<Type> params) {
+  public FunctionInfo(String name, Type ret, List<Type> params, NamespaceInfo ns) {
+    super(ns);
     this.name = name;
-		this.parameters = params;
-		this.retType = ret;
-	}
+    this.parameters = params;
+    this.retType = ret;
+  }
 
   /**
    * Get the return type of the function
@@ -115,16 +117,16 @@ public class FunctionInfo implements SymbolInfo {
     return disp;
   }
 
-	/**
-	 * Manipulate the register of the function
-	 */
-	public Register register() {
-		return this.reg;
-	}
+  /**
+   * Manipulate the register of the function
+   */
+  public Register register() {
+    return this.reg;
+  }
 
-	public void assignRegister(Register r) {
-		this.reg = r;
-	}
+  public void assignRegister(Register r) {
+    this.reg = r;
+  }
 
   /**
    * Equal function.
@@ -134,19 +136,19 @@ public class FunctionInfo implements SymbolInfo {
     return this.similar(other) && this.retType.isEqualTo(other.retType);
   }
 
-	/**
-	 * Test if two functions are "similar", that is : they have the same
-	 * name and same arguments, but may have different return types
-	 */
-	public boolean similar(FunctionInfo other) {
-		return similar(other.name(), other.parameters());
-	}
+  /**
+   * Test if two functions are "similar", that is : they have the same
+   * name and same arguments, but may have different return types
+   */
+  public boolean similar(FunctionInfo other) {
+    return similar(other.name(), other.parameters());
+  }
 
-	/**
-	 * Same function but taking the name and the parameters
-	 */
-	public boolean similar(String name, List<Type> params) {
-		if (!this.name.equals(name))
+  /**
+   * Same function but taking the name and the parameters
+   */
+  public boolean similar(String name, List<Type> params) {
+    if (!this.name.equals(name))
       return false;
 
     if (this.parameters.size() != params.size())
@@ -157,12 +159,16 @@ public class FunctionInfo implements SymbolInfo {
         return false;
     }
 
-		return true;
-	}
+    return true;
+  }
 
   /**
    * toString()
    */
+  public String toString() {
+    return toString("");
+  }
+
   public String toString(String name) {
     String t = this.retType.toString() + " " + name + "(";
 

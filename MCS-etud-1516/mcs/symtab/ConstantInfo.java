@@ -19,7 +19,14 @@ public class ConstantInfo extends VariableInfo {
    * @param v value of the constant
    */
   public ConstantInfo(Type t, Object v) {
-    super(t, -1);
+    super(t, -1, null);
+
+    if (t instanceof IntegerType)
+      this.value = Integer.parseInt((String)v);
+    else if (t instanceof CharacterType)
+      this.value = ((String)v).charAt(0);
+    else if (t instanceof StringType)
+      this.value = fromString((String)v);
     this.value = v;
   }
 
@@ -58,23 +65,11 @@ public class ConstantInfo extends VariableInfo {
 	/**
 	 * A bunch of static function for creating constant from anything
 	 */
-	static public ConstantInfo fromInt(int v) {
-		return new ConstantInfo(new IntegerType(), new Integer(v));
-	}
-
-	static public ConstantInfo fromChar(char v) {
-		return new ConstantInfo(new CharacterType(), new Character(v));
-	}
-
-	static public ConstantInfo fromArray(List<Object> obj, Type arraytype) {
-		return new ConstantInfo(new ArrayType(arraytype, obj.size()), obj);
-	}
-
-	static public ConstantInfo fromString(String str) {
+	static public Object fromString(String str) {
 		List<Object> lc = new ArrayList<Object>();
 		for (int i = 0; i < str.length(); i++)
 			lc.add(str.charAt(i));
-		return new ConstantInfo(new StringType(lc.size()), lc);
+		return lc;
 	}
 }
 
