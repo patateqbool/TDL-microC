@@ -20,7 +20,7 @@ public abstract class SymbolInfo {
    */
   abstract public String toString();
 
-  public NamespaceInfo getNamespace() {
+  public NamespaceInfo namespace() {
       return namespace;
   }
 }
