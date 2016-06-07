@@ -35,7 +35,7 @@ public class KlassTable {
 	}
 
 	public boolean insert(Klass k) {
-		if (exists(k.name()))
+		if (exists(k.name(), k.namespace()))
 			return false;
 		
 		this.content.add(k);
