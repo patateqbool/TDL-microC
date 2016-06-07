@@ -20,7 +20,7 @@ public class AttributeInfo extends VariableInfo {
   }
 
 	public AttributeInfo(Klass.AccessSpecifier as, Klass parent, VariableInfo vi) {
-		this(as, vi.type(), vi.displacement(), parent, null);
+		this(as, vi.type(), vi.displacement(), parent);
 	}
 
   public Klass.AccessSpecifier accessSpecifier() {
