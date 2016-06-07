@@ -15,7 +15,7 @@ import mcs.compiler.MCSSymbolNotFoundException;
 import mcs.compiler.MCSException;
 import mcs.compiler.MCSSymbolAlreadyDefinedException;
 
-class StructFields {
+public class StructFields {
 	// The list of the fields
 	/*
 	 * Problem : when reading the keys of the fields, we iterate over set, which is
