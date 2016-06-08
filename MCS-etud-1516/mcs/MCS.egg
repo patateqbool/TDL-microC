@@ -370,7 +370,7 @@ do
 	ENTITE^tvarS := ENTITE^tvar;
 	ENTITE^tfunS := ENTITE^tfun;
 	-- Pas de code pour cette RP.
-	ENTITE^code := "";
+	ENTITE^code := ENTITE^machine.generateComment("Definition variable globale.", "\t\t\t");
 end
 }
 
@@ -2248,7 +2248,7 @@ do
   dl := FX^listeDeplS;
   reg := new Register();
   code := E^code;
-	if ((dl.size()) != 0) then -- TODO : > 0) then
+	if ((dl.size()) != 0) then -- : > 0) then
     -- On a accédé à des champs dans FX.
     -- On génère le code correspondant, en prenant le registre de E comme base.
     -- Les verification d'existence de champs ont été faites dans FX.
