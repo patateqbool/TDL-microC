@@ -2784,7 +2784,7 @@ end
 --}
 --
 ---- definit un contenu d'un namespace
---ENTITE -> namespace #ajout identc aco ENTITES acf ;
+--ENTITE -> namespace identc #ajout aco ENTITES acf ;
 --
 ---- Ajout de identc à la table des namespaces.
 ---- Vérifie que identc n'est pas déjà utilisé (par une classe ou un namespace).
@@ -2820,7 +2820,7 @@ end
 --}
 --
 ---- donne l acces au contenu du 'namespace'
---ENTITE -> using #passIdentc identc IDC #trait pv ;
+--ENTITE -> using identc #passIdentc IDC #trait pv ;
 --
 --#passIdentc {
 --local 
@@ -2877,7 +2877,7 @@ end
 --end
 --}
 --
---IDC -> pt #passIdentc identc IDC #retour ;
+--IDC -> pt identc #passIdentc IDC #retour ;
 --
 --#passIdentc {
 --local 
@@ -2920,7 +2920,7 @@ end
 --
 ---- definition d'une classe (peut etre en dehors d'un namespace)
 --
---ENTITE -> ACCES class #verif identc HERITAGE #ajout aco DEFS acf ;
+--ENTITE -> ACCES class identc #verif HERITAGE #ajout aco DEFS acf ;
 --
 ---- Vérifie que identc n'est pas déjà utilisé (par une classe ou un namespace).
 --#verif {
@@ -3002,7 +3002,7 @@ end
 --end
 --}
 --
---HERITAGE -> dpts #passIdentc identc IDC #herit;
+--HERITAGE -> dpts identc #passIdentc IDC #herit;
 --
 --#passIdentc
 --local {
