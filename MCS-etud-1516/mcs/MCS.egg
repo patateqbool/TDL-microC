@@ -11,7 +11,7 @@ option k=2;
 -- le fichier source
 inh source : MCSSourceFile for PROGRAMME;
 -- la machine cible pour la generation de code
-inh machine : IMachine for 
+inh machine : AbstractMachine for 
          ENTITES, ENTITE, DECL, FONCTION, INST, BLOC, INSTS, SIX,
          PARFS, PARF, PARFSX, ES, ESX, 
          E, AFFX, A, AX, R, RX, T, TX, F,FX
@@ -143,6 +143,10 @@ syn champsS : StructFields for
 				 CHAMPS
 				 ;
 
+inh ni : NamespaceInfo for 
+         ENTITE, PARF, INST, F, FX
+				 ;
+
 --inh rechKlass : boolean for
 --         IDC
 --				 ;
@@ -174,9 +178,9 @@ syn champsS : StructFields for
 --				 IDC
 --				 ;
 -- ces attributs permettent de recuperer les instructions du code ASM inline       
-syn code_asm : STRING for ASM;
+--syn code_asm : STRING for ASM;
 -- la TDS courante
-inh tds_asm : TDS for ASM;
+--inh tds_asm : TDS for ASM;
 
 --terminals
 space separateur is  "[\r\n\t ]+";     
@@ -238,12 +242,13 @@ term ident is  "[a-z][_0-9A-Za-z]*";
 term identc is  "[A-Z][_0-9A-Za-z]*";
 
 -- pour les instructions en assembleur TAM 'inline'
-compil ASM;
+-- TODO décommenter plus tard.
+-- compil ASM;
 
 -- (1) : REGLES DE PRODUCTION
 PROGRAMME -> #attENTITES ENTITES #attPROGRAMME;
 global
-   machine : IMachine;
+   machine : AbstractMachine;
 -- Transmission de la machine cible  (choisie par l'option -m au lancement) 
 #attENTITES {
 local
@@ -338,12 +343,12 @@ local
 	ta : AliasTable;
 do
   ta := ENTITE^talias;
-  info := ENTITE^tvar.lookup(identc^txt, true);
+  info := ENTITE^tvar.lookup(identc^txt, ENTITE^ni, true);
   -- Si identc est une clef dans la TDSvar, erreur.
   if info != null then
      error(IDENT_TAKEN, identc^txt);
   else
-     info := ENTITE^tfun.lookup(identc^txt, true);
+     info := ENTITE^tfun.lookup(identc^txt, ENTITE^ni, true);
      -- De même si identc est déjà utilisé dans la TDSfun.
     if info != null then
         error(IDENT_TAKEN, identc^txt);
@@ -417,11 +422,11 @@ do
   tv := ENTITE^tvar;
 	tf := ENTITE^tfun;
   -- Si l'ident apprait dans tvar ou talias, on a une erreur.
-	info := ENTITE^tvar.lookup(ident^txt, true);
+	info := ENTITE^tvar.lookup(ident^txt, ENTITE^ni, true);
   if (info != null) then
     error(IDENT_TAKEN, ident^txt);
   else
-		t := ENTITE^talias.lookup(ident^txt, true);
+		t := ENTITE^talias.lookup(ident^txt, ENTITE^ni, true);
 		if (t!= null) then
 		  error(IDENT_TAKEN, ident^txt);
 	  else
@@ -691,17 +696,17 @@ do
   tv := PARF^tvar;
   fi := PARF^funInfoH;
   -- Vérifications concernant ident.
-  info := tv.lookup(ident^txt, false);
+  info := tv.lookup(ident^txt, PARF^ni, false);
   -- Si identc est une clef dans la TDSvar, erreur.
   if (info != null) then
     error(IDENT_TAKEN, ident^txt);
   else
-    info := PARF^tfun.lookup(ident^txt, false);
+    info := PARF^tfun.lookup(ident^txt, PARF^ni, false);
     -- De même si identc est déjà utilisé dans la TDSfun.
     if (info != null) then
       error(IDENT_TAKEN, ident^txt);
     else
-		  t := PARF^talias.lookup(ident^txt, false);
+		  t := PARF^talias.lookup(ident^txt);
 			-- De même dans talias.
 			if (t != null) then
 			  error(IDENT_TAKEN, ident^txt);
@@ -1053,12 +1058,12 @@ local
 do
   nom := ident^txt;
   tv := INST^tvar;
-  info := INST^tvar.lookup(nom, true);
+  info := INST^tvar.lookup(nom, INST^ni, true);
   -- Si ident est une clef dans la TDSvar, erreur.
   if info != null then
      error(IDENT_TAKEN, nom);
   else
-    info := INST^tfun.lookup(nom, false);
+    info := INST^tfun.lookup(nom, INST^ni, false);
     -- De même si identc est déjà utilisé dans la TDSfun.
     if (info != null) then
       error(ALREADY_A_FUNCTION_IDENT, nom);
@@ -1079,1100 +1084,1100 @@ do
 		-- Verification de types inutile, elle est faite dans AFFX.
 		-- On génère le code pour stocker la valeur du registre 
 		-- de AFFX dans la variable qu'on vient de déclarer.
-    code := code + INST^machine.generateStoreVariable(tv.lookup(ident^txt), AFFX^reg);
-	end
-  INST^code := code;
-	INST^tvarS := tv;
-end
-}
-
-
--- (29) : Instruction expression (affectation et appel de procedure)
-INST -> #attE E pv #attINST ;
-
-#attE {
-local
-do
-  E^machine := INST^machine;
-	E^tvar := INST^tvar;
-	E^tfun := INST^tfun;
-	E^talias := INST^talias;
-end
-}
-
-#attINST {
-local
-do
-  -- Une expression ne modifie pas la tvar.
-  INST^tvarS := INST^tvar;
-	-- Remonéte du code.
-	INST^code := E^code;
-end
-}
-
-
--- (30) : Bloc d'instructions
-INST ->  #attBLOC BLOC #attINST;
-
--- Création d'une tvar fille héritant de celle de INST pour BLOC.
-#attBLOC {
-local
-  tfille : VariableTable;
-do
-  tfille := new VariableTable(INST^tvar);
-  BLOC^tvar := tfille;
-  BLOC^funInfoH := INST^funInfoH;
-end
-}
-
--- La tvar de INST n'est pas modifiée par BLOC.
-#attINST {
-local
-do
-  INST^tvarS := INST^tvar;
-  -- Passage du code de BLOC à INST.
-  -- Les instructions de fin de bloc (flush etc) sont générés dans la RP de BLOC.
-  INST^code := BLOC^code;
-end
-}
-
-
--- (31) : Conditionnelle
-INST -> si paro #attE E parf #attBLOC BLOC #attSIX SIX #attINST;
-
-#attE {
-local
-do
-  E^machine := INST^machine;
-	E^tvar := INST^tvar;
-	E^tfun := INST^tfun;
-	E^talias := INST^talias;
-end
-}
-
--- Création d'une tvar fille héritant de celle de INST pour BLOC.
-#attBLOC {
-local
-  tfille : VariableTable;
-do
-  BLOC^funInfoH := INST^funInfoH;
-  tfille := new VariableTable(INST^tvar);
-  BLOC^tvar := tfille;
-  BLOC^tfun := INST^tfun;
-	BLOC^talias := INST^talias;
-	BLOC^machine := INST^machine;
-end
-}
-
--- Transmission des TDS 'parentes' à SIX.
-#attSIX {
-local
-do
-  SIX^funInfoH := INST^funInfoH;
-  SIX^tvar := INST^tvar;
-  SIX^tfun := INST^tfun;
-	SIX^talias := INST^talias;
-	SIX^machine := INST^machine;
-end
-}
-
-#attINST {
-local
-  code : String;
-do
-  -- Génération du code pour une conditionnelle.
-  code := E^code;
-	-- On vérifie que le type dans la conditionnelle est bien un entier (en l'absence de booléens)
-	match E^type
-	with IntegerType then
-		-- Si c'est le cas, on génère le code
- 		code := code + INST^machine.generateIfThenElse(E^reg,BLOC^code,SIX^code);
-	else
-		-- Sinon, on renvoie une erreur
-    error(TYPE_NOT_EQUAL);
-	end
-	INST^code := code ;
-  INST^tvarS := INST^tvar;
-end
-}
-
-
--- (32)
-SIX -> sinon #attBLOC BLOC #attSIX;
-
--- Création d'une tvar fille héritant de celle de INST pour BLOC.
--- Passage du type retour de la fonction.
-#attBLOC {
-local
-  tfille : VariableTable;
-do
-  BLOC^funInfoH := SIX^funInfoH;
-  tfille := new VariableTable(SIX^tvar);
-  BLOC^tvar := tfille;
-  BLOC^tfun := SIX^tfun;
-	BLOC^talias := SIX^talias;
-	BLOC^machine := SIX^machine;
-end
-}
-
--- Passage du code du BLOC à SIX.
-#attSIX {
-local
-do
-  SIX^code := BLOC^code;
-end
-}
-
-
--- (33)
-SIX -> #attSIX ;
--- Rien à faire pour la gestion des TDS.
--- Génération d'une chaine de caractère vide.
-#attSIX {
-local
-do
-  SIX^code := "";
-end
-}
-
-
-
--- (34) : Retour de fonction.
-INST ->  retour #attE E pv #attINST ;
-
-#attE {
-local
-do
-  E^machine := INST^machine;
-	E^tvar := INST^tvar;
-	E^tfun := INST^tfun;
-	E^talias := INST^talias;
-end
-}
-
--- Vérification que E est du type retour de la fonction.
-#attINST {
-local
-  typeRet : Type;
-  code : String;
-do
-  typeRet := INST^funInfoH.returnType();
-  -- Si typeRet ne correspond pas à E^type
-  -- alors erreur.
-  if !(typeRet.isEqualTo(E^type)) then
-    error(TYPE_NOT_COMPATIBLE);  
-  end
-	--Génération du code de retour de la fonction et du flush.
-  code :=   INST^machine.generateFlush(INST^tvar)
-	        + INST^machine.generateFunctionReturn(INST^funInfoH, E^reg);
-	INST^code := code;
-	INST^tvarS := null;
-end
-}
-
-
------------------------------------------------------------------------
---------------------------- LES EXPRESSIONS ---------------------------
------------------------------------------------------------------------
--- E = expression (y compris l'affectation)
--- A = expression figurant dans une affectation
--- R = expression figurant dans une expresion relationnelle
--- T = expression figurant dans une expression additive (TERME)
--- F = expression figurant dans une expression multiplicative (FACTEUR)
------------------------------------------------------------------------
-
--- (35)
-E -> #attA A #attAFFX AFFX #attE;
-
-#attA {
-local
-do
-  A^machine := E^machine;
-	A^tvar := E^tvar;
-  A^tfun := E^tfun;
-	A^talias := E^talias;
-end
-}
-
--- Passage des attributs hérités de AFFX.
--- Maj d'un attribut pour AFFX signalant si A est, ou non, une variable.
--- Maj de l'attribut typeH de AFFX afin de tester que les types correspondent.
-#attAFFX {
-local
-do
-  AFFX^machine := E^machine;
-	AFFX^tvar := E^tvar;
-	AFFX^tfun := E^tfun;
-	AFFX^talias := E^talias;
-  -- L'affectation est possible si A est une variable.
-  AFFX^affPossible := A^estVar;
-	-- Le type de cette afectation doit être le même que A.
-  AFFX^typeH := A^type;
-end
-}
-
--- Génération du code de l'affectation.
--- Passage des attributs syn de E.
-#attE {
-local
-  code : String;
-	reg : Register;
-	estVar : boolean;
-	vi : VariableInfo;
-do
-  reg := new Register();
-  code := A^code + AFFX^code;
-  -- On n'a pas d'affectation à droite.
-  if ((A^estVar) && (AFFX^estVar)) then
-	  -- E peut dans ce cas représenter une variable.
-	  estVar := true ;
-		vi := A^vi ;
-  else 
-	  -- E ne représente pas de variable.
-	  estVar := false ;
-		vi := null ;
-		-- On génère le code de l'affectation.
-		-- La compatibilité des types est effectuée dans AFFX.
-		code := code + E^machine.generateStoreVariable(A^vi,AFFX^reg);
-	end
-  E^type := A^type;
-	E^reg := AFFX^reg;
-	E^estVar := estVar;
-	E^vi := vi;
-	E^code := code;
-end
-}
-
-
--- (36) : Affectation
-AFFX -> affect #attA A #attAFFX ;
-
-#attA {
-local
-do
-  A^machine := AFFX^machine;
-	A^tvar := AFFX^tvar;
-  A^tfun := AFFX^tfun;
-	A^talias := AFFX^talias;
-end
-}
-
--- Vérifie que l'affectation est valide :
---   - la partie à gauche du = doit être une variable,
---   - le type de A doit être compatible avec celui de AFFX.
-#attAFFX {
-local
-do
-  if !(AFFX^affPossible) then
-    error(LEFT_PART_NOT_VARIABLE );
-  else
-	  -- Verification d'égalité des types.
-    if !(A^type.isEqualTo(AFFX^typeH)) then
-     error(TYPE_NOT_COMPATIBLE);    
+			code := code + INST^machine.generateStoreVariable(tv.lookup(ident^txt, INST^ni, true), AFFX^reg);
 		end
+		INST^code := code;
+		INST^tvarS := tv;
 	end
-  -- On met l'attribut estVar de AFFX à faux car la règle 
-  -- appelante ne pourra pas être une variable suite à cette RP.
-  -- Le registre et le type de AFFX sont ceux de A.
-  AFFX^estVar := false;
-  AFFX^reg := A^reg;
-  AFFX^type := A^type;
-	AFFX^code := A^code;
-end
-}
+	}
 
 
--- (37)
-AFFX -> #attAFFX ;
+	-- (29) : Instruction expression (affectation et appel de procedure)
+	INST -> #attE E pv #attINST ;
 
--- On met estVar à true car cette RP n'empeche pas la representation d'une var.
--- code est vide, reg est null, type aussi.
-#attAFFX {
-local
-do
-  AFFX^estVar := true ;
-	AFFX^reg := null;
-	AFFX^type := null;
-	AFFX^code := "";
-end
-}
+	#attE {
+	local
+	do
+		E^machine := INST^machine;
+		E^tvar := INST^tvar;
+		E^tfun := INST^tfun;
+		E^talias := INST^talias;
+	end
+	}
+
+	#attINST {
+	local
+	do
+		-- Une expression ne modifie pas la tvar.
+		INST^tvarS := INST^tvar;
+		-- Remonéte du code.
+		INST^code := E^code;
+	end
+	}
 
 
--- (38) : Relation
-A -> #attR R #attAX AX #attA ;
+	-- (30) : Bloc d'instructions
+	INST ->  #attBLOC BLOC #attINST;
 
-#attR {
-local
-do
-  R^machine := A^machine;
-	R^tvar := A^tvar;
-	R^tfun := A^tfun;
-	R^talias := A^talias;
-end
-}
+	-- Création d'une tvar fille héritant de celle de INST pour BLOC.
+	#attBLOC {
+	local
+		tfille : VariableTable;
+	do
+		tfille := new VariableTable(INST^tvar);
+		BLOC^tvar := tfille;
+		BLOC^funInfoH := INST^funInfoH;
+	end
+	}
 
-#attAX {
-local
-do
-  AX^machine := A^machine;
-	AX^tvar := A^tvar;
-	AX^tfun := A^tfun;
-	AX^talias := A^talias;
-end
-}
+	-- La tvar de INST n'est pas modifiée par BLOC.
+	#attINST {
+	local
+	do
+		INST^tvarS := INST^tvar;
+		-- Passage du code de BLOC à INST.
+		-- Les instructions de fin de bloc (flush etc) sont générés dans la RP de BLOC.
+		INST^code := BLOC^code;
+	end
+	}
 
--- Attributs syn pour A.
-#attA {
-local
-  reg : Register;
-	code : String;
-	vi : VariableInfo;
-	estVar : boolean;
-	t : Type;
-do
-  reg := new Register();
-	code := R^code + AX^code;
-	t := R^type;
-	-- Si AX n'est pas une variable, on doit générer le code de l'opération.
-	if !(AX^estVar) then
-	  -- Le type de A doit être comparable, ie il doit s'agir d'un type simple.
-	  match t
-		with SimpleType then 
-		  -- Si le type est comparable :
-	    -- On vérifie que les types de R et AX sont bien compatibles.
-      if !(t.isCompatible(AX^type)) then 
-		    error(TYPE_NOT_EQUAL);
-		  else
-  	 		-- On génnère le code de l'opération.
-		    code := code + A^machine.generateOperation(AX^oprel,R^reg,AX^reg,reg);
-	    end
+
+	-- (31) : Conditionnelle
+	INST -> si paro #attE E parf #attBLOC BLOC #attSIX SIX #attINST;
+
+	#attE {
+	local
+	do
+		E^machine := INST^machine;
+		E^tvar := INST^tvar;
+		E^tfun := INST^tfun;
+		E^talias := INST^talias;
+	end
+	}
+
+	-- Création d'une tvar fille héritant de celle de INST pour BLOC.
+	#attBLOC {
+	local
+		tfille : VariableTable;
+	do
+		BLOC^funInfoH := INST^funInfoH;
+		tfille := new VariableTable(INST^tvar);
+		BLOC^tvar := tfille;
+		BLOC^tfun := INST^tfun;
+		BLOC^talias := INST^talias;
+		BLOC^machine := INST^machine;
+	end
+	}
+
+	-- Transmission des TDS 'parentes' à SIX.
+	#attSIX {
+	local
+	do
+		SIX^funInfoH := INST^funInfoH;
+		SIX^tvar := INST^tvar;
+		SIX^tfun := INST^tfun;
+		SIX^talias := INST^talias;
+		SIX^machine := INST^machine;
+	end
+	}
+
+	#attINST {
+	local
+		code : String;
+	do
+		-- Génération du code pour une conditionnelle.
+		code := E^code;
+		-- On vérifie que le type dans la conditionnelle est bien un entier (en l'absence de booléens)
+		match E^type
+		with IntegerType then
+			-- Si c'est le cas, on génère le code
+			code := code + INST^machine.generateIfThenElse(E^reg,BLOC^code,SIX^code);
 		else
-		  -- Le type n'est pas simple : impossible de faire une comparaison.
-		  error(TYPE_NOT_COMPARABLE);
+			-- Sinon, on renvoie une erreur
+			error(TYPE_NOT_EQUAL);
 		end
+		INST^code := code ;
+		INST^tvarS := INST^tvar;
 	end
-	-- A représente une variable si AX ne l'empêche pas 
-  -- et R représente une variable, on fait alors passer
-  -- la vi de R à A. Sinon, vi est à null pour R.
-  if (R^estVar)&&(AX^estVar) then 
-    estVar := true;
-    vi := R^vi;
-	else
-	  estVar := false;
-    vi := null;
+	}
+
+
+	-- (32)
+	SIX -> sinon #attBLOC BLOC #attSIX;
+
+	-- Création d'une tvar fille héritant de celle de INST pour BLOC.
+	-- Passage du type retour de la fonction.
+	#attBLOC {
+	local
+		tfille : VariableTable;
+	do
+		BLOC^funInfoH := SIX^funInfoH;
+		tfille := new VariableTable(SIX^tvar);
+		BLOC^tvar := tfille;
+		BLOC^tfun := SIX^tfun;
+		BLOC^talias := SIX^talias;
+		BLOC^machine := SIX^machine;
 	end
-	-- Le registre de A contient le résultat de l'opération.
-	A^reg := reg;
-  -- Passage des autres attributs.
-	A^type := new IntegerType();
-  A^code := code;
-  A^vi := vi;
-	A^estVar := estVar;
-end
-}
+	}
+
+	-- Passage du code du BLOC à SIX.
+	#attSIX {
+	local
+	do
+		SIX^code := BLOC^code;
+	end
+	}
 
 
--- (39)
-AX -> OPREL #attR R #attAX ;
-
--- Rien à faire passer à OPREL.
-#attR {
-local
-do
-  R^machine := AX^machine;
-	R^tvar := AX^tvar;
-	R^tfun := AX^tfun;
-	R^talias := AX^talias;
-end
-}
-
--- Paramètres syn de AX.
-#attAX {
-local
-do
-  -- La RP appelante ne represente pas une variable.
-  AX^estVar := false;
-	-- Les autres attributs font passer ceux de R.
-  AX^oprel := OPREL^oprel;
-	AX^reg := R^reg;
-	AX^type := R^type;
-	AX^code := R^code;
-end
-}
+	-- (33)
+	SIX -> #attSIX ;
+	-- Rien à faire pour la gestion des TDS.
+	-- Génération d'une chaine de caractère vide.
+	#attSIX {
+	local
+	do
+		SIX^code := "";
+	end
+	}
 
 
--- (40)
-AX -> #attAX ;
 
--- Paramètres syn de AX.
-#attAX {
-local
-do
-  -- L'oprel de AX est null dans ce cas.
-  -- Il faut tout de même l'initialiser comme il s'agit d'un attribut synthétisé.
-  AX^oprel := null;
-  -- La RP n'empeche pas d'etre une variable.
-  AX^estVar := true;
-  -- Il faut init code.
-  AX^code := "";
-	-- Registre à null, de même que type.
-	AX^reg := null;
-	AX^type := null;
-end
-}
+	-- (34) : Retour de fonction.
+	INST ->  retour #attE E pv #attINST ;
 
+	#attE {
+	local
+	do
+		E^machine := INST^machine;
+		E^tvar := INST^tvar;
+		E^tfun := INST^tfun;
+		E^talias := INST^talias;
+	end
+	}
 
--- (41) Operateurs relationnels
-OPREL -> inf #attOPREL ;
-
-#attOPREL {
-local
-do
-  OPREL^oprel := 13; -- RelationalOperator.LT;
-end
-}
-
-
--- (42)
-OPREL -> sup #attOPREL ;
-
-#attOPREL {
-local
-do
-  OPREL^oprel := 15; --IMachine.RelationalOperator.GT;
-end
-}
+	-- Vérification que E est du type retour de la fonction.
+	#attINST {
+	local
+		typeRet : Type;
+		code : String;
+	do
+		typeRet := INST^funInfoH.returnType();
+		-- Si typeRet ne correspond pas à E^type
+		-- alors erreur.
+		if !(typeRet.isEqualTo(E^type)) then
+			error(TYPE_NOT_COMPATIBLE);  
+		end
+		--Génération du code de retour de la fonction et du flush.
+		code :=   INST^machine.generateFlush(INST^tvar)
+						+ INST^machine.generateFunctionReturn(INST^funInfoH, E^reg);
+		INST^code := code;
+		INST^tvarS := null;
+	end
+	}
 
 
--- (43)
-OPREL -> infeg #attOPREL ;
+	-----------------------------------------------------------------------
+	--------------------------- LES EXPRESSIONS ---------------------------
+	-----------------------------------------------------------------------
+	-- E = expression (y compris l'affectation)
+	-- A = expression figurant dans une affectation
+	-- R = expression figurant dans une expresion relationnelle
+	-- T = expression figurant dans une expression additive (TERME)
+	-- F = expression figurant dans une expression multiplicative (FACTEUR)
+	-----------------------------------------------------------------------
 
-#attOPREL {
-local
-do
-  OPREL^oprel := 14; --IMachine.RelationalOperator.LEQ;
-end
-}
+	-- (35)
+	E -> #attA A #attAFFX AFFX #attE;
+
+	#attA {
+	local
+	do
+		A^machine := E^machine;
+		A^tvar := E^tvar;
+		A^tfun := E^tfun;
+		A^talias := E^talias;
+	end
+	}
+
+	-- Passage des attributs hérités de AFFX.
+	-- Maj d'un attribut pour AFFX signalant si A est, ou non, une variable.
+	-- Maj de l'attribut typeH de AFFX afin de tester que les types correspondent.
+	#attAFFX {
+	local
+	do
+		AFFX^machine := E^machine;
+		AFFX^tvar := E^tvar;
+		AFFX^tfun := E^tfun;
+		AFFX^talias := E^talias;
+		-- L'affectation est possible si A est une variable.
+		AFFX^affPossible := A^estVar;
+		-- Le type de cette afectation doit être le même que A.
+		AFFX^typeH := A^type;
+	end
+	}
+
+	-- Génération du code de l'affectation.
+	-- Passage des attributs syn de E.
+	#attE {
+	local
+		code : String;
+		reg : Register;
+		estVar : boolean;
+		vi : VariableInfo;
+	do
+		reg := new Register();
+		code := A^code + AFFX^code;
+		-- On n'a pas d'affectation à droite.
+		if ((A^estVar) && (AFFX^estVar)) then
+			-- E peut dans ce cas représenter une variable.
+			estVar := true ;
+			vi := A^vi ;
+		else 
+			-- E ne représente pas de variable.
+			estVar := false ;
+			vi := null ;
+			-- On génère le code de l'affectation.
+			-- La compatibilité des types est effectuée dans AFFX.
+			code := code + E^machine.generateStoreVariable(A^vi,AFFX^reg);
+		end
+		E^type := A^type;
+		E^reg := AFFX^reg;
+		E^estVar := estVar;
+		E^vi := vi;
+		E^code := code;
+	end
+	}
 
 
--- (44)
-OPREL -> supeg #attOPREL ;
+	-- (36) : Affectation
+	AFFX -> affect #attA A #attAFFX ;
 
-#attOPREL {
-local
-do
-  OPREL^oprel := 16; --IMachine.RelationalOperator.GEQ;
-end
-}
+	#attA {
+	local
+	do
+		A^machine := AFFX^machine;
+		A^tvar := AFFX^tvar;
+		A^tfun := AFFX^tfun;
+		A^talias := AFFX^talias;
+	end
+	}
 
-
--- (45)
-OPREL -> eg #attOPREL ;
-
-#attOPREL {
-local
-do
-  OPREL^oprel := 11; --IMachine.RelationalOperator.EQ;
-end
-}
-
-
--- (46)
-OPREL -> neg #attOPREL ;
-
-#attOPREL {
-local
-do
-  OPREL^oprel := 12;--IMachine.RelationalOperator.NEQ;
-end
-}
-
-
--- (47)
-R -> #attT T #attRX RX #attR ;
-
--- Attributs inh de T.
-#attT {
-local
-do
-  T^machine := R^machine;
-	T^talias := R^talias;
-	T^tfun := R^tfun;
-	T^tvar := R^tvar;
-end
-}
+	-- Vérifie que l'affectation est valide :
+	--   - la partie à gauche du = doit être une variable,
+	--   - le type de A doit être compatible avec celui de AFFX.
+	#attAFFX {
+	local
+	do
+		if !(AFFX^affPossible) then
+			error(LEFT_PART_NOT_VARIABLE );
+		else
+			-- Verification d'égalité des types.
+			if !(A^type.isEqualTo(AFFX^typeH)) then
+			error(TYPE_NOT_COMPATIBLE);    
+			end
+		end
+		-- On met l'attribut estVar de AFFX à faux car la règle 
+		-- appelante ne pourra pas être une variable suite à cette RP.
+		-- Le registre et le type de AFFX sont ceux de A.
+		AFFX^estVar := false;
+		AFFX^reg := A^reg;
+		AFFX^type := A^type;
+		AFFX^code := A^code;
+	end
+	}
 
 
--- Attributs inh de RX.
-#attRX {
-local
-do
-  RX^machine := R^machine;
-	RX^talias := R^talias;
-	RX^tfun := R^tfun;
-	RX^tvar := R^tvar;
-end
-}
+	-- (37)
+	AFFX -> #attAFFX ;
 
--- Attributs syn de R.
-#attR {
-local
-  code : String;
-	reg : Register;
-	vi : VariableInfo;
-	estVar : boolean;
-	type : Type;
-do
-  -- Init du registre dans lequel sera stocké le résultat de l'opération.
-  reg := new Register();
-  code := T^code + RX^code;
-	type := T^type;
-  if (RX^op != 0) then -- IMachine.Operator.NOP) then
-	  -- Si il y a un opération : verif sur les types.
-		match type
-		with SimpleType then
-		  if !(type.isCompatible(RX^type)) then
-			  error(TYPE_NOT_COMPATIBLE);
+	-- On met estVar à true car cette RP n'empeche pas la representation d'une var.
+	-- code est vide, reg est null, type aussi.
+	#attAFFX {
+	local
+	do
+		AFFX^estVar := true ;
+		AFFX^reg := null;
+		AFFX^type := null;
+		AFFX^code := "";
+	end
+	}
+
+
+	-- (38) : Relation
+	A -> #attR R #attAX AX #attA ;
+
+	#attR {
+	local
+	do
+		R^machine := A^machine;
+		R^tvar := A^tvar;
+		R^tfun := A^tfun;
+		R^talias := A^talias;
+	end
+	}
+
+	#attAX {
+	local
+	do
+		AX^machine := A^machine;
+		AX^tvar := A^tvar;
+		AX^tfun := A^tfun;
+		AX^talias := A^talias;
+	end
+	}
+
+	-- Attributs syn pour A.
+	#attA {
+	local
+		reg : Register;
+		code : String;
+		vi : VariableInfo;
+		estVar : boolean;
+		t : Type;
+	do
+		reg := new Register();
+		code := R^code + AX^code;
+		t := R^type;
+		-- Si AX n'est pas une variable, on doit générer le code de l'opération.
+		if !(AX^estVar) then
+			-- Le type de A doit être comparable, ie il doit s'agir d'un type simple.
+			match t
+			with SimpleType then 
+				-- Si le type est comparable :
+				-- On vérifie que les types de R et AX sont bien compatibles.
+				if !(t.isCompatible(AX^type)) then 
+					error(TYPE_NOT_EQUAL);
+				else
+					-- On génnère le code de l'opération.
+					code := code + A^machine.generateOperation(AX^oprel,R^reg,AX^reg,reg);
+				end
 			else
-			  code := code + R^machine.generateOperation(RX^op,T^reg,RX^reg,reg);
-	    end
-		else
-		  error(TYPE_NOT_SIMPLE);
+				-- Le type n'est pas simple : impossible de faire une comparaison.
+				error(TYPE_NOT_COMPARABLE);
+			end
 		end
+		-- A représente une variable si AX ne l'empêche pas 
+		-- et R représente une variable, on fait alors passer
+		-- la vi de R à A. Sinon, vi est à null pour R.
+		if (R^estVar)&&(AX^estVar) then 
+			estVar := true;
+			vi := R^vi;
+		else
+			estVar := false;
+			vi := null;
+		end
+		-- Le registre de A contient le résultat de l'opération.
+		A^reg := reg;
+		-- Passage des autres attributs.
+		A^type := new IntegerType();
+		A^code := code;
+		A^vi := vi;
+		A^estVar := estVar;
 	end
-  -- R est variable si T l'est et RX ne l'empeche pas,
-  -- dans ce cas, on lui donne la vi de R. Dans le cas
-  -- contraire, l'attribut vi de R est à null.
-  if ((T^estVar)&&(RX^estVar)) then
-	  estVar := true;
-		vi := T^vi;
-	else
-	  estVar := false;
-		vi := null;
+	}
+
+
+	-- (39)
+	AX -> OPREL #attR R #attAX ;
+
+	-- Rien à faire passer à OPREL.
+	#attR {
+	local
+	do
+		R^machine := AX^machine;
+		R^tvar := AX^tvar;
+		R^tfun := AX^tfun;
+		R^talias := AX^talias;
 	end
-	-- Passage des attributs.
-	R^reg := reg;
-	R^code := code;
-  R^estVar := estVar;
-	R^vi := vi;
-  R^type := type;
-end
-}
+	}
+
+	-- Paramètres syn de AX.
+	#attAX {
+	local
+	do
+		-- La RP appelante ne represente pas une variable.
+		AX^estVar := false;
+		-- Les autres attributs font passer ceux de R.
+		AX^oprel := OPREL^oprel;
+		AX^reg := R^reg;
+		AX^type := R^type;
+		AX^code := R^code;
+	end
+	}
 
 
--- (48) : Additions ...
-RX -> OPADD #attT T #attRX1 RX #attRX ;
+	-- (40)
+	AX -> #attAX ;
 
--- Attributs inh de T.
-#attT {
-local
-do
-  T^machine := RX^machine;
-	T^talias := RX^talias;
-	T^tfun := RX^tfun;
-	T^tvar := RX^tvar;
-end
-}
+	-- Paramètres syn de AX.
+	#attAX {
+	local
+	do
+		-- L'oprel de AX est null dans ce cas.
+		-- Il faut tout de même l'initialiser comme il s'agit d'un attribut synthétisé.
+		AX^oprel := null;
+		-- La RP n'empeche pas d'etre une variable.
+		AX^estVar := true;
+		-- Il faut init code.
+		AX^code := "";
+		-- Registre à null, de même que type.
+		AX^reg := null;
+		AX^type := null;
+	end
+	}
 
 
--- Pas d'attribut inh pour OPADD.
--- Attributs inh de RX1.
-#attRX1 {
-local
-do
-  RX1^machine := RX^machine;
-	RX1^talias := RX^talias;
-	RX1^tfun := RX^tfun;
-	RX1^tvar := RX^tvar;
-end
-}
+	-- (41) Operateurs relationnels
+	OPREL -> inf #attOPREL ;
 
--- Attributs syn pour RX.
--- Génération du code de T RX en fonction de RX.
-#attRX {
-local
-  code : String;
-	reg : Register;
-	type : Type;
-do
-  reg := new Register();
-	type := T^type;
-  -- On met le code de T et RX1.
-  code := T^code + RX1^code;
-  if (RX1^op != 0) then -- IMachine.Operator.NOP) then
-	  -- Si il y a un opération : verif sur les types.
-		match type
-		with SimpleType then
-		  if !(type.isCompatible(RX1^type)) then
-			  error(TYPE_NOT_COMPATIBLE);
+	#attOPREL {
+	local
+	do
+		OPREL^oprel := 13;
+	end
+	}
+
+
+	-- (42)
+	OPREL -> sup #attOPREL ;
+
+	#attOPREL {
+	local
+	do
+		OPREL^oprel := 15; 
+	end
+	}
+
+
+	-- (43)
+	OPREL -> infeg #attOPREL ;
+
+	#attOPREL {
+	local
+	do
+		OPREL^oprel := 14;
+	end
+	}
+
+
+	-- (44)
+	OPREL -> supeg #attOPREL ;
+
+	#attOPREL {
+	local
+	do
+		OPREL^oprel := 16;
+	end
+	}
+
+
+	-- (45)
+	OPREL -> eg #attOPREL ;
+
+	#attOPREL {
+	local
+	do
+		OPREL^oprel := 11;
+	end
+	}
+
+
+	-- (46)
+	OPREL -> neg #attOPREL ;
+
+	#attOPREL {
+	local
+	do
+		OPREL^oprel := 12;
+	end
+	}
+
+
+	-- (47)
+	R -> #attT T #attRX RX #attR ;
+
+	-- Attributs inh de T.
+	#attT {
+	local
+	do
+		T^machine := R^machine;
+		T^talias := R^talias;
+		T^tfun := R^tfun;
+		T^tvar := R^tvar;
+	end
+	}
+
+
+	-- Attributs inh de RX.
+	#attRX {
+	local
+	do
+		RX^machine := R^machine;
+		RX^talias := R^talias;
+		RX^tfun := R^tfun;
+		RX^tvar := R^tvar;
+	end
+	}
+
+	-- Attributs syn de R.
+	#attR {
+	local
+		code : String;
+		reg : Register;
+		vi : VariableInfo;
+		estVar : boolean;
+		type : Type;
+	do
+		-- Init du registre dans lequel sera stocké le résultat de l'opération.
+		reg := new Register();
+		code := T^code + RX^code;
+		type := T^type;
+		if (RX^op != 0) then
+			-- Si il y a un opération : verif sur les types.
+			match type
+			with SimpleType then
+				if !(type.isCompatible(RX^type)) then
+					error(TYPE_NOT_COMPATIBLE);
+				else
+					code := code + R^machine.generateOperation(RX^op,T^reg,RX^reg,reg);
+				end
 			else
-        code := code + RX^machine.generateOperation(RX1^op,T^reg,RX1^reg,reg);
-	    end
-		else
-		  error(TYPE_NOT_SIMPLE);
+				error(TYPE_NOT_SIMPLE);
+			end
 		end
+		-- R est variable si T l'est et RX ne l'empeche pas,
+		-- dans ce cas, on lui donne la vi de R. Dans le cas
+		-- contraire, l'attribut vi de R est à null.
+		if ((T^estVar)&&(RX^estVar)) then
+			estVar := true;
+			vi := T^vi;
+		else
+			estVar := false;
+			vi := null;
+		end
+		-- Passage des attributs.
+		R^reg := reg;
+		R^code := code;
+		R^estVar := estVar;
+		R^vi := vi;
+		R^type := type;
 	end
-	-- Passage de l'operateur de OPADD à RX.
-	RX^op := OPADD^op;
-	RX^reg := reg;
-	RX^code := code;
-	RX^type := type;
-  -- Si cette RP apparait dans l'expression, alors il ne s'agit pas d'une variable.
-  RX^estVar := false;
-end
-}
+	}
 
 
--- (49)
-RX -> #attRX;
+	-- (48) : Additions ...
+	RX -> OPADD #attT T #attRX1 RX #attRX ;
 
-#attRX {
-local
-do
-  RX^op := 0; --IMachine.Operator.NOP;
-  -- N'empeche pas la représentation d'une variable.
-  RX^estVar := true;
-  RX^code := "";
-	RX^type := null;
-	RX^reg := null;
-end
-}
-
-
--- (50) : Operateurs additifs
-OPADD -> plus #attOPADD ;
-
-#attOPADD {
-local
-do
-  OPADD^op := 1; --IMachine.Operator.ADD;
-end
-}
+	-- Attributs inh de T.
+	#attT {
+	local
+	do
+		T^machine := RX^machine;
+		T^talias := RX^talias;
+		T^tfun := RX^tfun;
+		T^tvar := RX^tvar;
+	end
+	}
 
 
--- (51)
-OPADD -> moins #attOPADD ;
+	-- Pas d'attribut inh pour OPADD.
+	-- Attributs inh de RX1.
+	#attRX1 {
+	local
+	do
+		RX1^machine := RX^machine;
+		RX1^talias := RX^talias;
+		RX1^tfun := RX^tfun;
+		RX1^tvar := RX^tvar;
+	end
+	}
 
-#attOPADD {
-local
-do
-  OPADD^op := 2; --IMachine.Operator.SUB;
-end
-}
+	-- Attributs syn pour RX.
+	-- Génération du code de T RX en fonction de RX.
+	#attRX {
+	local
+		code : String;
+		reg : Register;
+		type : Type;
+	do
+		reg := new Register();
+		type := T^type;
+		-- On met le code de T et RX1.
+		code := T^code + RX1^code;
+		if (RX1^op != 0) then
+			-- Si il y a un opération : verif sur les types.
+			match type
+			with SimpleType then
+				if !(type.isCompatible(RX1^type)) then
+					error(TYPE_NOT_COMPATIBLE);
+				else
+					code := code + RX^machine.generateOperation(RX1^op,T^reg,RX1^reg,reg);
+				end
+			else
+				error(TYPE_NOT_SIMPLE);
+			end
+		end
+		-- Passage de l'operateur de OPADD à RX.
+		RX^op := OPADD^op;
+		RX^reg := reg;
+		RX^code := code;
+		RX^type := type;
+		-- Si cette RP apparait dans l'expression, alors il ne s'agit pas d'une variable.
+		RX^estVar := false;
+	end
+	}
 
 
--- (52)
-OPADD -> ou #attOPADD ;
+	-- (49)
+	RX -> #attRX;
 
-#attOPADD {
-local
-do
-  OPADD^op :=  6; --IMachine.Operator.OR;
-end
-}
+	#attRX {
+	local
+	do
+		RX^op := 0;
+		-- N'empeche pas la représentation d'une variable.
+		RX^estVar := true;
+		RX^code := "";
+		RX^type := null;
+		RX^reg := null;
+	end
+	}
 
 
--- (53) : Multiplication, ...
-T -> #attF F #attTX TX #attT ;
+	-- (50) : Operateurs additifs
+	OPADD -> plus #attOPADD ;
 
--- Attributs inh de F.
-#attF {
-local
-do
-  F^machine := T^machine;
-	F^talias := T^talias;
-	F^tfun := T^tfun;
-	F^tvar := T^tvar;
-end
-}
+	#attOPADD {
+	local
+	do
+		OPADD^op := 1;
+	end
+	}
 
--- Attributs inh de TX.
-#attTX {
-local
-do
-  TX^machine := T^machine;
-	TX^talias := T^talias;
-	TX^tfun := T^tfun;
-	TX^tvar := T^tvar;
-end
-}
 
--- Attributs syn de T. 
-#attT {
-local
-  code : String;
-	reg : Register;
-	vi : VariableInfo;
-	estVar : boolean;
-	t : Type;
-do
-  reg := new Register();
-  code := F^code + TX^code;
-	t := F^type;
-  if (TX^op != 0) then --IMachine.Operator.NOP) then
-	  -- Si il y a un opération : verif sur les types.
+	-- (51)
+	OPADD -> moins #attOPADD ;
+
+	#attOPADD {
+	local
+	do
+		OPADD^op := 2;
+	end
+	}
+
+
+	-- (52)
+	OPADD -> ou #attOPADD ;
+
+	#attOPADD {
+	local
+	do
+		OPADD^op :=  6;
+	end
+	}
+
+
+	-- (53) : Multiplication, ...
+	T -> #attF F #attTX TX #attT ;
+
+	-- Attributs inh de F.
+	#attF {
+	local
+	do
+		F^machine := T^machine;
+		F^talias := T^talias;
+		F^tfun := T^tfun;
+		F^tvar := T^tvar;
+	end
+	}
+
+	-- Attributs inh de TX.
+	#attTX {
+	local
+	do
+		TX^machine := T^machine;
+		TX^talias := T^talias;
+		TX^tfun := T^tfun;
+		TX^tvar := T^tvar;
+	end
+	}
+
+	-- Attributs syn de T. 
+	#attT {
+	local
+		code : String;
+		reg : Register;
+		vi : VariableInfo;
+		estVar : boolean;
+		t : Type;
+	do
+		reg := new Register();
+		code := F^code + TX^code;
+		t := F^type;
+		if (TX^op != 0) then
+			-- Si il y a un opération : verif sur les types.
+			match t
+			with SimpleType then
+				if !(t.isCompatible(TX^type)) then
+					error(TYPE_NOT_COMPATIBLE);
+				else
+					code := code + T^machine.generateOperation(TX^op,F^reg,TX^reg,reg);
+				end
+			else
+				error(TYPE_NOT_SIMPLE);
+			end
+		end
+		-- T est une variable si F l'est et TX ne l'empeche pas.
+		-- Dans ce cas, vi de T est celui de F.
+		-- Sinon, vi est à null.
+		if ((F^estVar)&&(TX^estVar)) then
+			estVar := true;
+			vi := F^vi;
+		else
+			estVar := false;
+			vi := null;
+		end
+		-- Passage des attributs.
+		T^reg := reg;
+		T^code := code;
+		T^vi := vi;
+		T^estVar := estVar;
+		T^type := t;
+	end
+	}
+
+
+	-- (54)
+	TX -> OPMUL #attF F #attTX1 TX #attTX;
+
+	-- Pas d'attribut inh pour OPMUL.
+	-- Attributs inh de F.
+	#attF {
+	local
+	do
+		F^machine := TX^machine;
+		F^talias := TX^talias;
+		F^tfun := TX^tfun;
+		F^tvar := TX^tvar;
+	end
+	}
+
+	-- Attributs inh de TX1.
+	#attTX1 {
+	local
+	do
+		TX1^machine := TX^machine;
+		TX1^talias := TX^talias;
+		TX1^tfun := TX^tfun;
+		TX1^tvar := TX^tvar;
+	end
+	}
+
+	-- Attributs syn de TX.
+	#attTX {
+	local
+		code : String;
+		reg : Register;
+		type : Type;
+	do
+		reg := new Register();
+		code := F^code + TX1^code;
+		type := F^type;
+		if (TX1^op != 0) then
+			-- Si il y a un opération : verif sur les types.
+			match type
+			with SimpleType then
+				if !(type.isCompatible(TX1^type)) then
+					error(TYPE_NOT_COMPATIBLE);
+				else
+					code := code + TX^machine.generateOperation(TX1^op,F^reg,TX1^reg,reg);
+				end
+			else
+				error(TYPE_NOT_SIMPLE);
+			end
+		end
+		TX^op := OPMUL^op;
+		TX^code := code;
+		TX^reg := reg;
+		--Cette RP empeche l'expression d'etre une variable.
+		TX^estVar := false;
+		TX^type := type;
+	end
+	}
+
+
+	-- (55)
+	TX -> #attTX ;
+
+	-- Attributs syn de TX.
+	#attTX {
+	local
+	do
+		TX^op := 0;
+		TX^code := "";
+		TX^reg := null;
+		-- N'empeche pas l'espression de rpz une var.
+		TX^estVar := true;
+		TX^type := null;
+	end
+	}
+
+
+	-- (56) : Operateurs multiplicatifs
+	OPMUL -> mult #attOPMUL ;
+
+	#attOPMUL {
+	local
+	do
+		OPMUL^op := 3;
+	end
+	}
+
+
+	-- (57)
+	OPMUL -> div #attOPMUL;
+
+	#attOPMUL {
+	local
+	do
+		OPMUL^op := 4;
+	end
+	}
+
+
+	-- (58)
+	OPMUL -> mod #attOPMUL ;
+
+	#attOPMUL {
+	local
+	do
+		OPMUL^op := 7;
+	end
+	}
+
+
+	-- (59)
+	OPMUL -> et #attOPMUL ;
+
+	#attOPMUL {
+	local
+	do
+		OPMUL^op := 17;
+	end
+	}
+
+
+	---------------------------------------
+	--------- Expressions de base ---------
+	---------------------------------------
+
+	-- (60) : Constante entiere
+	F -> entier #attF ;
+
+	-- Attributs syn de F.
+	-- Génération du code pour load la valeur de l'entier dans la mémoire.
+	#attF {
+	local
+		t : IntegerType;
+		r : Registre;
+	do
+		-- Creation du type et du registre.
+		t := new IntegerType();
+		r := new Register();
+		-- Récup de l'entier et conversion au bon format.
+		-- Génération du code, et set de l'attribut le contenant.
+		F^code := F^machine.generateLoadConstant(new ConstantInfo(t, entier^txt), r); 
+		-- Une expression de base ne peut representer une variable.
+		-- Donc pas de vi.
+		F^vi := null;
+		F^estVar := false;
+		-- Set de l'attribut type.
+		F^type := t;
+		-- Set de l'attribut registre de F, c'est le registre contenant l'entier.
+		F^reg := r;
+	end
+	}
+
+
+	-- (61) : Constante chaine
+	F -> chaine #attF ;
+
+	-- Attributs syn de F.
+	-- Génération de code pour load la chaine.
+	#attF {
+	local
+		l : int;
+		t : StringType;
+		r : Register;
+		s : String;
+	do
+		-- Récup de la chaine.
+		s := chaine^txt;
+		l := s.length();
+		-- Suppression des " au début et à la fin de celle-ci.
+		s := s.substring(1,l-1);
+		l := l-2;
+		-- Initialisation du type, en précisant la taille.
+		t := new StringType(l);
+		-- Création du registre.
+		r := new Register();
+		-- Génération du code et set des attributs de F.
+		F^code := F^machine.generateLoadConstant(new ConstantInfo(t, s), r);
+		-- Une expression de base ne peut representer une variable.
+		-- Donc pas de vi.
+		F^vi := null;
+		F^estVar := false;
+		F^type := t;
+		F^reg := r;
+	end
+	}
+
+
+	-- (62) : Constante caractere
+	F -> caractere #attF ;
+
+	-- Attributs syn de F.
+	-- Génération de code pour load le caractere.
+	#attF {
+	local
+		c : CharacterType;
+		r : Register;
+		s : String;
+		t : Type;
+		reg : Register;
+	do
+		-- Récup du caractère.
+		c := caractere^txt.charAt(1);
+		-- Init du type et du reg.
+		t := new CharacterType();
+		reg := new Register();
+		-- Gen du code et set des attributs de F.
+		F^code := F^machine.generateLoadConstant(new ConstantInfo(t, c), reg);
+		-- Une expression de base ne peut representer une variable.
+		-- Donc pas de vi.
+		F^vi := null;
+		F^estVar := false;
+		F^type := t;
+		F^reg := reg;
+	end
+	}
+
+
+	-- (63) : Expression unaire
+	F ->  OPUN #attF1 F #attF ;
+
+	-- Pas d'att inh pour OPUN.
+	-- Attributs inh de F1.
+	#attF1 {
+	local
+	do
+		F1^machine := F^machine;
+		F1^talias := F^talias;
+		F1^tfun := F^tfun;
+		F1^tvar := F^tvar;
+	end
+	}
+
+	-- Attributs syn de F.
+	-- Génération du code pour la déclaration de la variable.
+	#attF {
+	local
+		reg : Register;
+		code : String;
+		t : Type;
+	do
+		reg := new Register();
+		t := F1^type;
 		match t
 		with SimpleType then
-		  if !(t.isCompatible(TX^type)) then
-			  error(TYPE_NOT_COMPATIBLE);
-			else
-        code := code + T^machine.generateOperation(TX^op,F^reg,TX^reg,reg);
-	    end
-		else
-		  error(TYPE_NOT_SIMPLE);
+			code := F1^code + F^machine.generateOperation(OPUN^op,F1^reg,reg);
+		else 
+			error(TYPE_NOT_SIMPLE);
 		end
+		F^code := code;
+		-- Une variable ne peut contenir d'opérateur unaire.
+		-- Donc pas de vi.
+		F^estVar := false;
+		F^vi := null;
+		F^type := t; 
+		F^reg := reg;
 	end
-  -- T est une variable si F l'est et TX ne l'empeche pas.
-  -- Dans ce cas, vi de T est celui de F.
-  -- Sinon, vi est à null.
-  if ((F^estVar)&&(TX^estVar)) then
-	  estVar := true;
-		vi := F^vi;
-  else
-	  estVar := false;
-		vi := null;
+	}
+
+
+	-- (64) : Operateurs unaires
+	OPUN -> plus #attOPUN ;
+
+	#attOPUN {
+	local
+	do
+		OPUN^op := 10;
 	end
-  -- Passage des attributs.
-	T^reg := reg;
-	T^code := code;
-	T^vi := vi;
-	T^estVar := estVar;
-	T^type := t;
-end
-}
+	}
 
 
--- (54)
-TX -> OPMUL #attF F #attTX1 TX #attTX;
+	-- (65)
+	OPUN -> moins #attOPUN ;
 
--- Pas d'attribut inh pour OPMUL.
--- Attributs inh de F.
-#attF {
-local
-do
-  F^machine := TX^machine;
-	F^talias := TX^talias;
-	F^tfun := TX^tfun;
-	F^tvar := TX^tvar;
-end
-}
-
--- Attributs inh de TX1.
-#attTX1 {
-local
-do
-  TX1^machine := TX^machine;
-	TX1^talias := TX^talias;
-	TX1^tfun := TX^tfun;
-	TX1^tvar := TX^tvar;
-end
-}
-
--- Attributs syn de TX.
-#attTX {
-local
-  code : String;
-	reg : Register;
-	type : Type;
-do
-  reg := new Register();
-	code := F^code + TX1^code;
-	type := F^type;
-  if (TX1^op != 0) then --IMachine.Operator.NOP) then
-	  -- Si il y a un opération : verif sur les types.
-		match type
-		with SimpleType then
-		  if !(type.isCompatible(TX1^type)) then
-			  error(TYPE_NOT_COMPATIBLE);
-			else
-        code := code + TX^machine.generateOperation(TX1^op,F^reg,TX1^reg,reg);
-	    end
-		else
-		  error(TYPE_NOT_SIMPLE);
-		end
+	#attOPUN {
+	local
+	do
+		OPUN^op := 8;
 	end
-	TX^op := OPMUL^op;
-	TX^code := code;
-	TX^reg := reg;
-  --Cette RP empeche l'expression d'etre une variable.
-  TX^estVar := false;
-	TX^type := type;
-end
-}
+	}
 
 
--- (55)
-TX -> #attTX ;
+	-- (66)
+	OPUN -> non #attOPUN ;
 
--- Attributs syn de TX.
-#attTX {
-local
-do
-  TX^op := 0; --IMachine.Operator.NOP;
-  TX^code := "";
-	TX^reg := null;
-  -- N'empeche pas l'espression de rpz une var.
-  TX^estVar := true;
-	TX^type := null;
-end
-}
-
-
--- (56) : Operateurs multiplicatifs
-OPMUL -> mult #attOPMUL ;
-
-#attOPMUL {
-local
-do
-  OPMUL^op := 3; --IMachine.Operator.MUL;
-end
-}
-
-
--- (57)
-OPMUL -> div #attOPMUL;
-
-#attOPMUL {
-local
-do
-  OPMUL^op := 4; --IMachine.Operator.DIV;
-end
-}
-
-
--- (58)
-OPMUL -> mod #attOPMUL ;
-
-#attOPMUL {
-local
-do
-  OPMUL^op := 7; --IMachine.Operator.MOD;
-end
-}
-
-
--- (59)
-OPMUL -> et #attOPMUL ;
-
-#attOPMUL {
-local
-do
-  OPMUL^op := 17; --IMachine.Operator.AND;
-end
-}
-
-
----------------------------------------
---------- Expressions de base ---------
----------------------------------------
-
--- (60) : Constante entiere
-F -> entier #attF ;
-
--- Attributs syn de F.
--- Génération du code pour load la valeur de l'entier dans la mémoire.
-#attF {
-local
-  t : IntegerType;
-  r : Registre;
-do
-  -- Creation du type et du registre.
-  t := new IntegerType();
-  r := new Register();
-	-- Récup de l'entier et conversion au bon format.
-	-- Génération du code, et set de l'attribut le contenant.
-  F^code := F^machine.generateLoadConstant(new ConstantInfo(t, entier^txt), r); 
-  -- Une expression de base ne peut representer une variable.
-  -- Donc pas de vi.
-	F^vi := null;
-  F^estVar := false;
-	-- Set de l'attribut type.
-	F^type := t;
-	-- Set de l'attribut registre de F, c'est le registre contenant l'entier.
-	F^reg := r;
-end
-}
-
-
--- (61) : Constante chaine
-F -> chaine #attF ;
-
--- Attributs syn de F.
--- Génération de code pour load la chaine.
-#attF {
-local
-  l : int;
-  t : StringType;
-	r : Register;
-	s : String;
-do
-  -- Récup de la chaine.
-  s := chaine^txt;
-  l := s.length();
-	-- Suppression des " au début et à la fin de celle-ci.
-	s := s.substring(1,l-1);
-	l := l-2;
-	-- Initialisation du type, en précisant la taille.
-	t := new StringType(l);
-  -- Création du registre.
-	r := new Register();
-	-- Génération du code et set des attributs de F.
-	F^code := F^machine.generateLoadConstant(new ConstantInfo(t, s), r);
-  -- Une expression de base ne peut representer une variable.
-  -- Donc pas de vi.
-  F^vi := null;
-  F^estVar := false;
-	F^type := t;
-	F^reg := r;
-end
-}
-
-
--- (62) : Constante caractere
-F -> caractere #attF ;
-
--- Attributs syn de F.
--- Génération de code pour load le caractere.
-#attF {
-local
-  c : CharacterType;
-	r : Register;
-	s : String;
-	t : Type;
-	reg : Register;
-do
-  -- Récup du caractère.
-	c := caractere^txt.charAt(1);
-	-- Init du type et du reg.
-	t := new CharacterType();
-	reg := new Register();
-	-- Gen du code et set des attributs de F.
-	F^code := F^machine.generateLoadConstant(new ConstantInfo(t, c), reg);
-  -- Une expression de base ne peut representer une variable.
-  -- Donc pas de vi.
-  F^vi := null;
-  F^estVar := false;
-	F^type := t;
-	F^reg := reg;
-end
-}
-
-
--- (63) : Expression unaire
-F ->  OPUN #attF1 F #attF ;
-
--- Pas d'att inh pour OPUN.
--- Attributs inh de F1.
-#attF1 {
-local
-do
-  F1^machine := F^machine;
-	F1^talias := F^talias;
-	F1^tfun := F^tfun;
-	F1^tvar := F^tvar;
-end
-}
-
--- Attributs syn de F.
--- Génération du code pour la déclaration de la variable.
-#attF {
-local
-  reg : Register;
-  code : String;
-	t : Type;
-do
-  reg := new Register();
-	t := F1^type;
-	match t
-	with SimpleType then
-		code := F1^code + F^machine.generateOperation(OPUN^op,F1^reg,reg);
-	else 
-	  error(TYPE_NOT_SIMPLE);
+	#attOPUN {
+	local
+	do
+		OPUN^op := 9;
 	end
-  F^code := code;
-  -- Une variable ne peut contenir d'opérateur unaire.
-  -- Donc pas de vi.
-  F^estVar := false;
-  F^vi := null;
-	F^type := t; 
-	F^reg := reg;
-end
-}
+	}
 
 
--- (64) : Operateurs unaires
-OPUN -> plus #attOPUN ;
+	-- (67) : Pointeur NULL
+	F -> null #attF ;
 
-#attOPUN {
-local
-do
-  OPUN^op := 10; --IMachine.Operator.PLS;
-end
-}
+	-- Le pointeur null ne représente pas une variable.
+	-- Donc pas de vi.
+	#attF {
+	local
+	do
+		F^estVar := false;
+		F^vi := null;
+		F^code := "";
+		F^type := null;
+		F^reg := null; -- TODO
+	end
+	}
 
+	-- (68) : Expression parenthesee
+	F ->  paro #attE E parf #attFX FX #attF;
 
--- (65)
-OPUN -> moins #attOPUN ;
+	-- Attributs inh de E.
+	#attE {
+	local
+	do
+		E^machine := F^machine;
+		E^tvar := F^tvar;
+		E^tfun := F^tfun;
+		E^talias := F^talias;
+	end
+	}
 
-#attOPUN {
-local
-do
-  OPUN^op := 8; --IMachine.Operator.NEG;
-end
-}
-
-
--- (66)
-OPUN -> non #attOPUN ;
-
-#attOPUN {
-local
-do
-  OPUN^op := 9; --IMachine.Operator.NOT;
-end
-}
-
-
--- (67) : Pointeur NULL
-F -> null #attF ;
-
--- Le pointeur null ne représente pas une variable.
--- Donc pas de vi.
-#attF {
-local
-do
-  F^estVar := false;
-  F^vi := null;
-	F^code := "";
-	F^type := null;
-	F^reg := null; -- TODO
-end
-}
-
--- (68) : Expression parenthesee
-F ->  paro #attE E parf #attFX FX #attF;
-
--- Attributs inh de E.
-#attE {
-local
-do
-  E^machine := F^machine;
-	E^tvar := F^tvar;
-	E^tfun := F^tfun;
-	E^talias := F^talias;
-end
-}
-
--- Attributs inh de FX.
-#attFX {
-local
-  dl : DisplacementList;
-do
-	dl := new DisplacementList();
-  FX^machine := F^machine;
-	FX^tvar := F^tvar;
-	FX^tfun := F^tfun;
-	FX^talias := F^talias;
+	-- Attributs inh de FX.
+	#attFX {
+	local
+		dl : DisplacementList;
+	do
+		dl := new DisplacementList();
+		FX^machine := F^machine;
+		FX^tvar := F^tvar;
+		FX^tfun := F^tfun;
+		FX^talias := F^talias;
 	-- La partie avant FX n'est pas un appel de fonction.
 	FX^estFun := false;
 	FX^funInfoH := null;
@@ -2339,12 +2344,12 @@ do
 	varInfo := null;
 	funInfo := null;
 
-	-- Recherche dans la TVar.
-  info := F^tvar.lookup(ident^txt);
+	-- Recherche dans la TVar (globalement).
+  info := F^tvar.lookup(ident^txt, F^ni, false);
   if (info = null) then
 	  -- ident n'est pas dans la TVar, F n'est pas une variable.
 		-- On regarde dans la TFun s'il s'agit de l'identifiant d'une fonction.
-		info := F^tfun.lookup(ident^txt);
+		info := F^tfun.lookup(ident^txt, F^ni, false);
     if (info = null) then
 		  -- On n'a pas trouvé le symbole dans les TDS : erreur.
 			error(IDENT_UNDEFINED, ident^txt);
@@ -2357,7 +2362,7 @@ do
     end
   else
 		-- On peut passer le type.
-		varInfo := F^tvar.lookup(ident^txt); -- TODO cast (VariableInfo)info;
+		varInfo := F^tvar.lookup(ident^txt, F^ni, false);
 		type := varInfo.type();
 		-- On rajoute toujours le déplacement de a à la liste.
 		-- Le test pour savoir si a est bien un struct se fait dans les RP ,de FX.
@@ -2455,7 +2460,7 @@ do
   match type
 	with StructType then  
 		-- On vérifie que le champ existe et on y accède.
-    typeStruct := type; -- TODO cast lel (StructType)type;
+    typeStruct := type;
 		fields := typeStruct.fields();
 		if (fields.instanceOf(ident^txt) = (-1)) then
 		  -- Si le instanceOf renvoie -1, c'est que l'identifiant n'apparait pas dans les champs : erreur.
@@ -2519,12 +2524,12 @@ do
 	match type
 	with PointerType then
 	-- Si type est un pointeur on va vérifier qu'il s'agit d'un pointeur sur struct.
-    typeP := type; -- TODO cest lal (PointerType)type;
+    typeP := type;
 		type := typeP.getType();
 		-- Si le type pointé est struct, on va vérifier que le champ existe.
     match type
 		with StructType then
-		  typeS := type ; -- TODO (StructType)type;
+		  typeS := type ;
 			fields := typeS.fields();
       if (fields.instanceOf(ident^txt) = -1) then
 		    -- Si le instanceOf renvoie -1, c'est que l'identifiant n'apparait pas dans les champs : erreur.
@@ -2599,7 +2604,8 @@ do
   if (FX^nom = "") then
 	  error(NO_PAR_CALL);
 	else
-    fi := FX^tfun.lookup(FX^nom, ES^typesParamsS);
+	  -- On cherche avec la fonction qui ne prend pas de booléen, mais une liste de types pour les params.
+    fi := FX^tfun.lookup(FX^nom, FX^ni, ES^typesParamsS);
 	  if (fi = null) then
 	    error(NO_FUN_WITH_SUCH_PARS, FX^nom);
 	  end
@@ -2793,6 +2799,8 @@ end
 ----------------- CS extension --------------------
 ---- Decommenter les regles suivantes pour l'extension CS
 ---------------------------------------------------
+--
+-- (82)
 --TYPE -> bool #typage ;
 --
 --#typage {
@@ -2802,7 +2810,7 @@ end
 --end
 --}
 --
----- definit un contenu d'un namespace
+---- (83) : Definit un contenu d'un namespace
 --ENTITE -> namespace #ajout identc aco ENTITES acf ;
 --
 ---- Ajout de identc à la table des namespaces.
@@ -2838,7 +2846,7 @@ end
 --end
 --}
 --
----- donne l acces au contenu du 'namespace'
+---- (84) : Donne l'acces au contenu du 'namespace'
 --ENTITE -> using #passIdentc identc IDC #trait pv ;
 --
 --#passIdentc {
@@ -2868,6 +2876,7 @@ end
 --end
 --}
 --
+-- (85)
 --IDC -> #verifRetour ;
 --
 --#verifRetour {
@@ -2896,6 +2905,7 @@ end
 --end
 --}
 --
+-- (86)
 --IDC -> pt #passIdentc identc IDC #retour ;
 --
 --#passIdentc {
@@ -2937,8 +2947,7 @@ end
 --end
 --}
 --
----- definition d'une classe (peut etre en dehors d'un namespace)
---
+---- (87) : Definition d'une classe (peut etre en dehors d'un namespace)
 --ENTITE -> ACCES class #verif identc HERITAGE #ajout aco DEFS acf ;
 --
 ---- Vérifie que identc n'est pas déjà utilisé (par une classe ou un namespace).
@@ -2981,7 +2990,9 @@ end
 --	DEFS^tklass := tklass;
 --end
 --}
----- acces 
+--
+--
+---- (88) : Acces 
 --ACCES -> #acc public;
 --
 --#acc {
