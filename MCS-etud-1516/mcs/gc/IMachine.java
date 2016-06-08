@@ -252,6 +252,7 @@ public interface IMachine {
   /**
    * Generate the code for the declaration of a method
    * @param info info of the method
+   * @param code code of the block
    * @return the generated code
    */
   String generateMethodDeclaration(MethodInfo info, String code) throws MCSException;
@@ -263,6 +264,14 @@ public interface IMachine {
    * @return the generated code
    */
   String generateMethodCall(MethodInfo info, Register robj) throws MCSException;
+
+  /**
+   * Generate the code for declaring a constructor
+   * @param info info of the constructor (the register attribute) 
+   * @param code code of the block
+   * @return the generated code
+   */
+  String generateConstructorDeclaration(ConstructorInfo info, String code) throws MCSException;
 
   ////////////////////////////// MISC ///////////////////////////////
   /**

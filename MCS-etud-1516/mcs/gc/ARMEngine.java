@@ -716,6 +716,15 @@ public class ARMEngine extends AbstractMachine {
     return code;
   }
 
+  /**
+   * Generate the code for declaring a constructor
+   * @param info info of the constructor (the register attribute) 
+   * @param code code of the block
+   * @return the generated code
+   */
+  public String generateConstructorDeclaration(ConstructorInfo info, String code) throws MCSException {
+  }
+
 	////////////////////////////// MISC ///////////////////////////////
   /**
    * Generate a comment
