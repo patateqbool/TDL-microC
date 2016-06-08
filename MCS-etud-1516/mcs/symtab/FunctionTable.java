@@ -55,7 +55,7 @@ public class FunctionTable implements SymbolTable {
         if (fi.namespace() == namespace)
           return fi;
       }
-    return new SymbolInfoNotFound();
+    return null;
   }
 
   public SymbolInfo lookup(String name,  NamespaceInfo namespace, List<Type> params) {
@@ -66,7 +66,7 @@ public class FunctionTable implements SymbolTable {
       }
     }
 
-    return new SymbolInfoNotFound();
+    return null;
   }
 
   public boolean insert(String name, SymbolInfo info) {

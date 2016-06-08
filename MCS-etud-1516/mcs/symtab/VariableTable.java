@@ -76,7 +76,7 @@ public class VariableTable implements SymbolTable {
     if (!local && this.parent != null)
       return this.parent.lookup(name, ns, false);
 
-    return new SymbolInfoNotFound();
+    return null;
   }
 
   /**
