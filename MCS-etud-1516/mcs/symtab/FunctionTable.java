@@ -94,7 +94,7 @@ public class FunctionTable implements SymbolTable {
     return l;
   }
 
-  public List<String> symbolsTypes() {
+  public List<Type> symbolsTypes() {
     return null;
   }
 }

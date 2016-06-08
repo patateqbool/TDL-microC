@@ -11,8 +11,8 @@
       dst="false"
       main="false"
   >
-    <import    lib="mcs.tds.*"/>
-    <import    lib="mcs.type.*"/>
+    <import    lib="mcs.symtab.*"/>
+    <import    lib="mcs.compiler.*"/>
     <import    lib="java.util.*"/>
     <import    lib="mcs.gc.*"/>
   </egg>

@@ -14,7 +14,7 @@ public class AttributeInfo extends VariableInfo {
   private Klass.AccessSpecifier accSpec;
 
   public AttributeInfo(Klass.AccessSpecifier as, Type t, int d, Klass parent) {
-    super(t, d);
+    super(t, d, null);
     this.accSpec = as;
     this.parent = parent;
   }

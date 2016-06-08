@@ -8,7 +8,7 @@ package mcs.symtab;
 import java.util.Map;
 import java.util.HashMap;
 
-class AliasTable {
+public class AliasTable {
 	private Map<String, Type> table;
 
 	/**

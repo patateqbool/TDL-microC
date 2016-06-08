@@ -12,8 +12,8 @@
       main="false"
   >
     <import    lib="mcs.compiler.*"/>
-    <import    lib="mcs.tds.*"/>
-    <import    lib="mcs.type.*"/>
+    <import    lib="mcs.symtab.*"/>
     <import    lib="mcs.gc.*"/>
     <import    lib="java.util.*"/>
+    <import    lib="mcs.obj.*"/>
   </egg>

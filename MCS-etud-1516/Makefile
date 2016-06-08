@@ -16,7 +16,7 @@ all : src att class
 
 src :
 	(cd mcs ; $(JDIR)/java -cp ../$(GJAR) mg.egg.eggc.compiler.EGGC $(XLANG).egg)
-	(cd mcs ; $(JDIR)/java -cp ../$(GJAR) mg.egg.eggc.compiler.EGGC $(ALANG).egg)
+	#(cd mcs ; $(JDIR)/java -cp ../$(GJAR) mg.egg.eggc.compiler.EGGC $(ALANG).egg)
 
 att :
 	$(JDIR)/javac -classpath $(GJAR) mcs/symtab/*.java
