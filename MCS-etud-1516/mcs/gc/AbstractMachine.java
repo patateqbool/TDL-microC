@@ -39,4 +39,17 @@ public abstract class AbstractMachine implements IMachine {
 		}
 	}
 
+	/**
+	 * Utility functions
+	 */
+
+	/**
+	 * Build an integer from a string
+	 * @param val the string
+	 * @return the integer
+	 */
+	public int toInt(String val) {
+		return Integer.parseInt(val);
+	}
+
 }
