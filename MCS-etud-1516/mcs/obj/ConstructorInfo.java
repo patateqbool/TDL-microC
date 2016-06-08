@@ -7,10 +7,11 @@
 package mcs.obj;
 
 import mcs.symtab.FunctionInfo;
+import mcs.symtab.VoidType;
 
 public class ConstructorInfo extends MethodInfo {
   public ConstructorInfo(Klass.AccessSpecifier as, Klass parent) {
-    super("__cstr__", as, parent, parent);
+    super("__cstr__", as, new VoidType(), parent);
     super.assignVtable(null);
   }
 
@@ -27,6 +28,11 @@ public class ConstructorInfo extends MethodInfo {
 
   public boolean equals(ConstructorInfo other) {
     return this.parent().isEqualTo(other.parent()) && this.similar(other);
+  }
+
+  @Override
+  public String label() {
+    return "__cstr_" + super.label();
   }
 }
 
