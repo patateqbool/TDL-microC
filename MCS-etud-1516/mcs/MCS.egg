@@ -146,7 +146,7 @@ syn champsS : StructFields for
 inh ni : NamespaceInfo for 
          ENTITE, PARF, INST, F, FX, ENTITES, FONCTION, DECL,
 				 PARFS, PARFSX, INSTS, BLOC, AFFX, E, SIX, A, R, AX, T, RX,
-				 F, TX, ES, ESX
+				 TX, ES, ESX
 				 ;
 
 --inh rechKlass : boolean for
@@ -440,7 +440,7 @@ do
           error(IDENT_TAKEN, ident^txt);
         else
 				  -- Si ce n'est pas le cas, on peut add la variable à la tvar.
-          tv.insert(ident^txt, TYPE^type);
+          tv.insert(ident^txt, TYPE^type, ENTITE^ni);
 				end
 	    else
         -- On a une fonction.
@@ -521,7 +521,7 @@ do
   PARFS^tfun := FONCTION^tfun;
 	PARFS^talias := FONCTION^talias;
 	-- Creation de la FunctionInfo avec le type retour.
-  PARFS^funInfoH := new FunctionInfo(FONCTION^typeH);
+  PARFS^funInfoH := new FunctionInfo(FONCTION^nom, FONCTION^typeH, FONCTION^ni);
   -- Initialisation du compteur de parametres.
   PARFS^cParam := 0;
   PARFS^machine := FONCTION^machine;
@@ -534,7 +534,7 @@ end
 #attBLOC {
 local
   tf : FunctionTable;
-  fi : funInfo;
+  fi : FunctionInfo;
 do
   tf := FONCTION^tfun;
   fi := PARFS^funInfo;
@@ -600,7 +600,7 @@ end
 -- Passage des tds à PARFSX.
 #attPARFSX {
 local
-  fi : functionInfo ; 
+  fi : FunctionInfo ; 
 do
   PARFSX^funInfoH := PARF^funInfo;
   PARFSX^tvar := PARF^tvarS;
@@ -700,7 +700,7 @@ local
   tv : VariableTable;
 	t : Type;
 	info : SymbolInfo;
-  fi : functionInfo;
+  fi : FunctionInfo;
 do
   tv := PARF^tvar;
   fi := PARF^funInfoH;
@@ -722,7 +722,7 @@ do
 			else
 			  -- Ajout de ident à la TDS locale et au fi.
 			  fi.add(TYPE^type);
-        tv.insert(ident^txt, new VariableInfo(TYPE^type, fi.displacement(PARF^cParam)));
+        tv.insert(ident^txt, new VariableInfo(TYPE^type, fi.displacement(PARF^cParam), PARF^ni));
       end
 		end
   end
@@ -898,7 +898,7 @@ local
   c : StructFields;
 do
   c := CHAMPS^champs;
-  if c.exist(CHAMP^nomS) then
+  if (c.exists(CHAMP^nomS)) then
 	  -- si un champ porte déjà ce nom : erreur.
     error(IDENT_TAKEN, CHAMP^nomS);
   else
@@ -1068,10 +1068,12 @@ local
 	info : SymbolInfo;
 	t : Type;
 	tv : VariableTable;
+	si : SymbolInfo;
 do
   nom := ident^txt;
   tv := INST^tvar;
   info := INST^tvar.lookup(nom, INST^ni, true);
+	code := "";
   -- Si ident est une clef dans la TDSvar, erreur.
   if info != null then
      error(IDENT_TAKEN, nom);
@@ -1087,7 +1089,7 @@ do
 			  error(ALREADY_AN_ALIAS, nom);
 			else
 		    -- Sinon, on ajoute cet id à la tdsvar.
-	   	  tv.insert(nom, TYPE^type);
+	   	  tv.insert(nom, TYPE^type, INST^ni);
 				code := INST^machine.generateAllocateInStack(TYPE^type);
 			end
     end
@@ -1097,7 +1099,13 @@ do
 		-- Verification de types inutile, elle est faite dans AFFX.
 		-- On génère le code pour stocker la valeur du registre 
 		-- de AFFX dans la variable qu'on vient de déclarer.
-		code := code + INST^machine.generateStoreVariable(tv.lookup(ident^txt, INST^ni, true), AFFX^reg);
+		si := tv.lookup(ident^txt, INST^ni, true);
+		match si
+		with VariableInfo then
+		  code := code + INST^machine.generateStoreVariable(si, AFFX^reg);
+		else
+		  error(SHOULD_NOT_HAPPEN_SI_NOT_VI);
+		end
 	end
 	INST^code := code;
 	INST^tvarS := tv;
@@ -2013,7 +2021,7 @@ F -> entier #attF ;
 #attF {
 local
 	t : IntegerType;
-	r : Registre;
+	r : Register;
 do
 	-- Creation du type et du registre.
 	t := new IntegerType();
@@ -2074,9 +2082,8 @@ F -> caractere #attF ;
 -- Génération de code pour load le caractere.
 #attF {
 local
-	c : CharacterType;
+	c : char;
 	r : Register;
-	s : String;
 	t : Type;
 	reg : Register;
 do
@@ -2123,6 +2130,7 @@ local
 do
 	reg := new Register();
 	t := F1^type;
+	code := "";
 	match t
 	with SimpleType then
 		code := F1^code + F^machine.generateOperation(OPUN^op,F1^reg,reg);
@@ -2244,7 +2252,7 @@ do
     -- On a accédé à des champs dans FX.
     -- On génère le code correspondant, en prenant le registre de E comme base.
     -- Les verification d'existence de champs ont été faites dans FX.
-    code := code + F^machine.generateMakeAddress(E^reg, dl, reg);
+    code := code + F^machine.generateMakeAddress(dl, E^reg, reg);
   end
   -- F est une variable si E l'est et FX ne l'empeche pas.
   -- Dans ce cas, vi de F prend celui de E. Dans le cas
@@ -2296,8 +2304,8 @@ local
 do
   t := TYPE^type;
 	vi := null;
-  if F1^type.isCompatible(t) then
-		 vi := new VariableInfo(TYPE^type,F1^vi.disp());
+  if (F1^type.isCompatible(t)) then
+		 vi := new VariableInfo(TYPE^type, F1^vi.displacement(), F^ni);
   else
      error(TYPE_NOT_COMPATIBLE);	   
   end
@@ -2397,15 +2405,26 @@ do
 			-- On passe estFun à vrai.
 			listeDepl.add(0, false);
 			estFun := true;
-			type := funInfo.returnType();
+			match info
+			with FunctionInfo then
+			  funInfo := info;
+			  type := funInfo.returnType();
+			else 
+			  error(SHOULD_NOT_HAPPEN_SI_NOT_FI);
+			end
     end
   else
 		-- On peut passer le type.
-		varInfo := F^tvar.lookup(ident^txt, F^ni, false);
-		type := varInfo.type();
-		-- On rajoute toujours le déplacement de a à la liste.
-		-- Le test pour savoir si a est bien un struct se fait dans les RP ,de FX.
-		listeDepl.add(varInfo.displacement(), false);
+		match info
+		with VariableInfo then
+		  varInfo := info;
+	    type := varInfo.type();
+		  -- On rajoute toujours le déplacement de a à la liste.
+		  -- Le test pour savoir si a est bien un struct se fait dans les RP ,de FX.
+		  listeDepl.add(varInfo.displacement(), false);
+		else
+		  error(SHOULD_NOT_HAPPEN_SI_NOT_VI);
+		end
   end
 	-- On passe les attributs qui serviront à FX.
 	FX^listeDepl := listeDepl;
@@ -2425,7 +2444,7 @@ end
 #attF {
 local
   listeDepl : DisplacementList; 
-  reg : Registre;
+  reg : Register;
 	code : String;
 do
   -- Génération du code.
@@ -2433,12 +2452,13 @@ do
   --																					- accédé simplement à une variable.
   --               														- accédé à un champ de struct.
   listeDepl := FX^listeDeplS;
-  reg := new Registre();
+  reg := new Register();
+	code := "";
 	if estFun then
     -- On a un appel de fonction, peut être suivi d'accés à des champs de struct.
 	  -- regRetourFun est le registre contenant le résultat de l'appel de fonction,
 		-- il se trouve dans le FunctionInfo \o/.
-    code := F^machine.generateMakeAddress(funInfo.register(), listeDepl, reg);
+    code := F^machine.generateMakeAddress(listeDepl, funInfo.register(), reg);
 	else 
 	  -- On n'a pas d'appel de fonction. 
 		if ((listeDepl.size() != 0 )&&(listeDepl.size() != 1)) then --> 1) then
@@ -2487,6 +2507,7 @@ FX -> pt ident #attFX1 FX #attFX;
 local
   typeStruct : StructType; 
 	type : Type;
+	type2 : Type;
 	listeDepl : DisplacementList;
 	fields : List<String>;
 do
@@ -2497,12 +2518,13 @@ do
   listeDepl := FX^listeDepl;
 	type := FX^typeH;
   -- On vérifie que ce qui est à gauche de cet appel est bien un struct.
-  match type
+	type2 := FX^typeH;
+  match type2
 	with StructType then  
 		-- On vérifie que le champ existe et on y accède.
-    typeStruct := type;
+    typeStruct := type2;
 		fields := typeStruct.fields();
-		if (fields.instanceOf(ident^txt) = (-1)) then
+		if (fields.indexOf(ident^txt) = (-1)) then
 		  -- Si le instanceOf renvoie -1, c'est que l'identifiant n'apparait pas dans les champs : erreur.
 		  error(CHAMP_INEXISTANT, ident^txt);
 		else
@@ -2551,8 +2573,8 @@ FX -> arrow ident #attFX1 FX #attFX;
 #attFX1 {
 local
   type : Type;
-	typeP : PointerType;
-	typeS : StructType;
+	typeP : Type;
+	typeS : Type;
 	listeDepl : DisplacementList;
 	fields : List<String>;
 do
@@ -2562,17 +2584,17 @@ do
 	end
   type := FX^typeH;
 	listeDepl := FX^listeDepl;
-	match type
+	typeP := type;
+	match typeP
 	with PointerType then
 	-- Si type est un pointeur on va vérifier qu'il s'agit d'un pointeur sur struct.
-    typeP := type;
 		type := typeP.getType();
 		-- Si le type pointé est struct, on va vérifier que le champ existe.
-    match type
+		typeS := type;
+    match typeS
 		with StructType then
-		  typeS := type ;
 			fields := typeS.fields();
-      if (fields.instanceOf(ident^txt) = -1) then
+      if (fields.indexOf(ident^txt) = -1) then
 		    -- Si le instanceOf renvoie -1, c'est que l'identifiant n'apparait pas dans les champs : erreur.
 		    error(CHAMP_INEXISTANT, ident^txt);
 		  else
@@ -2628,7 +2650,7 @@ do
   if !(FX^estFun) then
 	  error(NOT_A_FUN);
 	end
-  ES^typesParams := new List<Type>();
+  ES^typesParams := new ArrayList<Type>();
   ES^codeH := "";
 	ES^tvar := FX^tvar;
 	ES^tfun := FX^tfun;
@@ -2642,14 +2664,14 @@ end
 -- Verification qu'il existe bien une fonction avec cette signature.
 #attFX1 {
 local
-  fi : functionInfo;
+  si : SymbolInfo;
 do
   if (FX^nom = "") then
 	  error(NO_PAR_CALL);
 	else
 	  -- On cherche avec la fonction qui ne prend pas de booléen, mais une liste de types pour les params.
-    fi := FX^tfun.lookup(FX^nom, FX^ni, ES^typesParamsS);
-	  if (fi = null) then
+    si := FX^tfun.lookup(FX^nom, FX^ni, ES^typesParamsS);
+	  if (si = null) then
 	    error(NO_FUN_WITH_SUCH_PARS, FX^nom);
 	  end
 	end
@@ -2717,7 +2739,7 @@ end
 -- Attributs inh de ESX et ajout du type du paramètre.
 #attESX {
 local
-  l : List<Types>;
+  l : List<Type>;
   code : String;
 do
   -- Ajout du type de E à la liste des types des params.
@@ -2777,7 +2799,7 @@ end
 -- Attributs inh de ESX1, ajout du type du param.
 #attESX1 {
 local
-  l : List<Types>;
+  l : List<Type>;
 	code : String;
 do
   l := ESX^typesParams;
@@ -3153,7 +3175,7 @@ end
 --#typeEtGenCode {
 --local
 --  t : BooleanType;
---  r : Registre;
+--  r : Register;
 --do
 --  -- Creation du type et du registre.
 --  t := new BooleanType();
@@ -3187,7 +3209,7 @@ end
 --#typeEtGenCode {
 --local
 --  t : BooleanType;
---  r : Registre;
+--  r : Register;
 --do
 --  -- Creation du type et du registre.
 --  t := new BooleanType();
