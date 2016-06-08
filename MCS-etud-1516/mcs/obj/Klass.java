@@ -21,7 +21,18 @@ import mcs.symtab.*;
 
 public class Klass extends CompositeType {
   enum AccessSpecifier {
-    APublic, APrivate, AProtected, AHidden
+    AHidden(0),
+    APublic(1),
+    APrivate(2),
+    AProtected(3);
+
+    private final int value;
+    private AccessSpecifier(int val) {
+      this.value = val;
+    }
+    public int value() {
+      return this.value;
+    }
   };
 
   private static int nextID = 0;
