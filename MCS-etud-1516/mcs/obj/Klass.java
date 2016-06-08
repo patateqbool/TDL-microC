@@ -21,7 +21,18 @@ import mcs.symtab.*;
 
 public class Klass extends CompositeType {
   enum AccessSpecifier {
-    APublic, APrivate, AProtected, AHidden
+    AHidden(0),
+    APublic(1),
+    APrivate(2),
+    AProtected(3);
+
+    private final int value;
+    private AccessSpecifier(int val) {
+      this.value = val;
+    }
+    public int value() {
+      return this.value;
+    }
   };
 
   private static int nextID = 0;
@@ -31,6 +42,7 @@ public class Klass extends CompositeType {
   private int id;
   private Klass parent;
   private List<MethodInfo> methodTable;
+  private List<ConstructorInfo> cstrTable;
   private Map<String,AttributeInfo> attributeTable;
   private Map<String,Integer> daughters;
   private NamespaceInfo namespace;
@@ -57,6 +69,7 @@ public class Klass extends CompositeType {
     // Internal stuff
     this.methodTable = new ArrayList<MethodInfo>();
     this.attributeTable = new OrderedMap<String,AttributeInfo>();
+    this.cstrTable = new ArrayList<ConstructorInfo>();
 
     if (parent != null) {
       // Add this daughter to the parent
@@ -123,6 +136,13 @@ public class Klass extends CompositeType {
 		return false;
 	}
 
+  public boolean constructorExists(ConstructorInfo cstr) {
+    for (ConstructorInfo ci : this.cstrTable)
+      if (cstr.equals(ci))
+        return true;
+    return false;
+  }
+
   public boolean attributeExists(String name) {
     return (this.attributeTable.get(name) != null);
   }
@@ -132,12 +152,16 @@ public class Klass extends CompositeType {
 	 * @param name name of the symbol
    * @param mi the method info
    */
-  public void addMethod(String name, MethodInfo mi) {
+  public boolean addMethod(String name, MethodInfo mi) {
 		if (methodExists(mi)) {
 			// Inserting a method that already exists is fine, it
       // is called overriding !
       // This causes a change in the vtable
-      lookupMethod(name, mi.parameters()).vtable().set(this.id, this.name);
+      MethodInfo old = lookupMethod(name, mi.parameters());
+      if (old.vtable().get(this.id) == this.name) // this method is already defined !
+        return false;
+
+      old.vtable().set(this.id, this.name);
 		} else {
       // This method does not exists; we must create a vtable for it
       VirtualTable vt = new VirtualTable();
@@ -146,6 +170,8 @@ public class Klass extends CompositeType {
 			mi.setName(name);
 		  this.methodTable.add(mi);
     }
+
+    return true;
   }
 
 	/**
@@ -153,8 +179,8 @@ public class Klass extends CompositeType {
 	 * @param name name of the symbol
 	 * @param fi the function info
 	 */
-	public void addMethod(String name, AccessSpecifier as, FunctionInfo fi) {
-		this.addMethod(
+	public boolean addMethod(String name, AccessSpecifier as, FunctionInfo fi) {
+		return this.addMethod(
 				name,
 				new MethodInfo(as, this, fi)
 		);
@@ -165,12 +191,14 @@ public class Klass extends CompositeType {
 	 * @param name name of the symbol
 	 * @param ai the attribute info
 	 */
-	public void addAttribute(String name, AttributeInfo ai) {
+	public boolean addAttribute(String name, AttributeInfo ai) {
 		if (this.attributeTable.get(name) == null) {
 			this.attributeTable.put(name, ai);
 			int ts = ai.type().size();
 			this.currentDisp = ai.displacement() + (ts + (4 - (ts % 4)));
+      return true;
 		}
+    return false;
 	}
 
 	/**
@@ -179,18 +207,21 @@ public class Klass extends CompositeType {
 	 * @param as access specifier
 	 * @param vi variable info
 	 */
-	public void addAttribute(String name, AccessSpecifier as, Type t) {
-		/* TODO: problem of bubbles in the memory ! 
-		 * If you have a mother A class with {private int a; public int b;},
-		 * disp(a) = 4, disp(b) = 8, A.currentDisp = 12;
-		 * If you have B : A, with {private int c;}, disp(c) = 12 but
-		 * the bloc (0,4) is not used ! (because a is private in mother).
-		 * However : A.b and B.b must return the same displacement !
-		 *
-		 * Solution : rearranging the attribute of A in PUBLIC, then PRIVATE.
-		 */
-		addAttribute(name, new AttributeInfo(as, t, this.currentDisp, this));
+	public boolean addAttribute(String name, AccessSpecifier as, Type t) {
+		return addAttribute(name, new AttributeInfo(as, t, this.currentDisp, this));
 	}
+
+  /**
+   * Append a constructor to the class
+   * @param ci constructor info to append
+   */
+  public boolean addConstructor(ConstructorInfo ci) {
+    if (!constructorExists(ci)) {
+      this.cstrTable.add(ci);
+      return true;
+    }
+    return false;
+  }
 
 	public MethodInfo lookupMethod(String name, List<Type> params) {
 		for (MethodInfo mi : this.methodTable) {
@@ -203,6 +234,14 @@ public class Klass extends CompositeType {
 	public AttributeInfo lookupAttribute(String name) {
 		return this.attributeTable.get(name);
 	}
+
+  public ConstructorInfo lookupConstructor(List<Type> params) {
+    for (ConstructorInfo ci : this.cstrTable) {
+      if (ci.similar(ci.name(), params))
+        return ci;
+    }
+    return null;
+  }
 
   /**
    * Accessors

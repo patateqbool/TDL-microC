@@ -166,21 +166,19 @@ public class FunctionInfo extends SymbolInfo {
    * toString()
    */
   public String toString() {
-    return toString("");
+    return this.retType + " " + this.name + makeParamsString();
   }
 
-  public String toString(String name) {
-    String t = this.retType.toString() + " " + name + "(";
-
+	protected String makeParamsString() {
+		String t = "(";
     for (int i = 0; i < this.parameters.size(); i++) {
       t += this.parameters.get(i);
-      if (i == this.parameters.size() - 1)
+      if (i < this.parameters.size() - 1)
         t += ", ";
     }
-
     t += ")";
-    return t;
-  }
+		return t;
+	}
 }
 
 

@@ -33,10 +33,6 @@ public class MethodInfo extends FunctionInfo {
     return this.accSpec;
   }
 
-	/*@Override
-	public String label() {
-	}*/
-
   // Vtable related
   public void assignVtable(VirtualTable t) {
     this.vtable = t;
@@ -45,6 +41,23 @@ public class MethodInfo extends FunctionInfo {
   public VirtualTable vtable() {
     return this.vtable;
   }
+
+  @Override
+  public boolean equals(FunctionInfo other) {
+    if (other instanceof MethodInfo) {
+      return this.equals((MethodInfo)other);
+    }
+    return false;
+  }
+
+  public boolean equals(MethodInfo other) {
+    return super.equals(other) && other.parent().isEqualTo(this.parent);
+  }
+
+	@Override
+	public String toString() {
+		return this.returnType() + " " + this.parent.name() + "." + this.name() + makeParamsString();
+	}
 }
 
 
