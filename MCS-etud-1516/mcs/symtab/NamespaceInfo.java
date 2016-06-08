@@ -48,8 +48,11 @@ public class NamespaceInfo {
     /**
      * Convert the information into string
      */
-    @Override
     public String toString() {
         return "Namespace : " + this.name;
     }
+
+		public boolean equals(NamespaceInfo ni) {
+			return ni.name.equals(this.name);
+		}
 }

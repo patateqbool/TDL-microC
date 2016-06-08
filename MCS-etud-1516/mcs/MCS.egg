@@ -268,7 +268,7 @@ end
 #attPROGRAMME {
 local
 do
-   machine.writeCode(PROGRAMME^source.getFileName(), ENTITES^code);  
+   machine.writeCode(PROGRAMME^source.getFileName(), ENTITES^code); 
 end
 }
 
@@ -343,8 +343,6 @@ local
 	t : Type;
 	ta : AliasTable;
 do
-	-- Pas de code pour cette RP.
-	ENTITE^code := ENTITE^machine.generateComment("Definition d'un type.", "\t\t\t");
   ta := ENTITE^talias;
   info := ENTITE^tvar.lookup(identc^txt, ENTITE^ni, true);
   -- Si identc est une clef dans la TDSvar, erreur.
@@ -371,6 +369,8 @@ do
 	-- Les autres tds ne sont pas modifiées.
 	ENTITE^tvarS := ENTITE^tvar;
 	ENTITE^tfunS := ENTITE^tfun;
+	-- Pas de code pour cette RP.
+	ENTITE^code := ENTITE^machine.generateComment("Typedef mècouïes", "\t\t");
 end
 }
 
@@ -420,6 +420,7 @@ local
 	t : Type;
 	b : boolean;
 do
+	write("À la fin de (5)\n");
   fi := DECL^funInfo;
   tv := ENTITE^tvar;
 	tf := ENTITE^tfun;
@@ -447,7 +448,7 @@ do
 				-- On ajoute la fonction à la tfun, 
 				-- si la valeur retour est false c'est qu'on avait déjà une fonction
 				-- avec la même signature. Dans ce cas, erreur.
-        b := tf.insert(ident^txt, fi);
+        b := tf.insert(ident^txt, ENTITE^ni, fi);
 				if (!b) then 
 				  error(ALREADY_A_FUN_WITH_THAT_SIGN, ident^txt);
 				end
@@ -459,6 +460,7 @@ do
 	-- La talias n'est pas modifiée par cette RP.
 	ENTITE^taliasS := ENTITE^talias ;
   -- Passage du code généré par DECL à ENTITE.
+	write("Code (5) : " + DECL^code + "\n");
   ENTITE^code := DECL^code;
 end
 }
@@ -472,9 +474,12 @@ DECL -> pv #attDECL;
 -- funInfo est à null car il ne s'agit pas d'une fonction.
 #attDECL {
 local
+	code : String;
 do
-  DECL^code := DECL^machine.generateAllocateInStack(DECL^typeH);
+	code := DECL^machine.generateAllocateInStack(DECL^typeH);
+  DECL^code := code;
 	DECL^funInfo := null;
+	write("À la fin de (6) Hodor y meurt. Code: " + code + "\n");
 end
 }
 
@@ -500,9 +505,12 @@ end
 -- "Mise à jour" des TDS de DECL.
 #attDECL {
 local
+	code : String;
 do
+	code := FONCTION^code;
   -- Passage du code de declaration de la fonction à DECL.
-  DECL^code := FONCTION^code;
+  DECL^code := code;
+	write("Code (7) : " + code + "\n");
 	-- Passage du functionInfo.
 	DECL^funInfo := FONCTION^funInfo;
 end
@@ -526,6 +534,7 @@ do
   PARFS^cParam := 0;
   PARFS^machine := FONCTION^machine;
 	PARFS^ni := FONCTION^ni;
+	write("Regle (8)\n");
 end
 }
 
@@ -545,14 +554,18 @@ do
 	BLOC^talias := FONCTION^talias;
 	BLOC^machine := FONCTION^machine;
 	BLOC^ni := FONCTION^ni;
+	write("Regle (8) : milieu\n");
 end
 }
 
 -- Generation du code de la declaration de la fonction.
 #attFONCTION {
 local
+	code : String;
 do
-  FONCTION^code := FONCTION^machine.generateFunctionDeclaration(PARFS^funInfo , BLOC^code);
+	code := FONCTION^machine.generateFunctionDeclaration(PARFS^funInfo , BLOC^code);
+	write("Code (8) : " + code + "\n");
+  FONCTION^code := code; 
 	FONCTION^funInfo := PARFS^funInfo;
 end
 }
@@ -708,6 +721,7 @@ do
   info := tv.lookup(ident^txt, PARF^ni, false);
   -- Si identc est une clef dans la TDSvar, erreur.
   if (info != null) then
+		write("Regle (13) : " + ident^txt + "\n");
     error(IDENT_TAKEN, ident^txt);
   else
     info := PARF^tfun.lookup(ident^txt, PARF^ni, false);
@@ -952,6 +966,7 @@ BLOC ->  aco #attINSTS INSTS acf #attBLOC ;
 #attINSTS {
 local
 do
+	write("JE SUIS DANS LA REGLE 25\n");
   INSTS^tvar := BLOC^tvar;
   INSTS^tfun := BLOC^tfun;
 	INSTS^talias := BLOC^talias;
@@ -969,6 +984,7 @@ local
 do
   code := INSTS^code;
   code := code + BLOC^machine.generateFlush(INSTS^tvarS);
+	write("Code ds bloc : " + code + "\n");
   BLOC^code := code;
 end
 }
@@ -1275,6 +1291,7 @@ INST ->  retour #attE E pv #attINST ;
 #attE {
 local
 do
+	write("Regle 34 (RETURN)\n");
 	E^machine := INST^machine;
 	E^tvar := INST^tvar;
 	E^tfun := INST^tfun;
@@ -1298,6 +1315,7 @@ do
 	--Génération du code de retour de la fonction et du flush.
 	code :=   INST^machine.generateFlush(INST^tvar)
 					+ INST^machine.generateFunctionReturn(INST^funInfoH, E^reg);
+	write("Code (34) : " + code + "\n");
 	INST^code := code;
 	INST^tvarS := null;
 end
@@ -1320,6 +1338,7 @@ E -> #attA A #attAFFX AFFX #attE;
 #attA {
 local
 do
+	write("Regle 35 (E)\n");
 	A^machine := E^machine;
 	A^tvar := E^tvar;
 	A^tfun := E^tfun;
@@ -1375,6 +1394,7 @@ do
 	E^estVar := estVar;
 	E^vi := vi;
 	E^code := code;
+	write("Code 35: " + code + "\n");
 end
 }
 
@@ -2383,7 +2403,8 @@ local
 	type : Type;
   info : SymbolInfo; 
 do
-  
+ 
+ write("Regle 71 (ident)\n");
   --Initialisations.
   listeDepl := new DisplacementList();
 	estFun := false;
@@ -2437,6 +2458,7 @@ do
 	FX^talias := F^talias;
 	FX^machine := F^machine;
 	FX^ni := F^ni;
+	write("Regle 71 : au milieu à peu près\n");
 end
 }
 
@@ -2447,6 +2469,7 @@ local
   reg : Register;
 	code : String;
 do
+	write("Après Règle 71\n");
   -- Génération du code.
   -- Traitements différents selon qu'on ait : - éffectué un appel de fonction.
   --																					- accédé simplement à une variable.
@@ -2476,6 +2499,7 @@ do
   F^estVar := true;
   F^type := FX^type;
 	F^reg := reg;
+	write("Code 71: " + code + "\n");
 end
 }
 
@@ -2495,6 +2519,7 @@ do
   FX^type := FX^typeH;
   FX^listeDeplS := FX^listeDepl;
 	FX^estVar := true;
+	write("Regle 72 (FX -> /\\)\n");
 end
 }
 

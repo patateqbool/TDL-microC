@@ -24,7 +24,7 @@ public class FunctionTable implements SymbolTable {
   public boolean exists(String name, NamespaceInfo namespace, SymbolInfo si) {
     for (FunctionInfo csi : this.content) {
       if (csi.similar(name, ((FunctionInfo)si).parameters())) {
-        if (csi.namespace() == namespace)
+        if (csi.namespace().equals(namespace))
           return true;
       }
     }
@@ -35,7 +35,7 @@ public class FunctionTable implements SymbolTable {
   public boolean exists(SymbolInfo si, NamespaceInfo namespace) {
     for (FunctionInfo csi : this.content) {
       if (csi.equals(si)) {
-        if (csi.namespace() == namespace)
+        if (csi.namespace().equals(namespace))
           return true;
       }
     }
@@ -50,18 +50,19 @@ public class FunctionTable implements SymbolTable {
    * set of parameters
    */
   public SymbolInfo lookup(String name, NamespaceInfo namespace, boolean local) {
-    for (FunctionInfo fi : this.content)
+    for (FunctionInfo fi : this.content) {
       if (fi.name().equals(name)) {
-        if (fi.namespace() == namespace)
+        if (fi.namespace().equals(namespace))
           return fi;
       }
+		}
     return null;
   }
 
   public SymbolInfo lookup(String name,  NamespaceInfo namespace, List<Type> params) {
     for (FunctionInfo fi : this.content) {
       if (fi.similar(name, params)) {
-        if (fi.namespace() == namespace)
+        if (fi.namespace().equals(namespace))
           return fi;
       }
     }

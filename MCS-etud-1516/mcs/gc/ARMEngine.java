@@ -59,6 +59,7 @@ public class ARMEngine extends AbstractMachine {
 	 * @param fileName name of the file
 	 * @param code code to write
 	 */
+	@Override
 	public void writeCode(String fileName, String code) throws MCSException {
 		// Generate the vtables
     String vtables =
@@ -91,6 +92,7 @@ public class ARMEngine extends AbstractMachine {
 
 		// Actually write the code to the file
 		super.writeCode(fileName, preliminary + vtables + code);
+		System.out.println("//\n" + code + "//\n");
 	}
 
 	/**
@@ -479,13 +481,14 @@ public class ARMEngine extends AbstractMachine {
   public String generateAllocateInStack(Type type) throws MCSException  {
     String code = "";
 
-    if (type instanceof StructType) {
+    if (type instanceof CompositeType) {
       Register raddr = new Register();
       code += generateAllocate(type, raddr, null);
       code += ARMEngine.Prefix + "PUSH\t" + raddr + "\n";
       heapbase++;
-    } else if (type instanceof ArrayType) {
     } else {
+			code += ARMEngine.Prefix + "ADD\t" + sp + ", #" + type.size() + "\n";
+			heapbase++;
     }
 
     return code;
@@ -600,6 +603,8 @@ public class ARMEngine extends AbstractMachine {
 			ARMEngine.Prefix + "PUSH\t" + lr + "\n" +
 			ARMEngine.Prefix + "PUSH\t" + sb + "\n" + 
 			ARMEngine.Prefix + "PUSH\t" + sp + "\n" +
+			"\n" +
+			generateComment("Body", ARMEngine.Prefix) +
 			blockcode;
     heapbase +=3;
 
