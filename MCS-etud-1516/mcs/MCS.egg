@@ -158,11 +158,7 @@ syn champsS : StructFields for
 --inh tns : NamespaceTable for
 --				 ;	
 --
----- TODO: on aura besoin de tnsS
---inh ns : NamespaceInfo for
---				 ;
---
---syn nsS : NamespaceInfo for
+--syn niS : NamespaceInfo for
 --				 IDC
 --				 ;
 --
@@ -2814,15 +2810,15 @@ end
 --do
 --  tns := ENTITE^tns;
 --  -- Si identc est une clef dans la TDSKlass, erreur.
---  if ENTITE^tklass.lookup(identc^txt, ENTITE^ns) != null then
+--  if ENTITE^tklass.lookup(identc^txt, ENTITE^ni) != null then
 --     error(IDENT_TAKEN, identc^txt);
 --  else
 --  -- Si identc est une clef dans la TDSNamespace, erreur.	
---    if tns.lookup(identc^txt, ENTITE^ns) != null then
+--    if tns.lookup(identc^txt, ENTITE^ni) != null then
 --      error(IDENT_TAKEN, identc^txt);
 --    else
 --     -- Sinon, on peut ajouter le nouveau namespace à la TDS.
---			tns.insert(identc^txt, ENTITE^ns);
+--			tns.insert(identc^txt, ENTITE^ni);
 --    end
 --  end  
 --  -- Pas de code pour cette RP.	
@@ -2846,14 +2842,14 @@ end
 --do
 --  -- On commence la recherche du namespace
 --  -- TODO: vérif à faire
---	if (ENTITE^tns.exists(identc^txt, ENTITE^ns)) then 
+--	if (ENTITE^tns.exists(identc^txt, ENTITE^ni)) then 
 --		-- S'il est possible de continuer (i.e. identc namespace) on le fait dans IDC
 --	  IDC^rechKlass := false;
 --	  IDC^machine := ENTITE^machine;
 --    IDC^tns := ENTITE^tns;
 --  	IDC^tklass := ENTITE^tklass;
 --		IDC^nomIDC := identc^txt;
---		IDC^ns := ENTITE^ns;
+--		IDC^ni := ENTITE^ni;
 --	else
 --		error(IDENT_UNDEFINED, identc^txt);
 --	end
@@ -2863,8 +2859,8 @@ end
 --#trait {
 --local 
 --do
---  -- TODO: attendre l'arrivé une liste de ns
---	ENTITE^ns := ENTITE^ns.add(IDC^nsS);
+--  -- TODO: attendre l'arrivé une liste de ni
+--	ENTITE^ni := ENTITE^ni.add(IDC^niS);
 --end
 --}
 --
@@ -2876,18 +2872,18 @@ end
 --  -- On verifie si on cherche à obtenir une classe ou un namespace
 --	if IDC^rechKlass then
 --	  -- On cherche si on a bien obtenu une classe
---	  if IDC^tklass.exists(IDC^nomIDC, IDC^ns) then
+--	  if IDC^tklass.exists(IDC^nomIDC, IDC^ni) then
 --	    -- Si c'est le cas, on la renvoie
---		  IDC^klassHerit := IDC^tklass.lookup(IDC^nomIDC, IDC^ns);
+--		  IDC^klassHerit := IDC^tklass.lookup(IDC^nomIDC, IDC^ni);
 --		else
 --		  -- Sinon, on renvoie une erreur
 --		  error(IDENT_UNDEFINED, IDC^nomIDC);
 --	  end
 --	else
 --	  -- On cherche si on a bien obtenu un namespace
---	  if IDC^tns.exists(IDC^nomIDC, IDC^ns) then
+--	  if IDC^tns.exists(IDC^nomIDC, IDC^ni) then
 --	    -- Si c'est le cas, on la renvoie
---		  IDC^nsS := IDC^tns.lookup(IDC^nomIDC, IDC^ns);
+--		  IDC^niS := IDC^tns.lookup(IDC^nomIDC, IDC^ni);
 --		else
 --		  -- Sinon, on renvoie une erreur
 --		  error(IDENT_UNDEFINED, IDC^nomIDC);
@@ -2902,18 +2898,18 @@ end
 --local 
 --do
 --  -- On cherche si on a bien obtenu un namespace précédemment
---	-- Comme on n'a pas de classe interne, on doit avoir ns.ns.ns.X
---	if (IDC^tns.exists(IDC^nomIDC, IDC^ns) then
+--	-- Comme on n'a pas de classe interne, on doit avoir ni.ni.ni.X
+--	if (IDC^tns.exists(IDC^nomIDC, IDC^ni) then
 --	  -- On teste l'exist d'identc
 --	  -- TODO: vérif quand ce sera bien
---  	if (IDC^tklass.exists(identc^txt, IDC^ns) or IDC^tns.exists(identc^txt, IDC^ns)) then
+--  	if (IDC^tklass.exists(identc^txt, IDC^ni) or IDC^tns.exists(identc^txt, IDC^ni)) then
 --			-- S'il existe, on transmet ce qu'il faut
 --	    IDC1^rechKlass := IDC^rechKlass;
 --		  IDC1^machine := IDC^machine;
 --      IDC1^tns := IDC^tns;
 --  	  IDC1^tklass := IDC^tklass;
 --		  IDC1^nomIDC := identc^txt;
---			IDC1^ns := IDC^tns.lookup(IDC^nomIDC,IDC^ns);
+--			IDC1^ni := IDC^tns.lookup(IDC^nomIDC,IDC^ni);
 --	  else
 --			-- Sinon, erreur
 --		  error(IDENT_UNDEFINED, identc^txt);
@@ -2932,7 +2928,7 @@ end
 --	if IDC^rechKlass then
 --		IDC^klassHerit := IDC1^klassHerit;
 --	else
---		IDC^nsS := IDC1^nsS;
+--		IDC^niS := IDC1^niS;
 --	end
 --end
 --}
@@ -2949,10 +2945,10 @@ end
 --do
 --  tklass := ENTITE^tklass;
 --  -- Si identc est une clef dans la TDSKlass, erreur.
---  if tklass.lookup(identc^txt, ENTITE^ns) != null then
+--  if tklass.lookup(identc^txt, ENTITE^ni) != null then
 --     error(IDENT_TAKEN, identc^txt);
 --  else
---    if ENTITE^tns.lookup(identc^txt, ENTITE^ns) != null then
+--    if ENTITE^tns.lookup(identc^txt, ENTITE^ni) != null then
 --      error(IDENT_TAKEN, identc^txt);
 --    else
 --		  -- Pas de code pour cette RP.	
@@ -2960,7 +2956,7 @@ end
 --			HERITAGE^machine := ENTITE^machine;
 -- 		  HERITAGE^tns := ENTITE^tns;
 --			HERITAGE^tklass := tklass;
---			HERITAGE^ns := ENTITE^ns;
+--			HERITAGE^ni := ENTITE^ni;
 --    end
 --  end  
 --	ENTITE^tklassS := tklass;
@@ -3028,14 +3024,14 @@ end
 --do
 --  -- On commence la recherche de la classe dont on hérite
 --  -- TODO: vérif quand la partie arm est clean
---	if (HERITAGE^tklass.exists(identc^txt, HERITAGE^ns) or HERITAGE^tns.exists(identc^txt, HERITAGE^ns)) then 
+--	if (HERITAGE^tklass.exists(identc^txt, HERITAGE^ni) or HERITAGE^tns.exists(identc^txt, HERITAGE^ni)) then 
 --		-- S'il est possible de continuer (i.e. identc ou namespace ou classe) on le fait dans IDC
 --	  IDC^rechKlass := true;
 --	  IDC^machine := HERITAGE^machine;
 --    IDC^tns := HERITAGE^tns;
 --  	IDC^tklass := HERITAGE^tklass;
 --		IDC^nomIDC := identc^txt;
---		IDC^ns := HERITAGE^ns;
+--		IDC^ni := HERITAGE^ni;
 --	else
 --		error(IDENT_UNDEFINED, identc^txt);
 --	end
