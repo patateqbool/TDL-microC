@@ -50,7 +50,7 @@ public class ARMEngine extends AbstractMachine {
 	 * Suffix for target file : asm
 	 */
 	public String getSuffix() {
-		return ".s";
+		return "s";
 	}
 
 	/**
@@ -78,9 +78,9 @@ public class ARMEngine extends AbstractMachine {
       "\n" +
 			// Declarations
       generateComment("Preliminary definitions : heap top, stack base, heap base", "") +
-			ht.alias() + "EQU " + ht.name() + "\n" +
-			sb.alias() + "EQU " + sb.name() + "\n" +
-      oi.alias() + "EQU " + oi.name() + "\n" +
+			ht.alias() + " EQU " + ht.name() + "\n" +
+			sb.alias() + " EQU " + sb.name() + "\n" +
+      oi.alias() + " EQU " + oi.name() + "\n" +
 			"HB EQU " + (heapbase+5)*4 + "\n" +
 			"\n" +
 			// Initialisations
