@@ -2796,7 +2796,7 @@ end
 ---- Decommenter les regles suivantes pour l'extension CS
 ---------------------------------------------------
 --
--- (82)
+---- (82)
 --TYPE -> bool #typage ;
 --
 --#typage {
@@ -2806,7 +2806,7 @@ end
 --end
 --}
 --
----- definit un contenu d'un namespace
+---- (83) definit un contenu d'un namespace
 --ENTITE -> namespace identc #ajout aco ENTITES acf ;
 --
 ---- Ajout de identc à la table des namespaces.
@@ -2842,7 +2842,7 @@ end
 --end
 --}
 --
----- donne l acces au contenu du 'namespace'
+---- (84) donne l acces au contenu du 'namespace'
 --ENTITE -> using identc #passIdentc IDC #trait pv ;
 --
 --#passIdentc {
@@ -2901,6 +2901,7 @@ end
 --end
 --}
 --
+---- (86)
 --IDC -> pt identc #passIdentc IDC #retour ;
 --
 --#passIdentc {
@@ -2942,7 +2943,7 @@ end
 --end
 --}
 --
----- definition d'une classe (peut etre en dehors d'un namespace)
+---- (87) definition d'une classe (peut etre en dehors d'un namespace)
 --
 --ENTITE -> ACCES class identc #verif HERITAGE #ajout aco DEFS acf ;
 --
@@ -2998,6 +2999,7 @@ end
 --end
 --}
 --
+---- (89)
 --ACCES -> #acc private;
 --
 --#acc {
@@ -3007,6 +3009,7 @@ end
 --end
 --}
 --
+---- (90)
 --ACCES -> #acc;
 --
 --#acc {
@@ -3016,7 +3019,7 @@ end
 --end
 --}
 --
----- heritage
+---- (91) heritage
 --
 --HERITAGE -> #heritNull;
 --
@@ -3028,6 +3031,7 @@ end
 --end
 --}
 --
+---- (92)
 --HERITAGE -> dpts identc #passIdentc IDC #herit;
 --
 --#passIdentc
@@ -3058,30 +3062,38 @@ end
 --}
 ---- membres d'une classe
 --
+---- (93)
 --DEFS -> ;
 --
+---- (94)
 --DEFS ->  ACCES DEF DEFS ;
 --
+---- (95)
 --DEF  ->  TYPE ident DECL ;
 --
----- constructeur
+---- (96) constructeur
 --
 --DEF  ->  identc paro PARFS parf BASE BLOC;
 --
 ---- appel eventuel au constructeur de la classe parente.
 --
+---- (97)
 --BASE -> ;
 --
+---- (98)
 --BASE -> dpts base paro ES parf  ;
 --
----- Mode de passage pour les fonctions et méthodes : rien : D, ref : D/R, out : R
+---- (99) Mode de passage pour les fonctions et méthodes : rien : D, ref : D/R, out : R
 --
 --PARF ->  MODE TYPE ident ;
 --
+---- (100)
 --MODE -> ref ;
 --
+---- (101)
 --MODE -> out ; 
 --
+---- (102)
 --F -> true #typeEtGenCode #estVarEtVi ;
 --
 ---- Set de l'attribut de type de F pour indiquer qu'il s'agit d'un booléen.
@@ -3114,6 +3126,8 @@ end
 --	F^vi := null;
 --end
 --}
+--
+---- (103)
 --F -> false #typeEtGenCode #estVarEtVi ;
 --
 ---- Set de l'attribut de type de F pour indiquer qu'il s'agit d'un booléen.
@@ -3147,16 +3161,18 @@ end
 --end
 --}
 --
+---- (104)
 --F -> this FX;
 --
----- base = super
+---- (105) base = super
 --
 --F -> base FX;
 --
-----compatible avec null
+---- (106) compatible avec null
 --
 --F -> null2;
 --
+---- (107)
 --F -> new identc IDC paro ES parf ;
 
 end
