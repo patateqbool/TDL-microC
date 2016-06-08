@@ -53,6 +53,11 @@ public class MethodInfo extends FunctionInfo {
   public boolean equals(MethodInfo other) {
     return super.equals(other) && other.parent().isEqualTo(this.parent);
   }
+
+	@Override
+	public String toString() {
+		return this.returnType() + " " + this.parent.name() + "." + this.name() + makeParamsString();
+	}
 }
 
 

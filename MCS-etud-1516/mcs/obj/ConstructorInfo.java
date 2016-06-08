@@ -30,10 +30,15 @@ public class ConstructorInfo extends MethodInfo {
     return this.parent().isEqualTo(other.parent()) && this.similar(other);
   }
 
-  @Override
+  /*@Override
   public String label() {
     return "__cstr_" + super.label();
-  }
+  }*/
+
+	@Override
+	public String toString() {
+		return this.parent().name() + "." + this.parent().name() + makeParamsString();
+	}
 }
 
 
