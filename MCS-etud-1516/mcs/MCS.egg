@@ -422,11 +422,11 @@ do
   if (info != null) then
     error(IDENT_TAKEN, ident^txt);
   else
-		t := ENTITE^talias.lookup(ident^txt, ENTITE^ni, true);
+		t := ENTITE^talias.lookup(ident^txt);
 		if (t!= null) then
 		  error(IDENT_TAKEN, ident^txt);
 	  else
-		  info := ENTITE^tfun.lookup(ident^txt, true);
+		  info := ENTITE^tfun.lookup(ident^txt, ENTITE^ni, true);
       if (fi = null) then
 	      -- On a une variable.
         if (info != null) then
