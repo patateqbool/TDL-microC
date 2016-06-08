@@ -276,9 +276,10 @@ public interface IMachine {
   /**
    * Generate the code for calling a constructor
    * @param info info of the constructor to call
+	 * @param base determines if this call is made to the super constructor (in another constructor)
    * @return the generated code
    */
-  String generateConstructorCall(ConstructorInfo info) throws MCSException;
+  String generateConstructorCall(ConstructorInfo info, boolean base) throws MCSException;
 
   ////////////////////////////// MISC ///////////////////////////////
   /**
