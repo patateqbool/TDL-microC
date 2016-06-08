@@ -10,7 +10,7 @@ import mcs.symtab.FunctionInfo;
 
 public class ConstructorInfo extends MethodInfo {
   public ConstructorInfo(Klass.AccessSpecifier as, Klass parent) {
-    super(parent.name(), as, parent, parent);
+    super("__cstr__", as, parent, parent);
     super.assignVtable(null);
   }
 

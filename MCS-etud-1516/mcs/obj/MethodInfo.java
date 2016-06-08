@@ -33,10 +33,6 @@ public class MethodInfo extends FunctionInfo {
     return this.accSpec;
   }
 
-	/*@Override
-	public String label() {
-	}*/
-
   // Vtable related
   public void assignVtable(VirtualTable t) {
     this.vtable = t;
