@@ -343,6 +343,8 @@ local
 	t : Type;
 	ta : AliasTable;
 do
+	-- Pas de code pour cette RP.
+	ENTITE^code := ENTITE^machine.generateComment("Definition d'un type.", "\t\t\t");
   ta := ENTITE^talias;
   info := ENTITE^tvar.lookup(identc^txt, ENTITE^ni, true);
   -- Si identc est une clef dans la TDSvar, erreur.
@@ -369,8 +371,6 @@ do
 	-- Les autres tds ne sont pas modifiées.
 	ENTITE^tvarS := ENTITE^tvar;
 	ENTITE^tfunS := ENTITE^tfun;
-	-- Pas de code pour cette RP.
-	ENTITE^code := ENTITE^machine.generateComment("Definition variable globale.", "\t\t\t");
 end
 }
 
