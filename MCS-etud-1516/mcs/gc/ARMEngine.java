@@ -719,12 +719,53 @@ public class ARMEngine extends AbstractMachine {
   /**
    * Generate the code for declaring a constructor
    * @param info info of the constructor (the register attribute) 
-   * @param code code of the block
+   * @param bcode code of the block
    * @return the generated code
    */
-  public String generateConstructorDeclaration(ConstructorInfo info, String code) throws MCSException {
+  public String generateConstructorDeclaration(ConstructorInfo info, String bcode) throws MCSException {
+    Register r = getNextUnusedRegister();
+
+    String codeinst =
+      info.parent().name() + info.label() + "_inst:\n" +
+      generateComment("Instanciate the class", ARMEngine.Prefix) +
+      ARMEngine.Prefix + "MOV\t" + r + ", " + ht + "\n";
+
+    Klass k = info.parent();
+    int rs = k.realSize();
+
+    if (rs < 65535) {
+      codeinst +=
+        ARMEngine.Prefix + "ADD\t" + ht + ", " + ht + ", #" + rs + "\n";
+    } else {
+      Register rsize = new Register();
+      codeinst +=
+        generateLoadConstant(new ConstantInfo(new IntegerType(), rs), rsize) +
+        ARMEngine.Prefix + "ADD\t" + ht + ", " + ht + ", " + rsize + "\n";
+    }
+
+    codeinst +=
+      ARMEngine.Prefix + "PUSH\t" + r + "\n";
+
+    info.assignRegister(r);
+    r.setStatus(Register.Status.Loaded);
+
+    heapbase += 3;
+
+    return codeinst + generateFunctionDeclaration(info, bcode);
   }
 
+  /**
+   * Generate the code for calling a constructor
+   * @param info info of the constructor to call
+   * @return the generated code
+   */
+  public String generateConstructorCall(ConstructorInfo info) throws MCSException {
+    String code =
+      ARMEngine.Prefix + "BL\t" + info.parent().name() + info.label() + "_inst\n";
+    heapbase++;
+    return code;
+  }
+  
 	////////////////////////////// MISC ///////////////////////////////
   /**
    * Generate a comment
