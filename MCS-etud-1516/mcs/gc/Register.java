@@ -44,7 +44,7 @@ public class Register {
   }
 
 	public String name() {
-		return name;
+		return name + (this.num == -1 ? "" : this.num);
 	}
 
 	public int num() {

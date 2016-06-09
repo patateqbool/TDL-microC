@@ -18,6 +18,13 @@ public class DisplacementList extends ArrayList<DisplacementPair> {
 	public void add(int disp, boolean deref) {
 		this.add(new DisplacementPair(disp, deref));
 	}
+
+	public String toString() {
+		String res = "=== Displacement List ===\n";
+		for (DisplacementPair dp : this) 
+			res += "<" + dp.disp + "," + dp.deref + ">\n";
+		return res + "=========================\n";
+	}
 }
 
 

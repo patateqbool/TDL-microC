@@ -103,7 +103,7 @@ syn oprel : Integer for -- : RelationalOperator for
 				 ;
 
 syn reg : Register for
-				 F, T, TX, RX, E, AFFX, A, AX, R
+				 F, FX, T, TX, R, RX, E, AFFX, A, AX
 				 ;
 				 
 syn estVar : boolean for
@@ -2454,7 +2454,6 @@ F -> ident #attFX FX #attF ;
 
 global
   varInfo : VariableInfo;
-  funInfo : FunctionInfo;
 	estFun : boolean;
 
 -- Attributs inh de FX.
@@ -2467,13 +2466,12 @@ local
   info : SymbolInfo; 
 do
  
- write("Regle (71) : " + ident^txt + ", " + F^ni.name() + "\n");
+  write("Regle (71) : " + ident^txt + ", " + F^ni.name() + "\n");
   --Initialisations.
   listeDepl := new DisplacementList();
 	estFun := false;
 	type := null;
 	varInfo := null;
-	funInfo := null;
 	info := null;
 	write("(71) VARTABLE :\n" + F^tvar);
 
@@ -2539,10 +2537,12 @@ do
   reg := new Register();
 	code := "";
 	if estFun then
+		write("(71) C'est une fonction\n");
     -- On a un appel de fonction, peut être suivi d'accés à des champs de struct.
 	  -- regRetourFun est le registre contenant le résultat de l'appel de fonction,
 		-- il se trouve dans le FunctionInfo \o/.
-    code := F^machine.generateMakeAddress(listeDepl, funInfo.register(), reg);
+		write("(71) DL :\n" + listeDepl + "\n     reg : " + FX^reg.debug() + "\n"); 
+    code := F^machine.generateMakeAddress(listeDepl, FX^reg, reg);
 	else 
 	  -- On n'a pas d'appel de fonction. 
 		if ((listeDepl.size() != 0 )&&(listeDepl.size() != 1)) then --> 1) then
@@ -2581,7 +2581,8 @@ do
   FX^type := FX^typeH;
   FX^listeDeplS := FX^listeDepl;
 	FX^estVar := true;
-	write("Regle 72 (FX -> /\\)\n");
+	FX^reg := null;
+	write("Regle (72) (FX -> /\\)\n");
 end
 }
 
@@ -2646,6 +2647,7 @@ do
   FX^type := FX1^type;
 	FX^listeDeplS := FX1^listeDeplS;
 	FX^estVar := FX1^estVar;
+	FX^reg := null;
 end
 }
 
@@ -2720,6 +2722,7 @@ do
   FX^type := FX1^type;
 	FX^listeDeplS := FX1^listeDeplS;
 	FX^estVar := FX1^estVar;
+	FX^reg := null;
 end
 }
 
@@ -2729,11 +2732,16 @@ end
 -- se font dans ES.
 FX -> #attES paro ES parf #attFX1 FX #attFX;
 
+global
+	code : String;  
+
 -- Attributs inh de ES.
 -- Verification que l'appelant est une fonction.
 #attES {
 local
 do
+	code := "";
+
 	write("Regle (75)\n");
   if !(FX^estFun) then
 	  error(NOT_A_FUN);
@@ -2752,30 +2760,47 @@ end
 -- Verification qu'il existe bien une fonction avec cette signature.
 #attFX1 {
 local
-  si : SymbolInfo;
+	type : Type;
+	si : SymbolInfo;
+	reg : Register;
 do
+	reg := null;
+	type := null;
+
   if (FX^nom = "") then
 	  error(NO_PAR_CALL);
 	else
 	  -- On cherche avec la fonction qui ne prend pas de booléen, mais une liste de types pour les params.
     si := FX^tfun.lookup(FX^nom, FX^ni, ES^typesParamsS);
+		write("(75) " + si + "\n");
 	  if (si = null) then
 	    error(NO_FUN_WITH_SUCH_PARS, FX^nom);
 	  end
+		match si
+		with FunctionInfo then
+	  	code := ES^code + FX^machine.generateFunctionCall(si);
+			type := si.returnType();
+			reg := si.register();
+  	else 
+	  	error(SHOULD_NOT_HAPPEN_SI_NOT_FI);
+		end
 	end
+
   -- La liste des deplacements n'a pas été modifié par le parcours des arguments.
   FX1^listeDepl := FX^listeDepl;
 	-- L'appel de fonction n'est pas une fonction.
 	FX1^estFun := false; 
 	--FX1^funInfoH := null;
 	-- Le type de l'appel est le type de retour de la fonction.
-	FX1^typeH := FX^typeH;
+	FX1^typeH := type;
 	-- Pas de nom pour FX ici.
 	FX1^nom := "";
 	FX1^tvar := FX^tvar;
 	FX1^tfun := FX^tfun;
 	FX1^talias := FX^talias;
 	FX1^machine := FX^machine;
+	FX^reg := reg;
+	write("(75) Code: " + code + "\n");
 end
 }
 
@@ -2784,17 +2809,8 @@ end
 -- Puis on appel la fonction. Et on met le code de FX1.
 #attFX {
 local
-	si : SymbolInfo;
-  code : String;
 do
-	si := FX^tfun.lookup(FX^nom, FX^ni, ES^typesParamsS);
-  code := "";
-	match si
-	with FunctionInfo then
-	  code := ES^code + FX^machine.generateFunctionCall(si) + FX1^code;
-  else 
-	  error(SHOULD_NOT_HAPPEN_SI_NOT_FI);
-	end
+  code := code + FX1^code;	
 	FX^code := code;
 	FX^type := FX1^type;
 	FX^listeDeplS := FX1^listeDeplS;
