@@ -105,7 +105,7 @@ public class FunctionInfo extends SymbolInfo {
   public int displacement(int n) {
     int disp = -12;
 
-    for (int i = 0; i <= n; i++) {
+    for (int i = 0; i < n; i++) {
       int ts = this.parameters.get(i).size();
 
       if (ts % 4 == 0) // already aligned
@@ -113,6 +113,8 @@ public class FunctionInfo extends SymbolInfo {
       else
         disp -= ts + (4 - (ts % 4));
     }
+
+		System.out.println("Calculated disp : " + disp);
 
     return disp;
   }

@@ -46,6 +46,7 @@ public class Klass extends CompositeType {
   private Map<String,AttributeInfo> attributeTable;
   private Map<String,Integer> daughters;
   private NamespaceInfo namespace;
+	private AccessSpecifier accessspec;
  
   // public Klass(String name, List<Klass> parents) {
   /**
@@ -55,9 +56,10 @@ public class Klass extends CompositeType {
    * @param name name of the class
    * @param parent parent class (can be null)
    */
-  public Klass(String name, Klass parent, NamespaceInfo ns) {
+  public Klass(AccessSpecifier as, String name, Klass parent, NamespaceInfo ns) {
     super(4);
 
+		this.accessspec = as;
     this.name = name;
     this.parent = parent;
     this.namespace = ns;
@@ -246,6 +248,10 @@ public class Klass extends CompositeType {
   /**
    * Accessors
    */
+	public AccessSpecifier accessSpecifier() {
+		return this.accessspec;
+	}
+
   public Klass parent() {
     return this.parent;
   }

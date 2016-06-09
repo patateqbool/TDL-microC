@@ -24,7 +24,7 @@ public class ARMEngine extends AbstractMachine {
 	static private final int NUM_REGISTER = 10;
 	static private final String Prefix = "\t\t";  // For a nice code
 	private List<Register> registers;							// List of registers on the machine
-	private Register sp, lr, pc, ht, sb, oi;			// Special registers
+	private Register sp, lr, pc, ht, sb, oi;	// Special registers
 	private int heapbase = 0;											// Manual heap base calculus
   private int condition_nb = 0;									// Number of if-then-else (/other conditionnal) structures
 
@@ -605,18 +605,16 @@ public class ARMEngine extends AbstractMachine {
 			ARMEngine.Prefix + "PUSH\t" + sp + "\n" +
 			"\n" +
 			generateComment("Body", ARMEngine.Prefix) +
-			blockcode;
+			blockcode +
+			"\n";
     heapbase +=3;
 
 		// End of the function
 		if (!(info.returnType() instanceof VoidType)) {
-			Register rval = getNextUnusedRegister();
-
 			code +=
 				generateComment("Default return. It is not wise to reach this point", ARMEngine.Prefix) +
-				ARMEngine.Prefix + "MOV\t" + rval + ", #0\n" + 
 				ARMEngine.Prefix + "MOV\t" + info.register() + ", " + ht + "\n" +
-				ARMEngine.Prefix + "STMIA\t!" + ht + ", " + rval + "\n\n";
+				ARMEngine.Prefix + "ADD\t" + ht + ", " + ht + ", #4\n\n";
       heapbase += 3;
 		}
 
@@ -656,13 +654,15 @@ public class ARMEngine extends AbstractMachine {
 	 * @param rval the register containing the value to be returned
 	 * @return the generated code
 	 */
-	public String generateFunctionReturn(FunctionInfo info, Register rval) {
+	public String generateFunctionReturn(FunctionInfo info, Register rval) throws MCSException {
 		String code = "", label = info.label();
 
     if (info instanceof MethodInfo)
       label = ((MethodInfo)info).parent().name() + label;
 
 		if (!(info.returnType() instanceof VoidType)) {
+			Register r = getNextUnusedRegister();
+			info.assignRegister(r);
 			code +=
 				ARMEngine.Prefix + "MOV\t" + info.register() + ", " + ht + "\n" +
 				ARMEngine.Prefix + "STMIA\t!" + ht + ", " + rval + "\n";

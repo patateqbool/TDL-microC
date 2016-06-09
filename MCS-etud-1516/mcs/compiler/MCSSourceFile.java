@@ -79,6 +79,7 @@ public class MCSSourceFile extends SourceUnit {
     } else {
 			// TODO si la machine n'est pas tam
 			// machine = new ???();
+			machine = new ARMEngine();
 		}
 	}
 

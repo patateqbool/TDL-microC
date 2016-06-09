@@ -22,10 +22,14 @@ public class FunctionTable implements SymbolTable {
   }
 
   public boolean exists(String name, NamespaceInfo namespace, SymbolInfo si) {
+		System.out.println("Checking for existence of " + name);
+		System.out.println(this.toString());
     for (FunctionInfo csi : this.content) {
       if (csi.similar(name, ((FunctionInfo)si).parameters())) {
-        if (csi.namespace().equals(namespace))
+        if (csi.namespace().equals(namespace)) {
+					System.out.println("I found something ! \\o/");
           return true;
+				}
       }
     }
 
@@ -42,6 +46,14 @@ public class FunctionTable implements SymbolTable {
 
     return false;
   }
+
+	public boolean exists(String name, NamespaceInfo namespace) {
+		for (FunctionInfo csi : this.content) {
+			if (csi.name().equals(name) && namespace.equals(csi.namespace()))
+				return true;
+		}
+		return false;
+	}
 
   /**
    * Note: this function only serve to see if there is a function
@@ -98,5 +110,13 @@ public class FunctionTable implements SymbolTable {
   public List<Type> symbolsTypes() {
     return null;
   }
+
+	public String toString() {
+		String res = "=== Function table ===\n";
+		for (FunctionInfo fi : this.content) {
+			res += fi + "\n";
+		}
+		return res +="======================\n";
+	}
 }
 

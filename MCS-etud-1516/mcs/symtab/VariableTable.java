@@ -55,12 +55,27 @@ public class VariableTable implements SymbolTable {
   }
 
   public boolean exists(String name, NamespaceInfo namespace, SymbolInfo si) {
+		System.out.println("Looking for " + name + " in\n" + this.toString());
     if (this.content.get(name) != null) {
-      if (this.content.get(name).namespace() == namespace)
+      if (this.content.get(name).namespace().equals(namespace))
         return true;
     }
     return false;
   }
+
+	public boolean exists(String name, NamespaceInfo namespace, boolean local) {
+		System.out.println("Looking for " + name + " in\n" + this.toString());
+    SymbolInfo si = this.content.get(name);
+
+    if (si != null) {
+      return (si.namespace().equals(namespace));
+    }
+
+    if (!local && this.parent != null)
+      return ((VariableTable)this.parent).exists(name, namespace, false);
+
+    return false;
+	}
 
   /**
    * Look up into the table
@@ -69,7 +84,7 @@ public class VariableTable implements SymbolTable {
     SymbolInfo si = this.content.get(name);
 
     if (si != null) {
-      if (si.namespace() == ns)
+      if (si.namespace().equals(ns))
         return si;
     }
 
@@ -119,6 +134,17 @@ public class VariableTable implements SymbolTable {
     }
     return res;
   }
+
+	public String toString() {
+		String s = "=== Variable Table ===\n";
+		for (String v : this.content.keySet()) {
+			s += v + " : " + this.content.get(v) + "\n";
+		}
+		if (this.parent != null)
+			return s + this.parent;
+		else
+			return s + "======================\n";
+	}
 }
 
 

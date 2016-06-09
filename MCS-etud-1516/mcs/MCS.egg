@@ -27,10 +27,6 @@ inh tvar : VariableTable for
 				 R, RX, T, TX, FX, ES, ESX
          ;
 
-syn tvarS : VariableTable for 
-         PARFS, PARF, PARFSX, ENTITE, INST, INSTS
-         ; -- Utilisée pour récupérer la TDS màj avec les paramètres de la fonction.
-
 inh talias : AliasTable for 
          ENTITES, ENTITE, BLOC, STYPE, TYPE, F, INSTS, INST, SIX, CHAMPS, CHAMP, E,
 				 AFFX, A, AX, DECL, FONCTION, PARFS, PARF, PARFSX,
@@ -265,7 +261,7 @@ do
   ENTITES^tfun := new FunctionTable();
   ENTITES^talias := new AliasTable();
 	ENTITES^machine := machine;
-	ENTITES^ni := null;
+	ENTITES^ni := new DefaultNamespaceInfo();
 end
 }
 -- Ecrit le code dans un fichier
@@ -307,7 +303,7 @@ end
 #attENTITES1 {
 local
 do
-  ENTITES1^tvar := ENTITE^tvarS;
+  ENTITES1^tvar := ENTITES^tvar;
   ENTITES1^tfun := ENTITE^tfunS;
 	ENTITES1^talias := ENTITE^taliasS;
 	ENTITES1^machine := ENTITES^machine;
@@ -371,7 +367,6 @@ do
 	-- On fait remonter la nouvelle talias.
 	ENTITE^taliasS := ta;
 	-- Les autres tds ne sont pas modifiées.
-	ENTITE^tvarS := ENTITE^tvar;
 	ENTITE^tfunS := ENTITE^tfun;
 	-- Pas de code pour cette RP.
 	ENTITE^code := ENTITE^machine.generateComment("Typedef mècouïes", "\t\t");
@@ -434,32 +429,35 @@ do
     error(IDENT_TAKEN, ident^txt);
   else
 		t := ENTITE^talias.lookup(ident^txt);
+		write("(5) info not null\n");
 		if (t!= null) then
-		  error(IDENT_TAKEN, ident^txt);
+		  error(ALREADY_AN_ALIAS, ident^txt);
 	  else
-		  info := ENTITE^tfun.lookup(ident^txt, ENTITE^ni, true);
+			write("(5) ident not already taken for type\n");
+		  --info := tf.lookup(ident^txt, ENTITE^ni, true);
       if (fi = null) then
+				write("(5) It's a variable declaration\n");
 	      -- On a une variable.
-        if (info != null) then
+        if (tf.exists(ident^txt, ENTITE^ni, fi)) then
 				  -- Dans ce cas, il ne faut pas que l'ident soit pris par une fonction.
           error(IDENT_TAKEN, ident^txt);
         else
+					write("(5) Add variable \\o/\n");
 				  -- Si ce n'est pas le cas, on peut add la variable à la tvar.
           tv.insert(ident^txt, TYPE^type, ENTITE^ni);
 				end
-	    else
+	   -- else
+			--	write("(5) It's a function declaration\n");
         -- On a une fonction.
 				-- On ajoute la fonction à la tfun, 
 				-- si la valeur retour est false c'est qu'on avait déjà une fonction
 				-- avec la même signature. Dans ce cas, erreur.
-        b := tf.insert(ident^txt, ENTITE^ni, fi);
-				if (!b) then 
-				  error(ALREADY_A_FUN_WITH_THAT_SIGN, ident^txt);
-				end
+				--if (!(tf.insert(ident^txt, ENTITE^ni, fi))) then 
+				  --error(ALREADY_A_FUN_WITH_THAT_SIGN, ident^txt);
+				--end
 	    end
     end
 	end
-	ENTITE^tvarS := tv ;
   ENTITE^tfunS := tf ;
 	-- La talias n'est pas modifiée par cette RP.
 	ENTITE^taliasS := ENTITE^talias ;
@@ -524,12 +522,16 @@ end
 -- (8)
 FONCTION -> #attPARFS paro PARFS parf #attBLOC BLOC #attFONCTION ;
 
+global
+	tvparams : VariableTable;
+
 -- Init des attributs hérités pour PARFS.
 #attPARFS {
 local
 do
+	tvparams := new VariableTable(FONCTION^tvar);
   -- On crée la TDSvar fille pour la passer à PARFS.
-  PARFS^tvar := new VariableTable(FONCTION^tvar);
+  PARFS^tvar := tvparams;
   PARFS^tfun := FONCTION^tfun;
 	PARFS^talias := FONCTION^talias;
 	-- Creation de la FunctionInfo avec le type retour.
@@ -551,10 +553,14 @@ local
 do
   tf := FONCTION^tfun;
   fi := PARFS^funInfo;
-  tf.insert(FONCTION^nom, fi);
-  BLOC^tfun := tf;
+  
+	if (!(tf.insert(FONCTION^nom, fi))) then
+		error(ALREADY_A_FUN_WITH_THAT_SIGN, FONCTION^nom);
+	end
+  
+	BLOC^tfun := tf;
 	BLOC^funInfoH := fi;
-  BLOC^tvar := new VariableTable(PARFS^tvarS);
+  BLOC^tvar := new VariableTable(tvparams);
 	BLOC^talias := FONCTION^talias;
 	BLOC^machine := FONCTION^machine;
 	BLOC^ni := FONCTION^ni;
@@ -584,10 +590,9 @@ PARFS -> #attPARFS ;
 #attPARFS {
 local
 do
+	write("Regle (9)\n");
   -- fin de la liste des parmètres, on transmet le fi 'final'.
   PARFS^funInfo := PARFS^funInfoH ;
-	-- Passage de tvar, qui contient les paramètres de la fonction.
-  PARFS^tvarS := PARFS^tvar;
 end
 }
 
@@ -600,6 +605,7 @@ PARFS -> #attPARF PARF #attPARFSX PARFSX #attPARFS ;
 local
   c : int;
 do
+	write("Regle (10)\n");
   -- Incrementation du compteur de parametres.
   c := PARFS^cParam + 1;
   PARF^cParam := c;
@@ -620,7 +626,8 @@ local
   fi : FunctionInfo ; 
 do
   PARFSX^funInfoH := PARF^funInfo;
-  PARFSX^tvar := PARF^tvarS;
+  write("(10) middle : passage tvar\n" + PARFS^tvar + "\n");
+	PARFSX^tvar := PARFS^tvar;
 	PARFSX^tfun := PARFS^tfun;
 	PARFSX^talias := PARFS^talias;
 	PARFSX^machine := PARFS^machine;
@@ -633,7 +640,6 @@ end
 #attPARFS {
 local
 do
-  PARFS^tvarS := PARFSX^tvarS;
   PARFS^funInfo := PARFSX^funInfo;
 end
 }
@@ -646,7 +652,6 @@ PARFSX -> #attPARFSX ;
 local
 do
   PARFSX^funInfo := PARFSX^funInfoH ;
-	PARFSX^tvarS := PARFSX^tvar;
 end
 }
 
@@ -679,7 +684,7 @@ end
 local
 do
   PARFSX1^funInfoH := PARF^funInfo;
-	PARFSX1^tvar := PARF^tvarS;
+	PARFSX1^tvar := PARFSX^tvar;
 	PARFSX1^tfun := PARFSX^tfun;
 	PARFSX1^talias := PARFSX^talias;
 	PARFSX1^machine := PARFSX^machine;
@@ -692,7 +697,6 @@ end
 local
 do
   PARFSX^funInfo := PARFSX1^funInfo ;
-	PARFSX^tvarS := PARFSX1^tvarS;
 end
 }
 
@@ -719,18 +723,19 @@ local
 	info : SymbolInfo;
   fi : FunctionInfo;
 do
-  tv := PARF^tvar;
+	write("Regle (13) : " + TYPE^type + " " + ident^txt + " [" + PARF^ni.name() + "]" + "\n");
+  
+	tv := PARF^tvar;
   fi := PARF^funInfoH;
   -- Vérifications concernant ident.
-  info := tv.lookup(ident^txt, PARF^ni, false);
+  --info := tv.lookup(ident^txt, PARF^ni, false);
   -- Si identc est une clef dans la TDSvar, erreur.
-  if (info != null) then
-		write("Regle (13) : " + ident^txt + "\n");
+  if (tv.exists(ident^txt, PARF^ni, false)) then
     error(IDENT_TAKEN, ident^txt);
   else
-    info := PARF^tfun.lookup(ident^txt, PARF^ni, false);
+    --info := PARF^tfun.lookup(ident^txt, PARF^ni, false);
     -- De même si identc est déjà utilisé dans la TDSfun.
-    if (info != null) then
+    if (PARF^tfun.exists(ident^txt, PARF^ni)) then
       error(IDENT_TAKEN, ident^txt);
     else
 		  t := PARF^talias.lookup(ident^txt);
@@ -740,11 +745,12 @@ do
 			else
 			  -- Ajout de ident à la TDS locale et au fi.
 			  fi.add(TYPE^type);
+				write("(13) ns = " + PARF^ni.name() + ", " + fi + "\n");
         tv.insert(ident^txt, new VariableInfo(TYPE^type, fi.displacement(PARF^cParam), PARF^ni));
-      end
+        write("(13) Après ajout :\n" + tv + "\n");      
+			end
 		end
   end
-	PARF^tvarS := tv;
 	PARF^funInfo := fi;
 end
 }
@@ -970,7 +976,7 @@ BLOC ->  aco #attINSTS INSTS acf #attBLOC ;
 #attINSTS {
 local
 do
-	write("JE SUIS DANS LA REGLE 25\n");
+	write("Regle (25)\n");
   INSTS^tvar := BLOC^tvar;
   INSTS^tfun := BLOC^tfun;
 	INSTS^talias := BLOC^talias;
@@ -987,8 +993,9 @@ local
   code : String;
 do
   code := INSTS^code;
-  code := code + BLOC^machine.generateFlush(INSTS^tvarS);
-	write("Code ds bloc : " + code + "\n");
+	write("Code (25) [pre-flush] : " + code + "\n");
+  code := code + BLOC^machine.generateFlush(BLOC^tvar);
+	write("Code (25) : " + code + "\n");
   BLOC^code := code;
 end
 }
@@ -1003,9 +1010,8 @@ INSTS -> #attINSTS ;
 #attINSTS {
 local
 do
+	write("Regle (26)\n");
   INSTS^code := "";
-  -- On fait remonter la tvarS pour le flush.
-  INSTS^tvarS := INSTS^tvar;
 end
 }
 
@@ -1017,6 +1023,7 @@ INSTS -> #attINST INST #attINSTS1 INSTS #attINSTS ;
 #attINST {
 local
 do
+	write("Regle (27)\n");
   INST^funInfoH := INSTS^funInfoH;
 	INSTS1^funInfoH := INSTS^funInfoH;
 	INST^tvar := INSTS^tvar;
@@ -1031,7 +1038,8 @@ end
 #attINSTS1 {
 local
 do
-  INSTS1^tvar := INST^tvarS;
+	write("Regle (27) : milieu : " + INST^code + "\n");
+  INSTS1^tvar := INSTS^tvar;
 	-- tfun, talias et machine directement hérité de INSTS.
   INSTS1^tfun := INSTS^tfun; 
 	INSTS1^talias := INSTS^talias;
@@ -1041,12 +1049,13 @@ end
 }
 
 -- Concaténation des codes et passage à INSTS.
--- Remontée de tvarS.
 #attINSTS {
 local
+	code : String;
 do
-  INSTS^code := INST^code + INSTS1^code;
-	INSTS^tvarS := INSTS1^tvarS;
+	code := INST^code + INSTS1^code;
+  INSTS^code := code;
+	write("Regle (27) : fin : " + code + "\n");
 end
 }
 
@@ -1092,15 +1101,15 @@ local
 do
   nom := ident^txt;
   tv := INST^tvar;
-  info := INST^tvar.lookup(nom, INST^ni, true);
+  --info := INST^tvar.lookup(nom, INST^ni, true);
 	code := "";
   -- Si ident est une clef dans la TDSvar, erreur.
-  if info != null then
+  if (INST^tvar.exists(nom, INST^ni, true)) then
      error(IDENT_TAKEN, nom);
   else
-    info := INST^tfun.lookup(nom, INST^ni, false);
+    --info := INST^tfun.lookup(nom, INST^ni, false);
     -- De même si identc est déjà utilisé dans la TDSfun.
-    if (info != null) then
+    if (INST^tfun.exists(nom, INST^ni)) then
       error(ALREADY_A_FUNCTION_IDENT, nom);
 		else
 		  t := INST^talias.lookup(nom);
@@ -1128,7 +1137,6 @@ do
 		end
 	end
 	INST^code := code;
-	INST^tvarS := tv;
 end
 }
 
@@ -1150,8 +1158,6 @@ end
 #attINST {
 local
 do
-	-- Une expression ne modifie pas la tvar.
-	INST^tvarS := INST^tvar;
 	-- Remonéte du code.
 	INST^code := E^code;
 end
@@ -1177,7 +1183,6 @@ end
 #attINST {
 local
 do
-	INST^tvarS := INST^tvar;
 	-- Passage du code de BLOC à INST.
 	-- Les instructions de fin de bloc (flush etc) sont générés dans la RP de BLOC.
 	INST^code := BLOC^code;
@@ -1243,7 +1248,6 @@ do
 		error(TYPE_NOT_EQUAL);
 	end
 	INST^code := code ;
-	INST^tvarS := INST^tvar;
 end
 }
 
@@ -1295,7 +1299,7 @@ INST ->  retour #attE E pv #attINST ;
 #attE {
 local
 do
-	write("Regle 34 (RETURN)\n");
+	write("Regle (34)\n");
 	E^machine := INST^machine;
 	E^tvar := INST^tvar;
 	E^tfun := INST^tfun;
@@ -1310,18 +1314,19 @@ local
 	typeRet : Type;
 	code : String;
 do
+	write("(34) Début de la fin\n");
 	typeRet := INST^funInfoH.returnType();
 	-- Si typeRet ne correspond pas à E^type
 	-- alors erreur.
-	if !(typeRet.isEqualTo(E^type)) then
+	if (!typeRet.isEqualTo(E^type)) then
 		error(TYPE_NOT_COMPATIBLE);  
 	end
+	write("(34) Milieu de la fin : " + E^reg.debug() + "\n");
 	--Génération du code de retour de la fonction et du flush.
-	code :=   INST^machine.generateFlush(INST^tvar)
-					+ INST^machine.generateFunctionReturn(INST^funInfoH, E^reg);
+	code := INST^machine.generateFlush(INST^tvar)
+	    	+ INST^machine.generateFunctionReturn(INST^funInfoH, E^reg);
 	write("Code (34) : " + code + "\n");
 	INST^code := code;
-	INST^tvarS := null;
 end
 }
 
@@ -1357,6 +1362,7 @@ end
 #attAFFX {
 local
 do
+	write("Regle (35) : milieu : " + A^code + "\n");
 	AFFX^machine := E^machine;
 	AFFX^tvar := E^tvar;
 	AFFX^tfun := E^tfun;
@@ -1385,6 +1391,7 @@ do
 		-- E peut dans ce cas représenter une variable.
 		estVar := true ;
 		vi := A^vi ;
+		reg := A^reg ;
 	else 
 		-- E ne représente pas de variable.
 		estVar := false ;
@@ -1392,13 +1399,15 @@ do
 		-- On génère le code de l'affectation.
 		-- La compatibilité des types est effectuée dans AFFX.
 		code := code + E^machine.generateStoreVariable(A^vi,AFFX^reg);
+		reg := AFFX^reg;
 	end
+	write("(35) reg = " + reg.debug() + "\n");
 	E^type := A^type;
-	E^reg := AFFX^reg;
+	E^reg := reg;
 	E^estVar := estVar;
 	E^vi := vi;
 	E^code := code;
-	write("Code 35: " + code + "\n");
+  write("Code 35: " + code + "\n");
 end
 }
 
@@ -1450,6 +1459,7 @@ AFFX -> #attAFFX ;
 #attAFFX {
 local
 do
+	write("Regle (37)\n");
 	AFFX^estVar := true ;
 	AFFX^reg := null;
 	AFFX^type := null;
@@ -1464,6 +1474,7 @@ A -> #attR R #attAX AX #attA ;
 #attR {
 local
 do
+	write("Regle (38)\n");
 	R^machine := A^machine;
 	R^tvar := A^tvar;
 	R^tfun := A^tfun;
@@ -1475,6 +1486,7 @@ end
 #attAX {
 local
 do
+	write("Regle (38) : milieu\n");
 	AX^machine := A^machine;
 	AX^tvar := A^tvar;
 	AX^tfun := A^tfun;
@@ -1512,6 +1524,8 @@ do
 			-- Le type n'est pas simple : impossible de faire une comparaison.
 			error(TYPE_NOT_COMPARABLE);
 		end
+	else
+		reg := R^reg;
 	end
 	-- A représente une variable si AX ne l'empêche pas 
 	-- et R représente une variable, on fait alors passer
@@ -1528,6 +1542,8 @@ do
 	-- Passage des autres attributs.
 	A^type := new IntegerType();
 	A^code := code;
+	write("(38) Reg : " + reg.debug() + "\n");
+	write("(38) Code : " + code + "\n");
 	A^vi := vi;
 	A^estVar := estVar;
 end
@@ -1571,6 +1587,7 @@ AX -> #attAX ;
 #attAX {
 local
 do
+	write("Regle (40)\n");
 	-- L'oprel de AX est null dans ce cas.
 	-- Il faut tout de même l'initialiser comme il s'agit d'un attribut synthétisé.
 	AX^oprel := null;
@@ -1658,6 +1675,7 @@ R -> #attT T #attRX RX #attR ;
 #attT {
 local
 do
+	write("Regle (47)\n");
 	T^machine := R^machine;
 	T^talias := R^talias;
 	T^tfun := R^tfun;
@@ -1671,6 +1689,7 @@ end
 #attRX {
 local
 do
+	write("Regle (47) : milieu\n");
 	RX^machine := R^machine;
 	RX^talias := R^talias;
 	RX^tfun := R^tfun;
@@ -1704,6 +1723,8 @@ do
 		else
 			error(TYPE_NOT_SIMPLE);
 		end
+	else
+		reg := T^reg;
 	end
 	-- R est variable si T l'est et RX ne l'empeche pas,
 	-- dans ce cas, on lui donne la vi de R. Dans le cas
@@ -1721,6 +1742,8 @@ do
 	R^estVar := estVar;
 	R^vi := vi;
 	R^type := type;
+	write("(47) reg : " + reg.debug() + "\n");
+	write("(47) code : " + code + "\n");
 end
 }
 
@@ -1846,6 +1869,7 @@ T -> #attF F #attTX TX #attT ;
 #attF {
 local
 do
+	write("Regle (53)\n");
 	F^machine := T^machine;
 	F^talias := T^talias;
 	F^tfun := T^tfun;
@@ -1858,6 +1882,7 @@ end
 #attTX {
 local
 do
+	write("Regle (53) : milieu\n");
 	TX^machine := T^machine;
 	TX^talias := T^talias;
 	TX^tfun := T^tfun;
@@ -1890,6 +1915,8 @@ do
 		else
 			error(TYPE_NOT_SIMPLE);
 		end
+	else
+		reg := F^reg;
 	end
 	-- T est une variable si F l'est et TX ne l'empeche pas.
 	-- Dans ce cas, vi de T est celui de F.
@@ -1902,11 +1929,13 @@ do
 		vi := null;
 	end
 	-- Passage des attributs.
+	write("(53) reg : " + reg.debug() + "\n");
 	T^reg := reg;
 	T^code := code;
 	T^vi := vi;
 	T^estVar := estVar;
 	T^type := t;
+	write("(53) code : " + code + "\n");
 end
 }
 
@@ -2408,21 +2437,22 @@ local
   info : SymbolInfo; 
 do
  
- write("Regle 71 (ident)\n");
+ write("Regle (71) : " + ident^txt + ", " + F^ni.name() + "\n");
   --Initialisations.
   listeDepl := new DisplacementList();
 	estFun := false;
 	type := null;
 	varInfo := null;
 	funInfo := null;
+	info := null;
+	write("(71) VARTABLE :\n" + F^tvar);
 
 	-- Recherche dans la TVar (globalement).
-  info := F^tvar.lookup(ident^txt, F^ni, false);
-  if (info = null) then
+  if (!(F^tvar.exists(ident^txt, F^ni, false))) then
+		write("(71) " + ident^txt + " not in tvar\n");
 	  -- ident n'est pas dans la TVar, F n'est pas une variable.
 		-- On regarde dans la TFun s'il s'agit de l'identifiant d'une fonction.
-		info := F^tfun.lookup(ident^txt, F^ni, false);
-    if (info = null) then
+    if (!(F^tfun.exists(ident^txt, F^ni))) then
 		  -- On n'a pas trouvé le symbole dans les TDS : erreur.
 			error(IDENT_UNDEFINED, ident^txt);
     else
@@ -2440,6 +2470,8 @@ do
     end
   else
 		-- On peut passer le type.
+		write("(71) " + ident^txt + " is a var\n");
+		info := F^tvar.lookup(ident^txt, F^ni, false);
 		match info
 		with VariableInfo then
 		  varInfo := info;
@@ -2503,7 +2535,8 @@ do
   F^estVar := true;
   F^type := FX^type;
 	F^reg := reg;
-	write("Code 71: " + code + "\n");
+	write("(71) reg : " + reg.debug() + "\n");
+	write("(71) code: " + code + "\n");
 end
 }
 
