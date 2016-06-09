@@ -2075,13 +2075,18 @@ F -> entier #attF ;
 local
 	t : IntegerType;
 	r : Register;
+  c : ConstantInfo;
 do
+  write("(60) Debut\n");
 	-- Creation du type et du registre.
 	t := new IntegerType();
 	r := new Register();
 	-- Récup de l'entier et conversion au bon format.
 	-- Génération du code, et set de l'attribut le contenant.
-	F^code := F^machine.generateLoadConstant(new ConstantInfo(t, entier^txt), r); 
+	c := new ConstantInfo(t, entier^txt);
+	write("(60) : ConstantInfo : " + c + "\n");
+	F^code := F^machine.generateLoadConstant(c, r); 
+	write("(60) reg : " + r.debug() + "\n");
 	-- Une expression de base ne peut representer une variable.
 	-- Donc pas de vi.
 	F^vi := null;
