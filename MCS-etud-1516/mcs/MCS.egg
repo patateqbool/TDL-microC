@@ -3261,14 +3261,70 @@ end
 --
 ---- (96) constructeur
 --
---DEF  ->  identc #verifIdentc paro PARFS parf BASE BLOC;
+--DEF  ->  identc #verifIdentc #attPARFS paro PARFS parf BASE #attBLOC BLOC #attDEF ;
 --
---#verifIdent {
+--global
+--	tvparams : VariableTable;
+--
+--#verifIdentc {
 --local
 --do
 --	if (DEF^kl.name() != identc^txt) then
 --		error(CONSTR_NOT_NAME_CLASS,ident^txt,DEF^kl.name());
 --	end if;
+--end
+--}
+--
+---- Init des attributs hérités pour PARFS.
+--#attPARFS {
+--local
+--do
+--	tvparams := new VariableTable();
+--  -- On crée une TDSvar vide pour la passer à PARFS.
+--  PARFS^tvar := tvparams;
+--  PARFS^tfun := new FunctionTable();
+--	PARFS^talias := new AliasTable();
+--	-- Creation de la FunctionInfo avec le type retour.
+--  PARFS^funInfoH := new FunctionInfo(identc^txt, DEF^kl.name(), DEF^ni);
+--  -- Initialisation du compteur de parametres.
+--  PARFS^cParam := 0;
+--  PARFS^machine := DEF^machine;
+--	PARFS^ni := DEF^ni;
+--end
+--}
+--
+---- Ajout de la FunctionInfo à la tfun de BLOC.
+---- Passage de la FunctionInfo à BLOC.
+--#attBLOC {
+--local
+--  tf : FunctionTable;
+--  fi : FunctionInfo;
+--do
+--  tf := PARFS^tfun;
+--  fi := PARFS^funInfo;
+-- 	BLOC^tfun := tf;
+--	BLOC^funInfoH := fi;
+--  BLOC^tvar := new VariableTable(tvparams);
+--	BLOC^talias := PARFS^talias;
+--	BLOC^machine := PARFS^machine;
+--	BLOC^ni := PARFS^ni;
+--end
+--}
+--
+---- Génération du constructeur
+--#attDEF {
+--local
+--	fi : FunctionInfo
+--do
+--	fi := DECL^funInfo;
+--	match fi
+--	with ConstructorInfo then
+--		DEF^kl.addConstructor(fi);
+--	else
+--			error(NOT_A_CONSTR);
+--	end
+--	--TODO: evaluer la nécessité de ce truc
+--	DEF^funInfo := PARFS^funInfo;
 --end
 --}
 --
