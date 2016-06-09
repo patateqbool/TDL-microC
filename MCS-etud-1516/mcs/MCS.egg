@@ -64,7 +64,7 @@ inh typeH : Type for
          ;
 
 inh funInfoH : FunctionInfo for
-         PARFS, PARFSX, BLOC, INSTS, INST, SIX, PARF, FX
+         PARFS, PARFSX, BLOC, INSTS, INST, SIX, PARF--, FX
 				 ;
 
 syn funInfo : FunctionInfo for
@@ -1315,15 +1315,22 @@ local
 	code : String;
 do
 	write("(34) Début de la fin\n");
+	
+	if (INST^funInfoH = null) then
+		write("(34) funInfoH est null !\n");
+	end
+
 	typeRet := INST^funInfoH.returnType();
 	-- Si typeRet ne correspond pas à E^type
 	-- alors erreur.
+	write("(34) E^type = " + E^type + "; fi^type = " + typeRet + "\n");
 	if (!typeRet.isEqualTo(E^type)) then
 		error(TYPE_NOT_COMPATIBLE);  
 	end
 	write("(34) Milieu de la fin : " + E^reg.debug() + "\n");
 	--Génération du code de retour de la fonction et du flush.
-	code := INST^machine.generateFlush(INST^tvar)
+	code := E^code
+				+ INST^machine.generateFlush(INST^tvar)
 	    	+ INST^machine.generateFunctionReturn(INST^funInfoH, E^reg);
 	write("Code (34) : " + code + "\n");
 	INST^code := code;
@@ -1347,7 +1354,7 @@ E -> #attA A #attAFFX AFFX #attE;
 #attA {
 local
 do
-	write("Regle 35 (E)\n");
+	write("Regle (35): E\n");
 	A^machine := E^machine;
 	A^tvar := E^tvar;
 	A^tfun := E^tfun;
@@ -1384,24 +1391,33 @@ local
 	estVar : boolean;
 	vi : VariableInfo;
 do
+	write("(35) Debut de la fin\n");
 	reg := new Register();
 	code := A^code + AFFX^code;
+	estVar := false;
+	vi := null;
 	-- On n'a pas d'affectation à droite.
-	if ((A^estVar) && (AFFX^estVar)) then
+	if (AFFX^estVar) then
 		-- E peut dans ce cas représenter une variable.
 		estVar := true ;
 		vi := A^vi ;
 		reg := A^reg ;
 	else 
-		-- E ne représente pas de variable.
-		estVar := false ;
-		vi := null ;
-		-- On génère le code de l'affectation.
-		-- La compatibilité des types est effectuée dans AFFX.
-		code := code + E^machine.generateStoreVariable(A^vi,AFFX^reg);
-		reg := AFFX^reg;
+		if (A^estVar) then
+			-- E ne représente pas de variable.
+			estVar := false ;
+			vi := null ;
+			-- On génère le code de l'affectation.
+			-- La compatibilité des types est effectuée dans AFFX.
+			code := code + E^machine.generateStoreVariable(A^vi,AFFX^reg);
+			write("(35) Code else : " + code + "\n");
+			reg := AFFX^reg;
+		else
+			error(LEFT_PART_NOT_VARIABLE);
+		end
 	end
 	write("(35) reg = " + reg.debug() + "\n");
+	write("(35) type = " + A^type + "\n");
 	E^type := A^type;
 	E^reg := reg;
 	E^estVar := estVar;
@@ -1503,10 +1519,13 @@ local
 	vi : VariableInfo;
 	estVar : boolean;
 	t : Type;
+	type : Type;
 do
+	type := null;
 	reg := new Register();
 	code := R^code + AX^code;
 	t := R^type;
+	write("(38) R^type = " + t + "\n");
 	-- Si AX n'est pas une variable, on doit générer le code de l'opération.
 	if !(AX^estVar) then
 		-- Le type de A doit être comparable, ie il doit s'agir d'un type simple.
@@ -1519,6 +1538,8 @@ do
 			else
 				-- On génnère le code de l'opération.
 				code := code + A^machine.generateOperation(AX^oprel,R^reg,AX^reg,reg);
+				-- Une comparaison renvoie un entier (/un booléen)
+				type := new IntegerType();
 			end
 		else
 			-- Le type n'est pas simple : impossible de faire une comparaison.
@@ -1526,6 +1547,7 @@ do
 		end
 	else
 		reg := R^reg;
+		type := R^type;
 	end
 	-- A représente une variable si AX ne l'empêche pas 
 	-- et R représente une variable, on fait alors passer
@@ -1540,7 +1562,7 @@ do
 	-- Le registre de A contient le résultat de l'opération.
 	A^reg := reg;
 	-- Passage des autres attributs.
-	A^type := new IntegerType();
+	A^type := type;
 	A^code := code;
 	write("(38) Reg : " + reg.debug() + "\n");
 	write("(38) Code : " + code + "\n");
@@ -1711,6 +1733,9 @@ do
 	reg := new Register();
 	code := T^code + RX^code;
 	type := T^type;
+
+	write("(47) T^type = " + type + "\n");
+
 	if (RX^op != 0) then
 		-- Si il y a un opération : verif sur les types.
 		match type
@@ -2282,7 +2307,7 @@ do
 	FX^talias := F^talias;
 	-- La partie avant FX n'est pas un appel de fonction.
 	FX^estFun := false;
-	FX^funInfoH := null;
+	--FX^funInfoH := null;
 	-- La liste des déplacements de FX est initialisée ici.
 	FX^listeDepl := dl;
 	-- On met le nom à "", pas d'appel de fonction de cette manière. 
@@ -2463,15 +2488,10 @@ do
     else
 		  -- L'id est celui d'une fonction.
 			-- On passe estFun à vrai.
+			write("(71) C'est une fonction\n");
 			listeDepl.add(0, false);
 			estFun := true;
-			match info
-			with FunctionInfo then
-			  funInfo := info;
-			  type := funInfo.returnType();
-			else 
-			  error(SHOULD_NOT_HAPPEN_SI_NOT_FI);
-			end
+			type := null;
     end
   else
 		-- On peut passer le type.
@@ -2491,7 +2511,7 @@ do
 	-- On passe les attributs qui serviront à FX.
 	FX^listeDepl := listeDepl;
 	FX^estFun := estFun;
-	FX^funInfoH := funInfo;
+	--FX^funInfoH := funInfo;
 	FX^typeH := type;
 	FX^nom := ident^txt;
 	FX^tvar := F^tvar;
@@ -2606,7 +2626,7 @@ do
   end
 	FX1^listeDepl := listeDepl;
 	FX1^estFun := false;
-	FX1^funInfoH := null;
+	--FX1^funInfoH := null;
 	FX1^typeH := type;
   FX1^nom := ident^txt;	
 	FX1^tvar := FX^tvar;
@@ -2679,7 +2699,7 @@ do
 	  error(NOT_A_POINTEUR);
   end
 	FX1^estFun := false;
-	FX1^funInfoH := null;
+	--FX1^funInfoH := null;
 	FX1^typeH := type;
 	FX1^listeDepl := listeDepl;
   FX1^nom := ident^txt;
@@ -2714,6 +2734,7 @@ FX -> #attES paro ES parf #attFX1 FX #attFX;
 #attES {
 local
 do
+	write("Regle (75)\n");
   if !(FX^estFun) then
 	  error(NOT_A_FUN);
 	end
@@ -2746,7 +2767,7 @@ do
   FX1^listeDepl := FX^listeDepl;
 	-- L'appel de fonction n'est pas une fonction.
 	FX1^estFun := false; 
-	FX1^funInfoH := null;
+	--FX1^funInfoH := null;
 	-- Le type de l'appel est le type de retour de la fonction.
 	FX1^typeH := FX^typeH;
 	-- Pas de nom pour FX ici.
@@ -2763,9 +2784,19 @@ end
 -- Puis on appel la fonction. Et on met le code de FX1.
 #attFX {
 local
+	si : SymbolInfo;
+  code : String;
 do
-  FX^code := ES^code + FX^machine.generateFunctionCall(FX^funInfoH) + FX1^code;
-  FX^type := FX1^type;
+	si := FX^tfun.lookup(FX^nom, FX^ni, ES^typesParamsS);
+  code := "";
+	match si
+	with FunctionInfo then
+	  code := ES^code + FX^machine.generateFunctionCall(si) + FX1^code;
+  else 
+	  error(SHOULD_NOT_HAPPEN_SI_NOT_FI);
+	end
+	FX^code := code;
+	FX^type := FX1^type;
 	FX^listeDeplS := FX1^listeDeplS;
 	FX^estVar := false;
 end

@@ -277,7 +277,10 @@ public class ARMEngine extends AbstractMachine {
     Type t = info.type();
 
     if (t instanceof SimpleType) {
-      Integer val = (Integer)info.value();
+      Object o = info.value();
+			System.out.println("gLC : " + o.getClass());
+
+			int val = (Integer)o;
 
       code +=
         ARMEngine.Prefix + "MOV\t" + r + ", #" + (val & 0x0000FFFF) + "\n";

@@ -27,7 +27,8 @@ public class ConstantInfo extends VariableInfo {
       this.value = ((String)v).charAt(0);
     else if (t instanceof StringType)
       this.value = fromString((String)v);
-    this.value = v;
+		else
+    	this.value = v;
   }
 
 	/**
