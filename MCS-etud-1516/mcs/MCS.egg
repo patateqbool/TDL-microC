@@ -1308,7 +1308,9 @@ do
 		if (codeELSE = "") then 
 		  codeTHEN := codeTHEN + ENTITE^machine.generateComment("(31) No ELSE.", "\t\t");
 		else
-
+		  codeELSE := INST^machine.generateComment("(31) Bloc ELSE:", "\t\t")
+		          + codeTHEN
+							+ INST^machine.generateComment("(31) End bloc ELSE.", "\t\t");
 		end
 		code := code 
 		      + INST^machine.generateIfThenElse(E^reg,BLOC^code,SIX^code);
