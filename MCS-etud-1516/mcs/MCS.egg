@@ -1731,7 +1731,6 @@ do
 end
 }
 
--- Rien à faire passer à OPREL.
 #attR {
 local
 do
@@ -1963,8 +1962,6 @@ do
 end
 }
 
-
--- Pas d'attribut inh pour OPADD.
 -- Attributs inh de RX1.
 #attRX1 {
 local
@@ -2429,7 +2426,7 @@ do
 	F1^tfun := F^tfun;
 	F1^tvar := F^tvar;
 	F1^ni := F^ni;
-  F1^indentation := F^indentation + 1 ; 
+  F1^indentation := F^indentation + 1; 
 end
 }
 
@@ -2787,9 +2784,7 @@ do
   --               														- accédé à un champ de struct.
   listeDepl := FX^listeDeplS;
   reg := new Register();
-	code := F^machine.generateComment("(71) Ident:", "\t\t")
-	      + FX^code
-				+ F^machine.generateComment("(71) End ident.", "\t\t");
+	code := FX^code
 	if estFun then
 		write("(71).attF C'est une fonction\n");
     -- On a un appel de fonction, peut être suivi d'accés à des champs de struct.
