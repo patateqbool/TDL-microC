@@ -2790,7 +2790,7 @@ do
   --               														- accédé à un champ de struct.
   listeDepl := FX^listeDeplS;
   reg := new Register();
-	code := FX^code
+	code := FX^code;
 	if estFun then
 		write("(71).attF C'est une fonction\n");
     -- On a un appel de fonction, peut être suivi d'accés à des champs de struct.
