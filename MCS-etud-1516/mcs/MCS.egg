@@ -1164,7 +1164,9 @@ do
 				write("(28) [" + INST^ni + "] " + ident^txt + " (" + TYPE^type + ") n'existe pas\n");
 		    -- Sinon, on ajoute cet id à la tdsvar.
 	   	  tv.insert(nom, TYPE^type, INST^ni);
-				code := INST^machine.generateAllocateInStack(TYPE^type);
+				code := INST^machine.generateComment("(28) Allocate in stack:", "\t\t")
+				      + INST^machine.generateAllocateInStack(TYPE^type)
+							+ INST^machine.generateComment("(28) End of allocation.", "\t\t");
 				write("(28) Code (allocation) : " + code + "\n");
 			end
     end
@@ -1178,7 +1180,12 @@ do
 		si := tv.lookup(ident^txt, INST^ni, true);
 		match si
 		with VariableInfo then
-		  code := code + INST^machine.generateStoreVariable(si, AFFX^reg);
+		  code := code
+			      + INST^machine.generateComment("(28) Expression to affect:", "\t\t")
+			      + AFFX^code
+						+ INST^machine.generateComment("(28) End of Expression to affect, affectation:" ,"\t\t")
+						+ INST^machine.generateStoreVariable(si, AFFX^reg)
+						+ INST^machine.generateComment("(28) En of affectation.", "\t\t");
 			write("(28) SI : " + si + "; Code: " + code + "\n");
 		else
 		  error(SHOULD_NOT_HAPPEN_SI_NOT_VI);
@@ -2790,7 +2797,7 @@ do
   --               														- accédé à un champ de struct.
   listeDepl := FX^listeDeplS;
   reg := new Register();
-	code := FX^code
+	code := FX^code;
 	if estFun then
 		write("(71).attF C'est une fonction\n");
     -- On a un appel de fonction, peut être suivi d'accés à des champs de struct.
