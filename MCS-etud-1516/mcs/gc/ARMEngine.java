@@ -83,12 +83,16 @@ public class ARMEngine extends AbstractMachine {
           "On: " + LocalDateTime.now() +  "\n" +
           "@@\n",
           "") +
+			".arm\n" +
       "\n" +
+			".data\n" +
+			"\n" +
+			".text\n" +
 			// Declarations
       generateComment("Preliminary definitions : heap top, stack base, heap base", "") +
-			ht.alias() + " EQU " + ht.name() + "\n" +
-			sb.alias() + " EQU " + sb.name() + "\n" +
-      oi.alias() + " EQU " + oi.name() + "\n" +
+			ht.alias() + " .req " + ht.name() + "\n" +
+			sb.alias() + " .req " + sb.name() + "\n" +
+      oi.alias() + " .req " + oi.name() + "\n" +
 			"HB EQU " + (heapbase+5)*4 + "\n" +
 			"\n";
 
@@ -641,8 +645,8 @@ public class ARMEngine extends AbstractMachine {
       label = ((MethodInfo)info).parent().name() + label;
 
 		if (!(info.returnType() instanceof VoidType)) {
-			Register r = getNextUnusedRegister();
-			info.assignRegister(r);
+			//Register r = getNextUnusedRegister();
+			//info.assignRegister(r);
 			code +=
 				generateInstruction("MOV", info.register(), ht) +
 				generateInstruction("STMIA", "!" + ht, rval);
@@ -678,6 +682,7 @@ public class ARMEngine extends AbstractMachine {
 	public String generateFunctionCall(FunctionInfo info) throws MCSException  {
 		String code =
 			generateInstruction("BL", info.label());
+		System.out.println("**** " + info.register());
 		return code;
 	}
 
@@ -1195,6 +1200,8 @@ public class ARMEngine extends AbstractMachine {
 			if (registers.get(i).status() == Register.Status.Used)
 				return registers.get(i);
 		}
+
+		System.err.println("FATAL ERROR : NO MORE REGISTER !");
 
     throw new MCSRegisterLimitReachedException();
 	}

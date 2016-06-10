@@ -2662,7 +2662,7 @@ do
     else
 		  -- L'id est celui d'une fonction.
 			-- On passe estFun à vrai.
-			write("(71) C'est une fonction\n");
+			write("(71).attFX C'est une fonction\n");
 			listeDepl.add(0, false);
 			estFun := true;
 			type := null;
@@ -2714,7 +2714,7 @@ do
   reg := new Register();
 	code := "";
 	if estFun then
-		write("(71) C'est une fonction\n");
+		write("(71).attF C'est une fonction\n");
     -- On a un appel de fonction, peut être suivi d'accés à des champs de struct.
 	  -- regRetourFun est le registre contenant le résultat de l'appel de fonction,
 		-- il se trouve dans le FunctionInfo \o/.
@@ -2961,6 +2961,7 @@ do
 	  	code := ES^code + FX^machine.generateFunctionCall(si);
 			type := si.returnType();
 			reg := si.register();
+			write("(75) fi : " + si + "\n");
   	else 
 	  	error(SHOULD_NOT_HAPPEN_SI_NOT_FI);
 		end
@@ -2981,6 +2982,11 @@ do
 	FX1^machine := FX^machine;
 	FX^reg := reg;
 	write("(75) Code: " + code + "\n");
+	if reg = null then
+		write("(75) Reg: NULL\n");
+	else
+		write("(75) Reg: " + reg + "\n");
+	end
   FX1^indentation := FX^indentation + 1 ; 
 end
 }
