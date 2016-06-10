@@ -3592,7 +3592,7 @@ end
 --		if (DEF^kl.attributeExists(ident^txt)) then
 --		  error(ALREADY_ATTRIBUTE,ident^txt,DEF^kl.name());			
 --		else
---		  DEF^kl.addAttribute(DEF^name,DEF^accH,TYPE^type);		
+--		  DEF^kl.addAttribute(DEF^name,DEF^accH,TYPE^type);
 --		end if;
 --	else
 --		fi := DECL^funInfo;
@@ -3602,6 +3602,7 @@ end
 --		  	error(ALREADY_METHOD,ident^txt,DEF^kl.name());			
 --			else
 --		 		DEF^kl.addMethod(DEF^name,DEF^accH,DEF^funInfo);		
+--			  DEF^code := DEF^machine.generateMethodDeclaration(fi,DECL^code);			
 --			end if;
 --		else
 --			error(NOT_A_METHOD);
