@@ -439,7 +439,7 @@ do
 	tf := ENTITE^tfun;
   -- Si l'ident apprait dans tvar ou talias, on a une erreur.
 	info := ENTITE^tvar.lookup(ident^txt, ENTITE^ni, true);
-  code := ENTITE^code;
+  code := DECL^code;
 	if (info != null) then
     error(IDENT_TAKEN, ident^txt);
   else
@@ -1025,8 +1025,7 @@ end
 local
   code : String;
 do
-  code := ENTITE^machine.generateComment("(25) Bloc:", "\t\t")
-        + code
+  code := BLOC^machine.generateComment("(25) Bloc:", "\t\t")
 				+ INSTS^code
 				+ BLOC^machine.generateComment("(25) End of bloc.", "\t\t");
 	write("Code (25) [pre-flush] : " + code + "\n");
@@ -1047,7 +1046,7 @@ INSTS -> #attINSTS ;
 local
 do
 	write("Regle (26)\n");
-  INSTS^code := INSTS^machine.generateComment("(26) End of instructions for this bloc.", "\t\t")"";
+  INSTS^code := INSTS^machine.generateComment("(26) End of instructions for this bloc.", "\t\t");
 end
 }
 
@@ -1306,15 +1305,15 @@ do
 		          + codeTHEN
 							+ INST^machine.generateComment("(31) End bloc THEN.", "\t\t");
 		if (codeELSE = "") then 
-		  codeTHEN := codeTHEN + ENTITE^machine.generateComment("(31) No ELSE.", "\t\t");
+		  codeTHEN := codeTHEN + INST^machine.generateComment("(31) No ELSE.", "\t\t");
 		else
 		  codeELSE := INST^machine.generateComment("(31) Bloc ELSE:", "\t\t")
 		          + codeTHEN
 							+ INST^machine.generateComment("(31) End bloc ELSE.", "\t\t");
 		end
 		code := code 
-		      + INST^machine.generateIfThenElse(E^reg,BLOC^code,SIX^code);
-	        + INST^machine.generateComment("(31) END IF THEN ELSE.", "\t\t")
+		      + INST^machine.generateIfThenElse(E^reg,BLOC^code,SIX^code)
+	        + INST^machine.generateComment("(31) END IF THEN ELSE.", "\t\t");
 	else
 		-- Sinon, on renvoie une erreur
 		error(TYPE_NOT_EQUAL);
