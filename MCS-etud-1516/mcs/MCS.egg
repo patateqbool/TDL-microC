@@ -199,6 +199,7 @@ sugar pv is  "\;";
 sugar affect is  "=";
 sugar si is  "if";
 sugar sinon is  "else";
+sugar tantque is "while";
 sugar void is  "void";
 sugar asm is  "asm";
 sugar int is  "int";
@@ -1330,8 +1331,58 @@ end
 }
 
 
+-- (31.5) : Boucle while
+INST -> tantque paro #attE E parf #attBLOC BLOC #attINST;
 
--- (34) : Retour de fonction.
+#attE {
+local
+do
+	E^machine := INST^machine;
+	E^tvar := INST^tvar;
+	E^tfun := INST^tfun;
+	E^talias := INST^talias;
+	E^ni := INST^ni;
+	E^indentation := INST^indentation + 1 ;
+end
+}
+
+-- Création d'une tvar fille héritant de celle de INST pour BLOC.
+#attBLOC {
+local
+	tfille : VariableTable;
+do
+	BLOC^funInfoH := INST^funInfoH;
+	tfille := new VariableTable(INST^tvar);
+	BLOC^tvar := tfille;
+	BLOC^tfun := INST^tfun;
+	BLOC^talias := INST^talias;
+	BLOC^machine := INST^machine;
+	BLOC^ni := INST^ni;
+	BLOC^indentation := INST^indentation + 1 ;
+end
+}
+
+#attINST {
+local
+	code : String;
+do
+	-- Génération du code pour une conditionnelle.
+	code := "";
+	-- On vérifie que le type dans la conditionnelle est bien un entier (en l'absence de booléens)
+	match E^type
+	with IntegerType then
+		-- Si c'est le cas, on génère le code
+		code := code ; -- A implémenter coté machine + INST^machine.generateWhile(E^code, BLOC^code);
+	else
+		-- Sinon, on renvoie une erreur
+		error(TYPE_NOT_EQUAL);
+	end
+	INST^code := code ;
+end
+}
+
+
+- (34) : Retour de fonction.
 INST ->  retour #attE E pv #attINST ;
 
 #attE {
