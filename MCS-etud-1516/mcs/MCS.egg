@@ -1366,7 +1366,7 @@ end
 local
 	code : String;
 do
-	-- Génération du code pour une conditionnelle.
+	-- Génération du code pour une boucle tant que.
 	code := "";
 	-- On vérifie que le type dans la conditionnelle est bien un entier (en l'absence de booléens)
 	match E^type
