@@ -6,6 +6,7 @@
  */
 package mcs.obj;
 
+import mcs.gc.Register;
 import mcs.symtab.*;
 
 public class MethodInfo extends FunctionInfo {
@@ -13,14 +14,14 @@ public class MethodInfo extends FunctionInfo {
   private Klass.AccessSpecifier accSpec;
   private VirtualTable vtable;
 
-	public MethodInfo(String name, Klass.AccessSpecifier as, Type ret, Klass parent) {
-		super(name, ret, null);
+	public MethodInfo(String name, Klass.AccessSpecifier as, Type ret, Klass parent, Register fr) {
+		super(name, ret, null, fr);
 		this.parent = parent;
     this.accSpec = as;
 	}
 
 	public MethodInfo(Klass.AccessSpecifier as, Klass parent, FunctionInfo other) {
-		super(other.name(), other.returnType(), other.parameters(), null);
+		super(other.name(), other.returnType(), other.parameters(), null, other.register());
 		this.parent = parent;
 		this.accSpec = as;
 	}

@@ -6,12 +6,13 @@
  */
 package mcs.obj;
 
+import mcs.gc.Register;
 import mcs.symtab.FunctionInfo;
 import mcs.symtab.VoidType;
 
 public class ConstructorInfo extends MethodInfo {
-  public ConstructorInfo(Klass.AccessSpecifier as, Klass parent) {
-    super("__cstr__", as, new VoidType(), parent);
+  public ConstructorInfo(Klass.AccessSpecifier as, Klass parent, Register fr) {
+    super("__cstr__", as, new VoidType(), parent, fr);
     super.assignVtable(null);
   }
 

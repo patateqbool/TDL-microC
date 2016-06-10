@@ -553,7 +553,7 @@ do
   PARFS^tfun := FONCTION^tfun;
 	PARFS^talias := FONCTION^talias;
 	-- Creation de la FunctionInfo avec le type retour.
-  PARFS^funInfoH := new FunctionInfo(FONCTION^nom, FONCTION^typeH, FONCTION^ni);
+  PARFS^funInfoH := new FunctionInfo(FONCTION^nom, FONCTION^typeH, FONCTION^ni, FONCTION^machine.functionReturn());
   -- Initialisation du compteur de parametres.
   PARFS^cParam := 0;
   PARFS^machine := FONCTION^machine;
