@@ -367,7 +367,12 @@ public interface IMachine {
    */
   String generateMultiComments(String com, String indent) throws MCSException;
 
-
+	/**
+	 * Return the function return register
+	 * @return the register
+	 */
+	Register functionReturn() throws MCSException;
+	
   //////////////////////////// CALCULUS /////////////////////////////
 
   /**

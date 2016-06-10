@@ -24,7 +24,7 @@ public class ARMEngine extends AbstractMachine {
 	static private final int NUM_REGISTER = 10;
 	static private final String Prefix = "\t\t", Spacing = "\t\t";  // For a nice code
 	private List<Register> registers;							// List of registers on the machine
-	private Register sp, lr, pc, ht, sb, oi;	// Special registers
+	private Register sp, lr, pc, ht, sb, oi, fr;	// Special registers
 	private int heapbase = 0;											// Manual heap base calculus
   private int condition_nb = 0;									// Number of if-then-else (/other conditionnal) structures
 
@@ -44,6 +44,7 @@ public class ARMEngine extends AbstractMachine {
 		ht = new Register("r", 12, "HT");
 		sb = new Register("r", 11, "SB");
     oi = new Register("r", 10, "OI");
+		fr = new Register("r", 9, "FR");
 	}
 
 	/**
@@ -90,9 +91,10 @@ public class ARMEngine extends AbstractMachine {
 			".text\n" +
 			// Declarations
       generateComment("Preliminary definitions : heap top, stack base, heap base", "") +
-			ht.alias() + " .req " + ht.name() + "\n" +
-			sb.alias() + " .req " + sb.name() + "\n" +
-      oi.alias() + " .req " + oi.name() + "\n" +
+			ht.alias() + "\t.req\t" + ht.name() + "\n" +
+			sb.alias() + "\t.req\t" + sb.name() + "\n" +
+      oi.alias() + "\t.req\t" + oi.name() + "\n" +
+			fr.alias() + "\t.req\t" + fr.name() + "\n" +
 			"HB EQU " + (heapbase+5)*4 + "\n" +
 			"\n";
 
@@ -571,8 +573,8 @@ public class ARMEngine extends AbstractMachine {
 	 * @return the generated code
 	 */
 	public String generateFunctionDeclaration(FunctionInfo info, String blockcode) throws MCSException {
-		Register r = getNextUnusedRegister();
-		info.assignRegister(r);
+		//Register r = getNextUnusedRegister();
+		//info.assignRegister(r);
 
     String label = info.label();
 
@@ -682,7 +684,6 @@ public class ARMEngine extends AbstractMachine {
 	public String generateFunctionCall(FunctionInfo info) throws MCSException  {
 		String code =
 			generateInstruction("BL", info.label());
-		System.out.println("**** " + info.register());
 		return code;
 	}
 
@@ -733,12 +734,12 @@ public class ARMEngine extends AbstractMachine {
    * @return the generated code
    */
   public String generateConstructorDeclaration(ConstructorInfo info, String bcode) throws MCSException {
-    Register r = getNextUnusedRegister();
+    //Register r = getNextUnusedRegister();
 
     String codeinst =
       generateLabel(info.parent().name() + info.label() + "_inst") +
       generateComment("Instanciate the class", ARMEngine.Prefix) +
-			generateInstruction("MOV", r, ht);
+			generateInstruction("MOV", info.register(), ht);
 
     Klass k = info.parent();
     int rs = k.realSize();
@@ -754,10 +755,10 @@ public class ARMEngine extends AbstractMachine {
     }
 
     codeinst +=
-			generateInstruction("PUSH", r);
+			generateInstruction("PUSH", info.register());
 
-    info.assignRegister(r);
-    r.setStatus(Register.Status.Loaded);
+    //info.assignRegister(r);
+    info.register().setStatus(Register.Status.Loaded);
 
     return codeinst + generateFunctionDeclaration(info, bcode);
   }
@@ -969,7 +970,14 @@ public class ARMEngine extends AbstractMachine {
     return code;
   }
 
-
+	/**
+	 * Return the function return register
+	 * @return the register
+	 */
+	public Register functionReturn() throws MCSException {
+		return fr;
+	}
+	
 
 	/// Calculus
   

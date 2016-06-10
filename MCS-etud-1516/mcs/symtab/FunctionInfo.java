@@ -22,18 +22,22 @@ public class FunctionInfo extends SymbolInfo {
    * @param ret return type of the function
    * @param params list of parameters of the function
    */
-  public FunctionInfo(String name, Type ret, NamespaceInfo ns) {
+  public FunctionInfo(String name, Type ret, NamespaceInfo ns, Register fr) {
     super(ns);
     this.name = name;
     this.retType = ret;
     this.parameters = new ArrayList<Type>();
+		this.reg = fr;
+		System.out.println("(FunInf)[n,t,ns] I has been created !!!");
   }
 
-  public FunctionInfo(String name, Type ret, List<Type> params, NamespaceInfo ns) {
+  public FunctionInfo(String name, Type ret, List<Type> params, NamespaceInfo ns, Register fr) {
     super(ns);
     this.name = name;
     this.parameters = params;
     this.retType = ret;
+		this.reg = fr;
+		System.out.println("(FunInf)[n,t,p,ns] I has been created !!!");
   }
 
   /**
@@ -125,12 +129,8 @@ public class FunctionInfo extends SymbolInfo {
   public Register register() {
     return this.reg;
   }
-
-  public void assignRegister(Register r) {
-    this.reg = r;
-  }
-
-  /**
+  
+	/**
    * Equal function.
    * @param other the other function
    */
@@ -168,7 +168,7 @@ public class FunctionInfo extends SymbolInfo {
    * toString()
    */
   public String toString() {
-    return this.retType + " " + this.name + makeParamsString();
+    return this.retType + " " + this.name + makeParamsString() + "<" + (this.reg == null ? "Unassigned" : this.reg) + ">";
   }
 
 	protected String makeParamsString() {

@@ -50,5 +50,6 @@ public abstract class AbstractMachine implements IMachine {
 	public int toInt(String val) {
 		return Integer.parseInt(val);
 	}
-
 }
+
+
