@@ -1107,6 +1107,7 @@ INST -> #attTYPE TYPE ident #attAFFX AFFX pv #attINST;
 #attTYPE {
 local
 do
+	write("Regle (28)\n");
   TYPE^talias := INST^talias;
 	TYPE^indentation := INST^indentation + 1 ;
 end
@@ -1141,6 +1142,7 @@ local
 	tv : VariableTable;
 	si : SymbolInfo;
 do
+	write("(28) Debut de la fin; nom : " + ident^txt + "\n");
   nom := ident^txt;
   tv := INST^tvar;
   --info := INST^tvar.lookup(nom, INST^ni, true);
@@ -1159,13 +1161,16 @@ do
 			if (t != null) then 
 			  error(ALREADY_AN_ALIAS, nom);
 			else
+				write("(28) [" + INST^ni + "] " + ident^txt + " (" + TYPE^type + ") n'existe pas\n");
 		    -- Sinon, on ajoute cet id à la tdsvar.
 	   	  tv.insert(nom, TYPE^type, INST^ni);
 				code := INST^machine.generateAllocateInStack(TYPE^type);
+				write("(28) Code (allocation) : " + code + "\n");
 			end
     end
   end 
 	if !(AFFX^estVar) then
+		write("(28) C'est une variable\n");
     -- On a une affectation.	
 		-- Verification de types inutile, elle est faite dans AFFX.
 		-- On génère le code pour stocker la valeur du registre 
@@ -1174,6 +1179,7 @@ do
 		match si
 		with VariableInfo then
 		  code := code + INST^machine.generateStoreVariable(si, AFFX^reg);
+			write("(28) SI : " + si + "; Code: " + code + "\n");
 		else
 		  error(SHOULD_NOT_HAPPEN_SI_NOT_VI);
 		end

@@ -87,6 +87,7 @@ public class ARMEngine extends AbstractMachine {
 			".arm\n" +
       "\n" +
 			".data\n" +
+			"hb:\t.word\t" + (heapbase+4)*4 + "\n" +
 			"\n" +
 			".text\n" +
 			// Declarations
@@ -95,7 +96,6 @@ public class ARMEngine extends AbstractMachine {
 			sb.alias() + "\t.req\t" + sb.name() + "\n" +
       oi.alias() + "\t.req\t" + oi.name() + "\n" +
 			fr.alias() + "\t.req\t" + fr.name() + "\n" +
-			"HB EQU " + (heapbase+5)*4 + "\n" +
 			"\n";
 
 		// Actually write the code to the file
@@ -471,14 +471,17 @@ public class ARMEngine extends AbstractMachine {
    * @return the generated code
    */
   public String generateAllocateInStack(Type type) throws MCSException  {
+		System.out.println("gAIS : allouer " + type + " dans la face");
     String code = "";
 
     if (type instanceof CompositeType) {
+			System.out.println("gAIS : c'est un type composite");
       Register raddr = new Register();
       code +=
 				generateAllocate(type, raddr, null) +
 				generateInstruction("PUSH", raddr);
     } else {
+			System.out.println("gAIS : c'est un type simple");
 			code +=
 				generateInstruction("ADD", sp, sp, type.size());
     }
