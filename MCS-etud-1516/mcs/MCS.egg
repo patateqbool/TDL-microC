@@ -380,7 +380,7 @@ do
 	-- Les autres tds ne sont pas modifiées.
 	ENTITE^tfunS := ENTITE^tfun;
 	-- Pas de code pour cette RP.
-  ENTITE^code := ENTITE^machine.generateComment("(4) TypeDef: NO CODE.", "\t\t");
+  ENTITE^code := ENTITE^machine.generateComment("(4) TypeDef: NO CODE.", "");
 end
 }
 
@@ -460,10 +460,10 @@ do
 					write("(5) Add variable \\o/\n");
 				  -- Si ce n'est pas le cas, on peut add la variable à la tvar.
           tv.insert(ident^txt, TYPE^type, ENTITE^ni);
-					code := ENTITE^machine.generateComment("(5) Variable declaration:", "\t") + code ;
+					code := ENTITE^machine.generateComment("(5) Variable declaration:", "") + code ;
 				end
 	   else
-		   code := ENTITE^machine.generateComment("(5) Function declaration:", "\t") + code ;
+		   code := ENTITE^machine.generateComment("(5) Function declaration:", "") + code ;
 			--	write("(5) It's a function declaration\n");
         -- On a une fonction.
 				-- On ajoute la fonction à la tfun, 
@@ -480,7 +480,7 @@ do
 	ENTITE^taliasS := ENTITE^talias ;
   -- Passage du code généré par DECL à ENTITE.
 	write("Code (5) : " + DECL^code + "\n");
-  ENTITE^code := code + ENTITE^machine.generateComment("(5) End of declaration.", "\t");
+  ENTITE^code := code + ENTITE^machine.generateComment("(5) End of declaration.", "");
 end
 }
 
@@ -1025,9 +1025,9 @@ end
 local
   code : String;
 do
-  code := BLOC^machine.generateComment("(25) Bloc:", "\t\t")
+  code := BLOC^machine.generateComment("(25) Bloc:", "")
 				+ INSTS^code
-				+ BLOC^machine.generateComment("(25) End of bloc.", "\t\t");
+				+ BLOC^machine.generateComment("(25) End of bloc.", "");
 	write("Code (25) [pre-flush] : " + code + "\n");
   code := code + BLOC^machine.generateFlush(BLOC^tvar);
 	write("Code (25) : " + code + "\n");
@@ -1046,7 +1046,7 @@ INSTS -> #attINSTS ;
 local
 do
 	write("Regle (26)\n");
-  INSTS^code := INSTS^machine.generateComment("(26) End of instructions for this bloc.", "\t\t");
+  INSTS^code := INSTS^machine.generateComment("(26) End of instructions for this bloc.", "\t");
 end
 }
 
@@ -1090,9 +1090,9 @@ end
 local
 	code : String;
 do
-	code := INSTS^machine.generateComment("(27) New instruction :", "\t\t")
+	code := INSTS^machine.generateComment("(27) New instruction:", "\t")
 	      + INST^code
-				+ INSTS^machine.generateComment("(27) End of instruction", "\t\t")
+				+ INSTS^machine.generateComment("(27) End of instruction", "\t")
 				+ INSTS1^code;
   INSTS^code := code;
 	write("Regle (27) : fin : " + code + "\n");
@@ -1178,9 +1178,9 @@ do
 		  error(SHOULD_NOT_HAPPEN_SI_NOT_VI);
 		end
 	end
-	INST^code := INST^machine.generateComment("(28) Variable declaration:", "\t\t")
+	INST^code := INST^machine.generateComment("(28) Variable declaration:", "\t")
 	           + code
-						 + INST^machine.generateComment("(28) End of variable declaration.", "\t\t");
+						 + INST^machine.generateComment("(28) End of variable declaration.", "\t");
 end
 }
 
@@ -1204,9 +1204,9 @@ end
 local
 do
 	-- Remontée du code.
-	INST^code := INST^machine.generateComment("(29) Expression:", "\t\t")
+	INST^code := INST^machine.generateComment("(29) Expression:", "\t")
 	           + E^code
-						 + INST^machine.generateComment("(29) End of expression", "\t\t");
+						 + INST^machine.generateComment("(29) End of expression", "\t");
 end
 }
 
@@ -1297,7 +1297,7 @@ do
 	match E^type
 	with IntegerType then
 		-- Si c'est le cas, on génère le code
-		code := INST^machine.generateComment("(31) IF THEN ELSE:", "\t\t") 
+		code := INST^machine.generateComment("(31) IF THEN ELSE:", "\t") 
 		      + INST^machine.generateComment("(31) Expression for condition:", "\t\t")
 		      + E^code
 					+ INST^machine.generateComment("(31) End of condition.", "\t\t");
@@ -1313,7 +1313,7 @@ do
 		end
 		code := code 
 		      + INST^machine.generateIfThenElse(E^reg,BLOC^code,SIX^code)
-	        + INST^machine.generateComment("(31) END IF THEN ELSE.", "\t\t");
+	        + INST^machine.generateComment("(31) END IF THEN ELSE.", "\t");
 	else
 		-- Sinon, on renvoie une erreur
 		error(TYPE_NOT_EQUAL);
@@ -1459,7 +1459,7 @@ do
 				+ INST^machine.generateFlush(INST^tvar)
 				+ INST^machine.generateComment("(34) End of flush. Function return:","\t\t")
 	    	+ INST^machine.generateFunctionReturn(INST^funInfoH, E^reg)
-				+ INST^machine.generateComment("(34) End of return.","\t\t");
+				+ INST^machine.generateComment("(34) End of return.","\t");
 	write("Code (34) : " + code + "\n");
 	INST^code := code;
 end
