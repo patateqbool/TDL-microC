@@ -282,6 +282,40 @@ public interface IMachine {
   String generateConstructorCall(ConstructorInfo info, boolean base) throws MCSException;
 
   ////////////////////////////// MISC ///////////////////////////////
+	/**
+	 * Generate an instruction with various number of parameters
+	 * @param inst instruction
+	 * @param p1,p2,... parameters
+	 * @param enclose enclose the last parameters in brackets (for addressing)
+	 * @return the generated code
+	 */
+	String generateInstruction(String inst, boolean enclose, Object p1, Object p2, Object p3) throws MCSException;
+	String generateInstruction(String inst, Object p1, Object p2, Object p3) throws MCSException;
+	String generateInstruction(String inst, boolean enclose, Object p1, Object p2) throws MCSException;
+	String generateInstruction(String inst, Object p1, Object p2) throws MCSException;
+	String generateInstruction(String inst, Object p1) throws MCSException;
+
+	/**
+	 * Generate a label
+	 * @param label
+	 * @return the generated code
+	 */
+	String generateLabel(String label) throws MCSException;
+	
+	/**
+	 * Generate a direct constant for use in instructions
+	 * @param val value of the constant
+	 * @return the generated code
+	 */
+	String generateDirect(int value) throws MCSException;
+
+	/**
+	 * Generate a register
+	 * @param reg the register
+	 * @return the generated code
+	 */
+	String generateRegister(Register reg) throws MCSException;
+	
   /**
    * Generate the code for making an address from a list of displacement pair; the 
    * base register is stack base.

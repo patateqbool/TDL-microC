@@ -22,7 +22,7 @@ public class ARMEngine extends AbstractMachine {
    * Moreover, we use R10 as a register for storing the object's class id when we jump from methods to vtables.
 	 */
 	static private final int NUM_REGISTER = 10;
-	static private final String Prefix = "\t\t";  // For a nice code
+	static private final String Prefix = "\t\t", Spacing = "\t\t";  // For a nice code
 	private List<Register> registers;							// List of registers on the machine
 	private Register sp, lr, pc, ht, sb, oi;	// Special registers
 	private int heapbase = 0;											// Manual heap base calculus
@@ -36,14 +36,14 @@ public class ARMEngine extends AbstractMachine {
 		registers = new ArrayList<Register>();
 
 		for (int i = 0; i < NUM_REGISTER; i++) {
-			registers.add(new Register("R", i));
+			registers.add(new Register("r", i));
 		}
-		sp = new Register("SP", -1);
-		lr = new Register("LR", -1);
-		pc = new Register("PC", -1);
-		ht = new Register("R", 12, "HT");
-		sb = new Register("R", 11, "SB");
-    oi = new Register("R", 10, "OI");
+		sp = new Register("sp", -1);
+		lr = new Register("lr", -1);
+		pc = new Register("pc", -1);
+		ht = new Register("r", 12, "HT");
+		sb = new Register("r", 11, "SB");
+    oi = new Register("r", 10, "OI");
 	}
 
 	/**
@@ -67,6 +67,13 @@ public class ARMEngine extends AbstractMachine {
       "\n" +
       generateComment("@@", "");
 
+		// Generate the init
+		String init =
+			generateComment("Initialize registers", "") +
+			generateInstruction("MOV", ht, "HB") +
+			generateInstruction("MOV", sb, sp) +
+			"\n";
+
 		// Generate preliminary
     String preliminary = 
 			// Header
@@ -83,16 +90,10 @@ public class ARMEngine extends AbstractMachine {
 			sb.alias() + " EQU " + sb.name() + "\n" +
       oi.alias() + " EQU " + oi.name() + "\n" +
 			"HB EQU " + (heapbase+5)*4 + "\n" +
-			"\n" +
-			// Initialisations
-      generateComment("Initialize registers", "") +
-			ARMEngine.Prefix + "MOV\tHT, HB\n" +
-			ARMEngine.Prefix + "MOV\tSB, ST\n" +
 			"\n";
 
 		// Actually write the code to the file
-		super.writeCode(fileName, preliminary + vtables + code);
-		System.out.println("//\n" + code + "//\n");
+		super.writeCode(fileName, preliminary + init + vtables + code);
 	}
 
 	/**
@@ -122,15 +123,13 @@ public class ARMEngine extends AbstractMachine {
 		// Generate a little header
     String code =
       generateComment("Virtual Table for method " + mi.label(), "") +
-      mi.label() + ".vtable:\n";
+      generateLabel(mi.label() + ".vtable");
 
 		// Generate the code for each entry
     for (int key : vt.allKeys()) {
       code +=
-        ARMEngine.Prefix + "CMP\t" + oi + ", #" + key + "\n" +
-        ARMEngine.Prefix + "BEQ\t" + vt.get(key) + mi.label() + "\n";
-
-      heapbase += 2;
+				generateInstruction("CMP", oi, key) +
+				generateInstruction("BEQ", vt.get(key) + mi.label());
     }
 
     return code + "\n";
@@ -169,19 +168,20 @@ public class ARMEngine extends AbstractMachine {
    * @return the generated code
    */
   public String generateLoadValue(VariableInfo info, int disp, Register rout) throws MCSException  {
-    String code = "", addr = "";
+    String code = "";
     Register r = getNextUnusedRegister();
     Register raddr = new Register();
+		Object odisp;
 
     if (info.type() instanceof CompositeType) {
       code += generateLoadFromStack(info.displacement(), raddr);
 
       if (disp < 65536) {
-        addr = "[" + raddr + ", #" + disp + "]";
+				odisp = disp;
       } else {
         Register rdisp = new Register();
         code += generateLoadConstant(new ConstantInfo(new IntegerType(), disp), rdisp);
-        addr = "[" + raddr + ", " + rdisp + "]";
+        odisp = rdisp;
         rdisp.setStatus(Register.Status.Used);
       }
 
@@ -192,12 +192,10 @@ public class ARMEngine extends AbstractMachine {
     }
 
     code +=
-      ARMEngine.Prefix + "LDR\t" + r + ", " + addr + "\n";
+			generateInstruction("LDR", true, r, raddr, odisp);
 
     r.setStatus(Register.Status.Loaded);
     rout.copy(r);
-
-    heapbase++;
 
     return code;
   }
@@ -212,26 +210,22 @@ public class ARMEngine extends AbstractMachine {
   public String generateLoadValue(VariableInfo info, Register rdisp, Register rout) throws MCSException  {
     Register raddr = new Register();
     Register r = getNextUnusedRegister();
-    String code = "", addr = "";
+    String code = "";
     Type t = info.type();
 
     if (t instanceof CompositeType) {
-      code += generateLoadFromStack(info.displacement(), raddr);
-      addr = "[" + raddr + ", " + rdisp + "]";
+      code +=
+				generateLoadFromStack(info.displacement(), raddr) +
+				generateInstruction("LDR", true, r, raddr, rdisp);
     } else {
       // not supposed to be called, isn't it ?
       return "";
     }
 
-    code +=
-      ARMEngine.Prefix + "LDR\t" + r + ", " + addr + "\n";
-
     raddr.setStatus(Register.Status.Used);
     rdisp.setStatus(Register.Status.Used);
     r.setStatus(Register.Status.Loaded);
     rout.copy(r);
-
-    heapbase++;
 
     return code;
   }
@@ -244,23 +238,22 @@ public class ARMEngine extends AbstractMachine {
    */
   public String generateLoadFromStack(int disp, Register rout) throws MCSException  {
     Register r = getNextUnusedRegister();
-    String code = "", snd = "";
+    String code = "";
+		Object snd;
 
     if (disp < 65536) {
-      snd = "#" + Integer.toString(-disp);
+      snd = -disp;
     } else {
       Register rval = new Register();
       code += generateLoadConstant(new ConstantInfo(new IntegerType(), -disp), rval);
-      snd = rval.toString();
+      snd = rval;
       rval.setStatus(Register.Status.Used);
     }
     code +=
-      ARMEngine.Prefix + "LDR\t" + r + ", [" + sb + ", " + snd + "]\n";
+			generateInstruction("LDR", true, r, sb, snd);
 
     r.setStatus(Register.Status.Loaded);
     rout.copy(r);
-
-    heapbase++;
 
     return code;
   }
@@ -283,14 +276,11 @@ public class ARMEngine extends AbstractMachine {
 			int val = (Integer)o;
 
       code +=
-        ARMEngine.Prefix + "MOV\t" + r + ", #" + (val & 0x0000FFFF) + "\n";
-
-      heapbase++;
+				generateInstruction("MOV", r, (val & 0x0000FFFF));
 
       if (val >= 65536) {
         code +=
-          ARMEngine.Prefix + "MOVT\t" + r + ", #" + (val >> 16) + "\n";
-        heapbase++;
+					generateInstruction("MOVT", r, (val >> 16));
       }
     } else if (t instanceof StructType) {
       // TODO
@@ -318,11 +308,11 @@ public class ARMEngine extends AbstractMachine {
 
     if (disp < 65536) {
       r = getNextUnusedRegister();
-      code += ARMEngine.Prefix + "LDR\t" + r + ", [" + raddr + ", #" + disp + "]\n";
+      code += 
+				generateInstruction("LDR", true, r, raddr, disp);
       r.setStatus(Register.Status.Loaded);
       raddr.setStatus(Register.Status.Used);
       rout.copy(r);
-      heapbase++;
     } else {
       code += generateLoadConstant(new ConstantInfo(new IntegerType(), disp), r);
       code += generateLoadFromHeap(raddr, r, rout);
@@ -342,14 +332,13 @@ public class ARMEngine extends AbstractMachine {
     String code = "";
     Register r = getNextUnusedRegister();
 
-    code += ARMEngine.Prefix + "LDR\t" + r + ", [" + raddr + ", " + rdisp + "]\n";
+    code +=
+			generateInstruction("LDR", true, r, raddr, rdisp);
 
     raddr.setStatus(Register.Status.Used);
     rdisp.setStatus(Register.Status.Used);
     r.setStatus(Register.Status.Loaded);
     rout.copy(r);
-
-    heapbase++;
 
     return code;
   }
@@ -368,8 +357,7 @@ public class ARMEngine extends AbstractMachine {
 
     if (t instanceof SimpleType) {
       code +=
-        ARMEngine.Prefix + "STR\t" + rin + ", [" + sb + ", " + Integer.toString(-vinfo.displacement()) + "]\n";
-      heapbase++;
+				generateInstruction("STR", true, rin, sb, -vinfo.displacement());
     } else if (t instanceof StructType) {
       // Shouldn't be called like that
     } else if (t instanceof ArrayType) {
@@ -440,21 +428,17 @@ public class ARMEngine extends AbstractMachine {
     raddr.setStatus(Register.Status.Used);
 
     if (disp < 65536) {
-      addr += "#" + disp;
+			code +=
+				generateInstruction("STR", true, rin, raddr, disp);
     } else {
       Register r = new Register();
       code +=
-        generateLoadConstant(new ConstantInfo(new IntegerType(), disp), r);
-      addr += r;
+        generateLoadConstant(new ConstantInfo(new IntegerType(), disp), r) +
+				generateInstruction("STR", true, rin, raddr, r);
       r.setStatus(Register.Status.Used);
     }
     
-    code += 
-      ARMEngine.Prefix + "STR\t" + rin + ", [" + addr + "]\n";
-
     rin.setStatus(Register.Status.Used);
-
-    heapbase++;
 
     return code;
   }
@@ -468,11 +452,10 @@ public class ARMEngine extends AbstractMachine {
    */
   public String generateStoreInHeap(Register raddr, Register rdisp, Register rin) throws MCSException  {
     String code =
-      ARMEngine.Prefix + "STR\t" + rin + ", [" + raddr + ", " + rdisp + "]\n";
+			generateInstruction("STR", true, rin, raddr, rdisp);
     raddr.setStatus(Register.Status.Used);
     rdisp.setStatus(Register.Status.Used);
     rin.setStatus(Register.Status.Used);
-    heapbase++;
     return code;
   }
 
@@ -486,12 +469,12 @@ public class ARMEngine extends AbstractMachine {
 
     if (type instanceof CompositeType) {
       Register raddr = new Register();
-      code += generateAllocate(type, raddr, null);
-      code += ARMEngine.Prefix + "PUSH\t" + raddr + "\n";
-      heapbase++;
+      code +=
+				generateAllocate(type, raddr, null) +
+				generateInstruction("PUSH", raddr);
     } else {
-			code += ARMEngine.Prefix + "ADD\t" + sp + ", #" + type.size() + "\n";
-			heapbase++;
+			code +=
+				generateInstruction("ADD", sp, sp, type.size());
     }
 
     return code;
@@ -507,7 +490,8 @@ public class ARMEngine extends AbstractMachine {
 	public String generateAllocate(Type type, Register raddr, Register rsize) throws MCSException  {
 		Register reg = getNextUnusedRegister();
 
-		String code = ARMEngine.Prefix + "MOV\t" + reg + ", " + ht + "\n";
+		String code =
+			generateInstruction("MOV", reg, ht);
 
 		if (type instanceof StructType) {
 			StructType ts = (StructType)type;
@@ -525,18 +509,16 @@ public class ARMEngine extends AbstractMachine {
 			ArrayType t = (ArrayType)type;
 			Register rs = getNextUnusedRegister();
 			code +=
-				ARMEngine.Prefix + "UMUL\t" + rs + ", " + rsize + ", #" + t.getType().size() + "\n" +
-				ARMEngine.Prefix + "ST\t" + rs + ", [" + ht + "]\n" +
-				ARMEngine.Prefix + "ADD\t" + ht + ", " + ht + ", #4\n" + 
-				ARMEngine.Prefix + "ADD\t" + ht + ", " + ht + ", " + rs + "\n";
+				generateInstruction("UMUL", rs, rsize, t.getType().size()) +
+				generateInstruction("ST", true, rs, ht) +
+				generateInstruction("ADD", ht, ht, 4) +
+				generateInstruction("ADD", ht, ht, rs);
 			rsize.setStatus(Register.Status.Used);
-      heapbase += 4;
 		} else {
 			Register rs = new Register();
 			code +=
 				generateLoadConstant(new ConstantInfo(new IntegerType(), type.size()), rs) +
-				ARMEngine.Prefix + "ADD\t" + ht + ", " + ht + ", " + rs + "\n";
-      heapbase++;
+				generateInstruction("ADD", ht, ht, rs);
 		}
 
 		reg.setStatus(Register.Status.Loaded);
@@ -552,12 +534,9 @@ public class ARMEngine extends AbstractMachine {
 	 */
 	public String generateFlushVariable(Type type) throws MCSException  {
 		Register reg = getNextUnusedRegister();
-		String code = ARMEngine.Prefix;
 
-    code += "POP\t" + reg + "\n";
-    heapbase++;
-
-    return code;
+		return 
+			generateInstruction("POP", reg);
 	}
 
 	/**
@@ -601,34 +580,33 @@ public class ARMEngine extends AbstractMachine {
 					"@@\n" +
 					" Function: " + info.toString() + "\n" +
 					"@@\n", "") +
-			label + ":\n" +
+			generateLabel(label) +
 			generateComment("Push link register, stack base and stack pointer", ARMEngine.Prefix) +
-			ARMEngine.Prefix + "PUSH\t" + lr + "\n" +
-			ARMEngine.Prefix + "PUSH\t" + sb + "\n" + 
-			ARMEngine.Prefix + "PUSH\t" + sp + "\n" +
+			generateInstruction("PUSH", lr) +
+			generateInstruction("PUSH", sb) +
+			generateInstruction("PUSH", sp) +
 			"\n" +
 			generateComment("Body", ARMEngine.Prefix) +
 			blockcode +
 			"\n";
-    heapbase +=3;
 
 		// End of the function
 		if (!(info.returnType() instanceof VoidType)) {
 			code +=
 				generateComment("Default return. It is not wise to reach this point", ARMEngine.Prefix) +
-				ARMEngine.Prefix + "MOV\t" + info.register() + ", " + ht + "\n" +
-				ARMEngine.Prefix + "ADD\t" + ht + ", " + ht + ", #4\n\n";
-      heapbase += 3;
+				generateInstruction("MOV", info.register(), ht) +
+				generateInstruction("ADD", ht, ht, 4) +
+				"\n";
 		}
 
 		code +=
-			label + "_end:\n" +
+			generateLabel(label + "_end") +
 			generateComment("Pop registers", ARMEngine.Prefix) +
-			ARMEngine.Prefix + "POP\t" + sp + "\n" +
-			ARMEngine.Prefix + "POP\t" + sb + "\n" +
-			ARMEngine.Prefix + "POP\t" + lr + "\n\n" +
+			generateInstruction("POP", sp) +
+			generateInstruction("POP", sb) +
+			generateInstruction("POP", lr) +
+			"\n" +
 			generateComment("Pop arguments", ARMEngine.Prefix);
-    heapbase += 3;
 
 		// As we push arguments in one order, we need to pop them in the
 		// other
@@ -644,8 +622,7 @@ public class ARMEngine extends AbstractMachine {
 
 		code +=
       generateComment("Jump back to preceding context", ARMEngine.Prefix) +
-			ARMEngine.Prefix + "BX\t" + lr + "\n\n";
-    heapbase++;
+			generateInstruction("BX", lr) + "\n";
 
 		return code;
 	}
@@ -667,19 +644,15 @@ public class ARMEngine extends AbstractMachine {
 			Register r = getNextUnusedRegister();
 			info.assignRegister(r);
 			code +=
-				ARMEngine.Prefix + "MOV\t" + info.register() + ", " + ht + "\n" +
-				ARMEngine.Prefix + "STMIA\t!" + ht + ", " + rval + "\n";
+				generateInstruction("MOV", info.register(), ht) +
+				generateInstruction("STMIA", "!" + ht, rval);
 
 			info.register().setStatus(Register.Status.Loaded);
 			rval.setStatus(Register.Status.Used);
-
-      heapbase += 2;
 		}
 
 		code +=
-			ARMEngine.Prefix + "B\t" + label + "_end\n\n";
-
-    heapbase++;
+			generateInstruction("B", label + "_end") + "\n";
 
 		return code;
 	}
@@ -691,9 +664,8 @@ public class ARMEngine extends AbstractMachine {
 	 */
 	public String generateFunctionPushArgument(Register reg) throws MCSException  {
 		String code =
-			ARMEngine.Prefix + "PUSH\t" + reg + "\n";
+			generateInstruction("PUSH", reg);
 		reg.setStatus(Register.Status.Used);
-		heapbase++;
 		return code;
 	}
 
@@ -705,8 +677,7 @@ public class ARMEngine extends AbstractMachine {
 	 */
 	public String generateFunctionCall(FunctionInfo info) throws MCSException  {
 		String code =
-			ARMEngine.Prefix + "BL\t" + info.label() + "\n";
-    heapbase++;
+			generateInstruction("BL", info.label());
 		return code;
 	}
 
@@ -722,19 +693,17 @@ public class ARMEngine extends AbstractMachine {
       generateComment("Vtable redirection", ARMEngine.Prefix) +
       // We need to retrieve the object's id. First, we get the address of the object,
       // which is just below the context, so with a displacement of -16
-      ARMEngine.Prefix + "LDR\t" + oi + ", [" + sb + ", #-16]\n" + 
+			generateInstruction("LDR", true, oi, sb, -16) +
       // Then we load the very first field of the object (displacement 0)
-      ARMEngine.Prefix + "LDR\t" + oi + ", [" + oi + "]\n" +
+			generateInstruction("LDR", true, oi, oi) +
       // We then compare the id of the retrieved object to the id of the class
-      ARMEngine.Prefix + "CMP\t" + oi + ", #" + kmeth.classId() + "\n" +
+			generateInstruction("CMP", oi, kmeth.classId()) +
       // Then we branch to the vtable if needed
-      ARMEngine.Prefix + "BEQ\t" + info.label() + ".vtable\n" +
+			generateInstruction("BEQ", info.label() + ".vtable") +
       "\n" +
       // Next part is the "real code" that we labellize with .body
-      kmeth.name() + info.label() + ":\n"
-      + blockcode;
-
-    heapbase += 4;
+      generateLabel(kmeth.name() + info.label()) +
+    	blockcode;
 
     return generateFunctionDeclaration(info, code);
   }
@@ -762,30 +731,28 @@ public class ARMEngine extends AbstractMachine {
     Register r = getNextUnusedRegister();
 
     String codeinst =
-      info.parent().name() + info.label() + "_inst:\n" +
+      generateLabel(info.parent().name() + info.label() + "_inst") +
       generateComment("Instanciate the class", ARMEngine.Prefix) +
-      ARMEngine.Prefix + "MOV\t" + r + ", " + ht + "\n";
+			generateInstruction("MOV", r, ht);
 
     Klass k = info.parent();
     int rs = k.realSize();
 
     if (rs < 65535) {
       codeinst +=
-        ARMEngine.Prefix + "ADD\t" + ht + ", " + ht + ", #" + rs + "\n";
+				generateInstruction("ADD", ht, ht, rs);
     } else {
       Register rsize = new Register();
       codeinst +=
         generateLoadConstant(new ConstantInfo(new IntegerType(), rs), rsize) +
-        ARMEngine.Prefix + "ADD\t" + ht + ", " + ht + ", " + rsize + "\n";
+				generateInstruction("ADD", ht, ht, rsize);
     }
 
     codeinst +=
-      ARMEngine.Prefix + "PUSH\t" + r + "\n";
+			generateInstruction("PUSH", r);
 
     info.assignRegister(r);
     r.setStatus(Register.Status.Loaded);
-
-    heapbase += 3;
 
     return codeinst + generateFunctionDeclaration(info, bcode);
   }
@@ -798,12 +765,92 @@ public class ARMEngine extends AbstractMachine {
    */
   public String generateConstructorCall(ConstructorInfo info, boolean base) throws MCSException {
     String code =
-      ARMEngine.Prefix + "BL\t" + info.parent().name() + info.label() + (base ? "" : "_inst") + "\n";
-    heapbase++;
+			generateInstruction("BL", info.parent().name() + info.label() + (base ? "" : "_inst"));
     return code;
   }
   
 	////////////////////////////// MISC ///////////////////////////////
+	/**
+	 * Generate an instruction with various number of parameters
+	 * @param inst instruction
+	 * @param p1,p2,... parameters
+	 * @param enclose enclose the last parameters in brackets (for addressing)
+	 * @return the generated code
+	 */
+	public String generateInstruction(String inst, boolean enclose, Object p1, Object p2, Object p3) throws MCSException {
+		heapbase++;
+		String code =
+			ARMEngine.Prefix + inst;
+
+		if (p1 != null)
+			code += ARMEngine.Spacing + format(p1);
+
+		if (p2 != null)
+			code += "," + ARMEngine.Spacing +  (enclose ? "[" : "") + format(p2);
+
+		if (p3 != null)
+			code += "," + (enclose ? " " : ARMEngine.Spacing) + format(p3);
+
+		if (p2 != null && enclose)
+			code += "]";
+
+		return code + "\n";
+	}
+
+	public String generateInstruction(String inst, Object p1, Object p2, Object p3) throws MCSException {
+		return generateInstruction(inst, false, p1, p2, p3);
+	}
+
+	public String generateInstruction(String inst, boolean enclose, Object p1, Object p2) throws MCSException {
+		return generateInstruction(inst, enclose, p1, p2, null);
+	}
+
+	public String generateInstruction(String inst, Object p1, Object p2) throws MCSException {
+		return generateInstruction(inst, false, p1, p2);
+	}
+
+	public String generateInstruction(String inst, Object p1) throws MCSException {
+		return generateInstruction(inst, p1, null);
+	}
+	
+	/**
+	 * Generate a label
+	 * @param label
+	 * @return the generated code
+	 */
+	public String generateLabel(String label) throws MCSException {
+		return label + ":\n";
+	}
+
+	/**
+	 * Generate a direct constant for use in instructions
+	 * @param val value of the constant
+	 * @return the generated code
+	 */
+	public String generateDirect(int value) throws MCSException {
+		return "$" + Integer.toString(value);
+	}
+	
+	/**
+	 * Generate a register
+	 * @param reg the register
+	 * @return the generated code
+	 */
+	public String generateRegister(Register reg) throws MCSException {
+		return "%" + reg.toString();
+	}
+
+	private String format(Object o) throws MCSException {
+		if (o instanceof String)
+			return (String)o;
+		else if (o instanceof Integer)
+			return generateDirect((Integer)o);
+		else if (o instanceof Register)
+			return generateRegister((Register)o);
+		
+		throw new MCSWrongUseException("format()");
+	}
+
   /**
    * Generate a comment
    * @param com comment to print
@@ -868,17 +915,17 @@ public class ARMEngine extends AbstractMachine {
 		// it is special because it is relative to the stack
 		ListIterator<DisplacementPair> iter = dlist.listIterator();
 		dp = iter.next();
-		code += ARMEngine.Prefix + "LDR\t" + r + ", [" + rbaseaddr + ", #" + Integer.toString(-dp.disp) + "]\n";
+		code +=
+			generateInstruction("LDR", true, r, rbaseaddr, -dp.disp);
 
 		while (iter.hasNext()) {
 			dp = iter.next();
 			if (dp.deref) {
 				code +=
-					ARMEngine.Prefix + "LDR\t" + r + ", [" + r + "]\n";
-        heapbase++;
+					generateInstruction("LDR", true, r, r);
       }
 			code +=
-				ARMEngine.Prefix + "LDR\t" + r + ", [" + r + ", #" + dp.disp + "]\n";
+				generateInstruction("LDR", true, r, r, dp.disp);
 		}
 
 		rbaseaddr.setStatus(Register.Status.Used);
@@ -898,21 +945,18 @@ public class ARMEngine extends AbstractMachine {
   public String generateIfThenElse(Register rcond, String cif, String celse) throws MCSException {
 		boolean else_present = !(celse.isEmpty());
     String code = 
-      ARMEngine.Prefix + "CBZ\t" + rcond + ", " + (else_present ? "else" : "end") + "_" + condition_nb + "\n" +
+			generateInstruction("CBZ", rcond, (else_present ? "else" : "end" + "_" + condition_nb)) +
       cif + "\n";
-
-    heapbase++;
 
 		if (else_present) {
 			code +=
-      	ARMEngine.Prefix + "B\tend_" + condition_nb + "\n" +
-      	"else_" + condition_nb + ":\n" +
+				generateInstruction("B", "end_" + condition_nb) +
+      	generateLabel("else_" + condition_nb) +
       	celse + "\n";
-      heapbase++;
 		}
 
 		code +=
-      "end_" + condition_nb + ":\n\n";
+			generateLabel("end_" + condition_nb) + "\n";
 
     rcond.setStatus(Register.Status.Used);
     condition_nb++;
@@ -955,43 +999,44 @@ public class ARMEngine extends AbstractMachine {
 		// TODO: wrong operation type
 		// The last part of the code never changes : xxx Rx, R<1>, R<2>
 
-		String code = "";
+		String code = "", instr = "";
 
 		// Get the next register
 		Register r = getNextUnusedRegister();
 
 		switch (op) {
 			case ADD:
-				code += ARMEngine.Prefix + "ADD\t" + r + ", " + r1 + ", " + r2 + "\n";
-				heapbase++;
+				instr = "ADD";
 				break;
 			case SUB:
-				code += ARMEngine.Prefix + "SUB\t" + r + ", " + r1 + ", " + r2 + "\n";
-				heapbase++;
+				instr = "SUB";
 				break;
 			case MUL:
-				code += ARMEngine.Prefix + "MUL\t" + r + ", " + r1 + ", " + r2 + "\n";
-				heapbase++;
+				instr = "MUL";
 				break;
 			case DIV:
-				code += ARMEngine.Prefix + "SIV\t" + r + ", " + r1 + ", " + r2 + "\n";
-				heapbase++;
+				instr = "DIV";
 				break;
 			case AND:
-				code += ARMEngine.Prefix + "AND\t" + r + ", " + r1 + ", " + r2 + "\n";
-				heapbase++;
+				instr = "AND";
 				break;
 			case OR:
-				code += ARMEngine.Prefix + "ORR\t" + r + ", " + r1 + ", " + r2 + "\n";
-				heapbase++;
+				instr = "OR";
 				break;
 			case MOD:
-				// Do this : q = a/b, b*q, a-bq = r
-				code += ARMEngine.Prefix + "SDIV\t" + r + ", " + r1 + ", " + r2 + "\n";
-				code += ARMEngine.Prefix + "MUL\t" + r + ", " + r2 + ", " + r + "\n";
-				code += ARMEngine.Prefix + "SUB\t" + r + ", " + r1 + ", " + r + "\n";
-				heapbase += 3;
+				// nop
 				break;
+		}
+
+		if (op != Operator.MOD) {
+			code +=
+				generateInstruction(instr, r, r1, r2);
+		} else {	
+			// Do this : q = a/b, b*q, a-bq = r
+			code +=
+				generateInstruction("SDIV", r, r1, r2) +
+				generateInstruction("MUL", r, r2, r) +
+				generateInstruction("SUB", r, r1, r);
 		}
 
 		// Source register are no longer used
@@ -1014,11 +1059,8 @@ public class ARMEngine extends AbstractMachine {
 	 * @return the generated code
 	 */
 	private String generateArithOperation(Operator op, Register rin, Register rout) throws MCSException  {
-		// TODO: wrong operation type
-		String code = ", " + rin + ", #0\n";
-
 		// Find the operation code
-		String opcode = "";
+		String opcode = "", code = "";
 		switch (op) {
 			case NEG:
 				opcode = "RSB";
@@ -1037,14 +1079,14 @@ public class ARMEngine extends AbstractMachine {
 		Register r = getNextUnusedRegister();
 
 		// Generate code
-		code = ARMEngine.Prefix + opcode + "\t" + r + code;
+		if (op != Operator.PLS) {
+			code =
+				generateInstruction(opcode, r, rin, 0);
+		}
 
 		// Manage register
 		r.setStatus(Register.Status.Loaded);
 		rout.copy(r);
-
-		// Modify heapbase
-		heapbase++;
 
 		// End
 		return code;
@@ -1052,42 +1094,49 @@ public class ARMEngine extends AbstractMachine {
 
 	private String generateRelOperation(Operator op, Register r1, Register r2, Register rout) throws MCSException  {
 		Register r = getNextUnusedRegister();
-		String code = ARMEngine.Prefix + "MOV\t" + r + "#0\n"; 
+		String cc = "", operand = "";
+		String code = 
+			generateInstruction("MOV", r, 0);
+
 		switch (op) {
-			/* AND is a specification of EQ */
 			case EQ:
-				code += ARMEngine.Prefix + "CMP\t" + r1 + ", " + r2 + "\n";
-				code += ARMEngine.Prefix + "MOVEQ\t" + r + "1" + "\n";
-				break;	
+				cc = "EQ";
+				operand = "CMP";
+				break;
 			case NEQ:
-				code += ARMEngine.Prefix + "CMP\t" + r1 + ", " + r2 + "\n";
-				code += ARMEngine.Prefix + "MOVEQ\t" + r + "1" + "\n";
-				break;	
+				cc = "NE";
+				operand = "CMP";
+				break;
 			case LT:
-				code += ARMEngine.Prefix + "CMP\t" + r1 + ", " + r2 + "\n";
-				code += ARMEngine.Prefix + "MOVEQ\t" + r + "1" + "\n";
-				break;	
+				cc = "LT";
+				operand = "CMP";
+				break;
 			case LEQ:
-				code += ARMEngine.Prefix + "CMP\t" + r1 + ", " + r2 + "\n";
-				code += ARMEngine.Prefix + "MOVEQ\t" + r + "1" + "\n";
-				break;	
+				cc = "LE";
+				operand = "CMP";
+				break;
 			case GT:
-				code += ARMEngine.Prefix + "CMP\t" + r1 + ", " + r2 + "\n";
-				code += ARMEngine.Prefix + "MOVEQ\t" + r + "1" + "\n";
-				break;	
+				cc = "GT";
+				operand = "CMP";
+				break;
 			case GEQ:
-				code += ARMEngine.Prefix + "CMP\t" + r1 + ", " + r2 + "\n";
-				code += ARMEngine.Prefix + "MOVEQ\t" + r + "1" + "\n";
-				break;	
+				cc = "GE";
+				operand = "CMP";
+				break;
 			case RAND:
-				code += ARMEngine.Prefix + "ANDS\t" + r1 + ", " + r2 + "\n";
-				code += ARMEngine.Prefix + "MOVEQ\t" + r + "1" + "\n";
-				break;	
+				operand = "ANDS";
+				cc = "EQ";
+				break;
 			case ROR:
-				code += ARMEngine.Prefix + "ORRS\t" + r1 + ", " + r2 + "\n";
-				code += ARMEngine.Prefix + "MOVEQ\t" + r + "1" + "\n";
+				operand = "ORRS";
+				cc = "EQ";
 				break;
 		}
+
+		code +=
+			generateInstruction(operand, r1, r2) +
+			generateInstruction("MOV" + cc, r, 1);
+
 		// Information about register
 		r1.setStatus(Register.Status.Used);
 		r2.setStatus(Register.Status.Used);
@@ -1096,8 +1145,6 @@ public class ARMEngine extends AbstractMachine {
 		// Manage register
 		r.setStatus(Register.Status.Loaded);
 		rout.copy(r);
-
-		heapbase += 3;
 
 		return code;
 	}
@@ -1110,11 +1157,14 @@ public class ARMEngine extends AbstractMachine {
 	 */
 	private String generateRelOperation(Operator op, Register rin, Register rout) throws MCSException {
 		Register r = getNextUnusedRegister();
-		String code = ARMEngine.Prefix + "MOV\t" + r + "#0\n";
+		String code =
+			generateInstruction("MOV", r, 0);
+		
 		switch (op) {
 			case RNOT:
-				code += ARMEngine.Prefix + "CMP\t" + rin + ", 0\n";
-				code += ARMEngine.Prefix + "MOVNE\t" + r + "1" + "\n";
+				code +=
+					generateInstruction("CMP", rin, 0) +
+					generateInstruction("MOVNE", r, 1);
 				break;
 		}
 
@@ -1124,8 +1174,6 @@ public class ARMEngine extends AbstractMachine {
 		// Manage register
 		r.setStatus(Register.Status.Loaded);
 		rout.copy(r);
-
-		heapbase += 3;
 
 		return code;
 	}

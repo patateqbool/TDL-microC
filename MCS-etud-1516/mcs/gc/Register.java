@@ -29,6 +29,10 @@ public class Register {
     this(name, num, "");
 	}
 
+	public Register(String name) {
+		this(name, -1);
+	}
+
 	public Register() {
 		this("", -1);
 	}
@@ -40,15 +44,19 @@ public class Register {
 	}
 
   public String alias() {
-    return alias;
+    return this.alias;
   }
 
+	public boolean hasAlias() {
+		return this.alias.length() > 0;
+	}
+
 	public String name() {
-		return name + (this.num == -1 ? "" : this.num);
+		return this.name + (this.num == -1 ? "" : this.num);
 	}
 
 	public int num() {
-		return num;
+		return this.num;
 	}
 
 	public Status status() {
