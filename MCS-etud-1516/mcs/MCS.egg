@@ -1542,7 +1542,6 @@ do
 			-- On génère le code de l'affectation.
 			-- La compatibilité des types est effectuée dans AFFX.
 			write("(35) Code else : " + code + "\n");
-			reg := AFFX^reg;
 			code := E^machine.generateComment("(35) Affectation, left part:", "\t\t")
 			      + code
 			      + E^machine.generateComment("(35) End of left part, right part:", "\t\t")
@@ -1550,6 +1549,7 @@ do
 						+ E^machine.generateComment("(35) End of right part, store:", "\t\t")
 						+ E^machine.generateStoreVariable(A^vi,AFFX^reg)
 						+ E^machine.generateComment("(35) End of store.", "\t\t");
+			reg := AFFX^reg;
 		else
 			error(LEFT_PART_NOT_VARIABLE);
 		end
@@ -2568,8 +2568,8 @@ do
   reg := new Register();
   code := F^machine.generateComment("(68) Parenthesized expression:", "\t\t")
 		    + E^code
-				+ F^machine.generateComment("(68) End of parenthesized expression.", "\t\t")
-		if ((dl.size()) != 0) then -- : > 0) then
+				+ F^machine.generateComment("(68) End of parenthesized expression.", "\t\t");
+	if ((dl.size()) != 0) then -- : > 0) then
     -- On a accédé à des champs dans FX.
     -- On génère le code correspondant, en prenant le registre de E comme base.
     -- Les verification d'existence de champs ont été faites dans FX.
@@ -2577,6 +2577,8 @@ do
 		      + F^machine.generateComment("(68) Make address:", "\t\t")
 					+ F^machine.generateMakeAddress(dl, E^reg, reg)
 					+ F^machine.generateComment("(68) End make address.", "\t\t");
+	else
+		reg := E^reg;
   end
   -- F est une variable si E l'est et FX ne l'empeche pas.
   -- Dans ce cas, vi de F prend celui de E. Dans le cas
@@ -2785,7 +2787,7 @@ do
   --               														- accédé à un champ de struct.
   listeDepl := FX^listeDeplS;
   reg := new Register();
-	code := F^machine.generateComment("(71) Ident:", "\t\t");
+	code := F^machine.generateComment("(71) Ident:", "\t\t")
 	      + FX^code
 				+ F^machine.generateComment("(71) End ident.", "\t\t");
 	if estFun then
