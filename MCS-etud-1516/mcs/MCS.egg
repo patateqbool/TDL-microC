@@ -1164,7 +1164,9 @@ do
 				write("(28) [" + INST^ni + "] " + ident^txt + " (" + TYPE^type + ") n'existe pas\n");
 		    -- Sinon, on ajoute cet id à la tdsvar.
 	   	  tv.insert(nom, TYPE^type, INST^ni);
-				code := INST^machine.generateAllocateInStack(TYPE^type);
+				code := INST^machine.generateComment("(28) Allocate in stack:", "\t\t")
+				      + INST^machine.generateAllocateInStack(TYPE^type)
+							+ INST^machine.generateComment("(28) End of allocation.", "\t\t");
 				write("(28) Code (allocation) : " + code + "\n");
 			end
     end
@@ -1178,7 +1180,12 @@ do
 		si := tv.lookup(ident^txt, INST^ni, true);
 		match si
 		with VariableInfo then
-		  code := code + INST^machine.generateStoreVariable(si, AFFX^reg);
+		  code := code
+			      + INST^machine.generateComment("(28) Expression to affect:", "\t\t")
+			      + AFFX^code
+						+ INST^machine.generateComment("(28) End of Expression to affect, affectation:" ,"\t\t")
+						+ INST^machine.generateStoreVariable(si, AFFX^reg)
+						+ INST^machine.generateComment("(28) En of affectation.", "\t\t");
 			write("(28) SI : " + si + "; Code: " + code + "\n");
 		else
 		  error(SHOULD_NOT_HAPPEN_SI_NOT_VI);
@@ -3606,7 +3613,7 @@ end
 --
 ---- (96) constructeur
 --
---DEF  ->  identc #verifIdentc #attPARFS paro PARFS parf BASE #attBLOC BLOC #attDEF ;
+--DEF  ->  identc #verifIdentc #attPARFS paro PARFS parf #attBASE BASE #attBLOC BLOC #attDEF ;
 --
 --global
 --	tvparams : VariableTable;
@@ -3630,11 +3637,23 @@ end
 --  PARFS^tfun := new FunctionTable();
 --	PARFS^talias := new AliasTable();
 --	-- Creation de la FunctionInfo avec le type retour.
---  PARFS^funInfoH := new FunctionInfo(identc^txt, DEF^kl.name(), DEF^ni);
+--  PARFS^funInfoH := new FunctionInfo(identc^txt, DEF^kl.name(), DEF^ni, DEF^machine.functionReturn());
 --  -- Initialisation du compteur de parametres.
 --  PARFS^cParam := 0;
 --  PARFS^machine := DEF^machine;
 --	PARFS^ni := DEF^ni;
+--  PARFS^indentation := DEF^indentation + 1;	
+--end
+--}
+--
+---- Init des attributs hérités pour PARFS.
+--#attBASE {
+--local
+--do
+--  BASE^machine := DEF^machine;
+--	BASE^ni := DEF^ni;
+--	BASE^kl := DEF^kl;
+--	BASE^indentation := DEF^indentation;
 --end
 --}
 --
@@ -3648,6 +3667,7 @@ end
 --  tf := PARFS^tfun;
 --  fi := PARFS^funInfo;
 -- 	BLOC^tfun := tf;
+--  BLOC^indentation := DEF^indentation + 1;	
 --	BLOC^funInfoH := fi;
 --  BLOC^tvar := new VariableTable(tvparams);
 --	BLOC^talias := PARFS^talias;
@@ -3656,7 +3676,7 @@ end
 --end
 --}
 --
----- Génération du constructeur
+---- Génération du constructeur + GC
 --#attDEF {
 --local
 --	fi : FunctionInfo
@@ -3665,6 +3685,7 @@ end
 --	match fi
 --	with ConstructorInfo then
 --		DEF^kl.addConstructor(fi);
+--	  DEF^code := DEF^machine.generateFunctionDeclaration(fi , BASE^code+BLOC^code);			
 --	else
 --			error(NOT_A_CONSTR);
 --	end
@@ -3676,10 +3697,49 @@ end
 ---- appel eventuel au constructeur de la classe parente.
 --
 ---- (97)
---BASE -> ;
+--BASE -> #codeVide ;
+--
+--#codeVide {
+--local
+--do
+--	BASE^code := "";
+--end
+--}
 --
 ---- (98)
---BASE -> dpts base paro ES parf  ;
+--BASE -> dpts base #attES paro ES parf #validGC ;
+--
+---- Attributs inh de ES.
+---- Verification que l'appelant est une fonction.
+--#attES {
+--local
+--do
+--  if (BASE^kl = null) then
+--	  error(NO_PARENT_CLASS,BASE^kl.name());
+--	end if;
+--  ES^typesParams := new ArrayList<Type>();
+--  ES^codeH := "";
+--	ES^tvar := new VariableTable();
+--	ES^tfun := new FunctionTable();
+--	ES^talias := new AliasTable();
+--	ES^machine := BASE^machine;
+--	ES^ni := BASE^ni;
+--  ES^indentation := BASE^indentation + 1 ; 
+--end
+--}
+--
+---- Verification qu'il existe bien un constructeur parent avec cette signature.
+--#validGC {
+--local
+--	ci : ConstructorInfo;
+--do
+--  ci := BASE^parent().lookupConstructor(ES^typesParamsS);
+--	if (ci = null) then
+--	  error(NO_CONSTR_WITH_SUCH_PARS, BASE^kl.name());
+--	end
+--	BASE^code := ES^code + FX^machine.generateConstructorCall(ci,true);
+--end
+--}
 --
 ---- (99) Mode de passage pour les fonctions et méthodes : rien : D, ref : D/R, out : R
 --
