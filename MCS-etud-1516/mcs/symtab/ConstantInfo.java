@@ -21,14 +21,18 @@ public class ConstantInfo extends VariableInfo {
   public ConstantInfo(Type t, Object v) {
     super(t, -1, null);
 
-    if (t instanceof IntegerType)
-      this.value = Integer.parseInt((String)v);
-    else if (t instanceof CharacterType)
-      this.value = ((String)v).charAt(0);
-    else if (t instanceof StringType)
-      this.value = fromString((String)v);
-		else
-    	this.value = v;
+		if (v instanceof String) {
+    	if (t instanceof IntegerType)
+      	this.value = Integer.parseInt((String)v);
+    	else if (t instanceof CharacterType)
+      	this.value = ((String)v).charAt(0);
+    	else if (t instanceof StringType)
+      	this.value = fromString((String)v);
+			else
+    		this.value = v;
+		} else {
+			this.value = v;
+		}
   }
 
 	/**

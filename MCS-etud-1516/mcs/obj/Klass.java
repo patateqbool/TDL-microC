@@ -245,6 +245,17 @@ public class Klass extends CompositeType {
     return null;
   }
 
+	/**
+	 * Return the list of the displacement of each attribute
+	 */
+	public Map<Integer,Type> displacementList() {
+		Map<Integer,Type> res = new OrderedMap<Integer,Type>();
+		for (AttributeInfo ai : this.attributeTable.values()) {
+			res.put(ai.displacement(), ai.type());
+		}
+		return res;
+	}
+
   /**
    * Accessors
    */

@@ -77,6 +77,10 @@ public class StructType extends CompositeType {
 		return this.fields.sumSizes(field);
 	}
 
+	public int realSize() {
+		return this.fields.sumSizes();
+	}
+
 	/**
 	 * isEqual()
 	 */

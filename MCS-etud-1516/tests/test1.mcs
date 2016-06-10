@@ -12,6 +12,10 @@ void main() {
 	struct {
 		int a;
 		int b;
+		struct {
+			int c;
+			int d;
+		} ste;
 	} st;
 	//st.a = 3;
 //	funTest(5, 3);

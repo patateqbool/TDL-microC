@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.ListIterator;
 import java.time.LocalDateTime;
+import java.util.Map;
 import mcs.symtab.*;
 import mcs.compiler.*;
 import mcs.obj.*;
@@ -271,6 +272,8 @@ public class ARMEngine extends AbstractMachine {
 	 * @return the generated code
 	 */
 	public String generateLoadConstant(ConstantInfo info, Register rout) throws MCSException  {
+		System.out.println("gLCst : " + (info == null ? "NULL" : ""));
+		System.out.println("gLCst : " + info);
     String code = "";
     Register r = getNextUnusedRegister();
     Type t = info.type();
@@ -486,6 +489,8 @@ public class ARMEngine extends AbstractMachine {
 				generateInstruction("ADD", sp, sp, type.size());
     }
 
+		System.out.println("gAIS : code = " + code);
+
     return code;
   }
 	
@@ -499,21 +504,39 @@ public class ARMEngine extends AbstractMachine {
 	public String generateAllocate(Type type, Register raddr, Register rsize) throws MCSException  {
 		Register reg = getNextUnusedRegister();
 
+		System.out.println("gAll : allouer un '" + type + "' dans le tas");
+
 		String code =
 			generateInstruction("MOV", reg, ht);
+		reg.setStatus(Register.Status.Loaded);
 
 		if (type instanceof StructType) {
+			System.out.println("gAll : c'est une structure");
 			StructType ts = (StructType)type;
 			Register r = new Register();
-			for (Type t : ts.fieldsTypes()) {
-				code += generateAllocate(t, r, null);
+			code +=
+				generateInstruction("ADD", ht, ht, ts.realSize());
+			for (String f : ts.fields()) {
+				Type t = ts.find(f);
+				if (t instanceof CompositeType) {
+					code +=
+						generateAllocate(t, r, null) +
+						generateInstruction("STR", true, r, reg, ts.fieldDisplacement(f)); 
+				}
 			}
 		} else if (type instanceof Klass) {
       Klass k = (Klass)type;
       Register r = new Register();
-      for (Type t : k.attributeTypes()) {
-        code += generateAllocate(t, r, null);
-      }
+			code +=
+				generateInstruction("ADD", ht, ht, k.realSize());
+			Map<Integer,Type> dl = k.displacementList();
+			for (Integer disp : dl.keySet()) {
+				if (dl.get(disp) instanceof CompositeType) {
+					code +=
+						generateAllocate(dl.get(disp), r, null) +
+						generateInstruction("STR", true, r, reg, disp); 
+				}
+			}
     } else if (type instanceof ArrayType) {
 			ArrayType t = (ArrayType)type;
 			Register rs = getNextUnusedRegister();
@@ -524,14 +547,14 @@ public class ARMEngine extends AbstractMachine {
 				generateInstruction("ADD", ht, ht, rs);
 			rsize.setStatus(Register.Status.Used);
 		} else {
-			Register rs = new Register();
+			System.out.println("gAll : c'est un type simple");
 			code +=
-				generateLoadConstant(new ConstantInfo(new IntegerType(), type.size()), rs) +
-				generateInstruction("ADD", ht, ht, rs);
+				generateInstruction("ADD", ht, ht, type.size());
 		}
 
-		reg.setStatus(Register.Status.Loaded);
 		raddr.copy(reg);
+
+		System.out.println("gAll : code = " + code);
 
 		return code;
 	}
