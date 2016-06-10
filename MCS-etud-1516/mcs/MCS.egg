@@ -1452,9 +1452,14 @@ do
 	end
 	write("(34) Milieu de la fin : " + E^reg.debug() + "\n");
 	--Génération du code de retour de la fonction et du flush.
-	code := E^code
+	code := INST^machine.generateComment("(34) Return:","\t") 
+	      + INST^machine.generateComment("(34) Expression to return:","\t\t")
+				+ E^code
+				+ INST^machine.generateComment("(34) End of expression. Flush:","\t\t")
 				+ INST^machine.generateFlush(INST^tvar)
-	    	+ INST^machine.generateFunctionReturn(INST^funInfoH, E^reg);
+				+ INST^machine.generateComment("(34) End of flush. Function return:","\t\t")
+	    	+ INST^machine.generateFunctionReturn(INST^funInfoH, E^reg)
+				+ INST^machine.generateComment("(34) End of return.","\t\t");
 	write("Code (34) : " + code + "\n");
 	INST^code := code;
 end
