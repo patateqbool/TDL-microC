@@ -1,12 +1,13 @@
 option k = 2;
 option auto = true;
 
-syn code_asm	: STRING for ;
-inh tds_asm		: VariableTable for ;
+syn code_asm	: STRING for INSTS, INST;
+inh tds_asm		: VariableTable for ASM, INSTS, INST, PAR, PARS, PARSX, VARIABLE;
+inh mach_asm	:	AbstractMachine for ASM, INSTS, INST, PAR, PARS, PARSX, NUMBER;
+inh parlist		: List<Object> for PAR, PARS, PARSX;
 
 -- Separators
 sugar	separ		is	"[\t ]+";
-space comm		is	"\/\/[^\n]*\n";
 sugar nl			is	"(\n|\r)";
 sugar	column	is	"\:";
 sugar semicol	is	";";
@@ -14,11 +15,14 @@ sugar coma		is	",";
 sugar excl		is 	"!";
 sugar equ			is 	"=";
 sugar	sharp		is	"#";
+sugar dollar  is  "\$";
 sugar point		is 	"\.";
 sugar minus		is	"\-";
 sugar plus		is	"\+";
 sugar	obrack	is	"\[";
 sugar cbrack	is 	"\]";
+sugar ocbrack	is	"\{";
+sugar ccbrack	is	"\}";
 
 -- Opcodes
 sugar	adc				"ADC";	
@@ -308,6 +312,12 @@ sugar le	"LE";
 sugar al	"AL";
 sugar	s		"S";
 
+-- Shift types
+sugar st_asr	"ASR";
+sugar st_lsl	"LSL";
+sugar st_lsr	"LSR";
+sugar st_ror	"ROR";
+
 -- Registers
 sugar	sp	"sp";
 sugar lr	"lr";
@@ -319,20 +329,249 @@ sugar fr	"fr";
 
 -- Terms
 term	str			is	"\"([^\"]|\\.)*\"";
-term 	num			is	"\$((\-|\+)?[0-9]+|0x[0-9a-fA-F]+|0b[0-1]+)";
-term	var			is	"\{[A-Za-z][A-Za-z0-9_]*\}";
+term 	num			is	"((\-|\+)?[0-9]+|0x[0-9a-fA-F]+|0b[0-1]+)";
+term	var			is	"[A-Za-z][A-Za-z0-9_]*";
 term  ident		is	"[0-9a-zA-Z_\$@#\.\?\<\>]+";
 term	direct	is	"\.[a-z0-9_\.]+";
 term	genreg	is	"r[0-9]";
+term 	comm 		is	"\/\/[^\n]*\n";
 
 -- Rules
-INST -> ;
-INST -> SM OCSUFF ;
-INST -> LDSTR OCSUFF ;
-INST -> VINST OCSUFF ;
-INST -> NINST OCSUFF ;
+ASM -> ocbrack #init INSTS ccbrack #gen ;
+#init {
+	INSTS^mach_asm := ASM^mach_asm;
+	INSTS^tds_asm := ASM^tds_asm;
+}
 
-OCSUFF -> S CC space ;
+#gen {
+do
+	ASM^code_asm := ASM^mach_asm.generateComment("Inline ASM", "\t\t") + INSTS^code_asm;
+end
+}
+
+-- Instructions and opcode
+INSTS -> #init INST INSTS #gen ;
+#init {
+do
+	INST^tds_asm := INSTS^tds_asm;
+	INSTS1^tds_asm := INSTS^tds_asm;
+end
+}
+
+#gen {
+do
+	INSTS^code_asm := INST^code_asm + "\n" + INSTS1^code_asm;
+end
+}
+
+INST -> space nl #gen ;
+#gen {
+do
+	INST^code := "\n";
+end
+}
+
+INST -> OPCODE S CC space #init PARS #gen ;
+#init {
+do
+	PARS^parlist := new ArrayList<Object>();
+	PARS^tds_asm := INST^tds_asm;
+end
+}
+
+#gen {
+do
+	INST^code_asm := OPCODE^code_asm + S^code_asm + CC^code_asm + "\t" + PARS^code_asm;
+end
+}
+
+INST -> comm #gen ;
+#gen {
+do
+	INST^code := comm^txt;
+end
+}
+
+OPCODE -> SM #gen ;
+#gen {
+do
+	OPCODE^code_asm := SM^asm;
+end
+}
+
+OPCODE -> LDSTR #gen ;
+#gen {
+do
+	OPCODE^code_asm := LDSTR^asm;
+end
+}
+
+OPCODE -> VINST #gen ;
+#gen {
+do
+	OPCODE^code_asm := VINST^asm;
+end
+}
+
+OPCODE -> NINST #gen ;
+#gen {
+do
+	OPCODE^code_asm := NINST^asm;
+end
+}
+
+-- Parameters
+PARS -> space ;
+--#gen {
+--do
+--	PARS^code_asm := "":
+--end
+--}
+
+PARS -> #init PAR #gen PARSX ;
+#init {
+do
+	PARSX^parlist := PARS^parlist;
+	PARSX^tds_asm := PARS^tds_asm;
+end
+}
+
+#gen {
+do
+	PARS^parlist.add(PAR^code_asm);
+end
+}
+
+PARSX -> space ;
+
+PARSX -> space coma space #init PAR #gen PARSX ;
+#init {
+do
+	PAR^tds_asm := PARSX^tds_asm;
+	PARSX1^tds_asm := PARSX^tds_asm;
+end
+}
+
+#gen {
+do
+	PARSX^parlist.add(PAR^code_asm);
+	PARSX1^parlist := PARSX^parlist;
+end
+}
+
+PAR -> #init ADDR #gen ;
+#init {
+do
+	ADDR^tds_asm := PAR^tds_asm;
+end
+}
+
+#gen {
+do
+	PAR^code_asm := ADDR^code_asm;
+end
+}
+
+PAR -> SHIFTOP REGISTER #gen ;
+#gen {
+do
+	PAR^code_asm := SHIFTOP^code_asm + REGISTER^code_asm;
+end
+}
+
+PAR -> SHIFTOP NUMBER #gen ;
+#gen {
+do
+	PAR^code_asm := SHIFTOP^code_asm + REGISTER^code_asm;
+end
+}
+
+-- Shift operations
+SHIFTOP -> #gen ;
+#gen {
+do
+	SHIFTOP^code_asm := "";
+end
+}
+
+SHIFTOP -> SHIFTTYPE space #gen ;
+#gen {
+do
+	SHIFTOP^code_asm := SHIFTTYPE^code_asm + " ";
+end;
+}
+
+SHIFTTYPE -> st_asr #gen ;
+#gen {
+do
+	SHIFTTYPE^code_asm := st_asr^txt;
+end
+}
+
+SHIFTTYPE -> st_lsl #gen ;
+#gen {
+do
+	SHIFTTYPE^code_asm := st_lsl^txt;
+end
+}
+
+SHIFTTYPE -> st_lsr #gen ;
+#gen {
+do
+	SHIFTTYPE^code_asm := st_lsr^txt;
+end
+}
+
+SHIFTTYPE -> st_ror #gen ;
+#gen {
+do
+	SHIFTTYPE^code_asm := st_ror^txt;
+end
+}
+
+
+-- An address can be of the form :
+-- 		[Reg]
+--		[Reg, Reg]
+--		[Reg, #<num>]
+-- With an optionnal additionnal '!'
+ADDR -> obrack space REGISTER space ADDRSEC space cbrack ADDRSUFF #gen ;
+#gen {
+do
+	ADDR^code_asm := "[" + REGISTER^code_asm + ADDRSEC^code_asm + "]" + ADDRSUFF^code_asm;
+end
+}
+
+ADDR -> VARIABLE #gen;
+#gen {
+do
+	VARIABLE^tds_asm := ADDR^tds_asm;
+end
+}
+
+ADDRSEC -> ;
+ADDRSEC -> coma space REGISTER ;
+ADDRSEC -> coma space NUMBER ;
+
+ADDRSUFF -> excl ;
+ADDRSUFF -> ;
+
+-- Variables
+VARIABLE -> sharp var ;
+
+-- Numbers
+NUMBER -> dollar num ;
+
+-- Registers
+REGISTER -> genreg ;
+REGISTER -> sp ;
+REGISTER -> lr ;
+REGISTER -> pc ;
+REGISTER -> ht ;
+REGISTER -> oi ;
+REGISTER -> sb ;
+REGISTER -> fr ;
+
 
 NINST ->	adc ;
 NINST ->	add ;
