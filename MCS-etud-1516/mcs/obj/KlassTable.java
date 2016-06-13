@@ -11,37 +11,37 @@ import java.util.ArrayList;
 import mcs.symtab.NamespaceInfo;
 
 public class KlassTable {
-	private List<Klass> content;
+    private List<Klass> content;
 
-	public KlassTable() {
-		this.content = new ArrayList<Klass>();
-	}
-
-	public boolean exists(String name, NamespaceInfo ns) {
-    for (Klass k : this.content) {
-      if (k.name().equals(name) && k.namespace().equals(ns))
-        return true;
+    public KlassTable() {
+        this.content = new ArrayList<Klass>();
     }
 
-    return false;
-  }
+    public boolean exists(String name, NamespaceInfo ns) {
+        for (Klass k : this.content) {
+            if (k.name().equals(name) && k.namespace().equals(ns))
+                return true;
+        }
 
-	// hahaha je suis caché
-	public Klass lookup(String name, NamespaceInfo ns) {
-		for (Klass k : this.content) {
-			if (k.name().equals(name) && k.namespace().equals(ns))
-				return k;
-		}
-		return null;
-	}
+        return false;
+    }
 
-	public boolean insert(Klass k) {
-		if (exists(k.name(), k.namespace()))
-			return false;
-		
-		this.content.add(k);
-		return true;
-	}
+    // hahaha je suis caché
+    public Klass lookup(String name, NamespaceInfo ns) {
+        for (Klass k : this.content) {
+            if (k.name().equals(name) && k.namespace().equals(ns))
+                return k;
+        }
+        return null;
+    }
+
+    public boolean insert(Klass k) {
+        if (exists(k.name(), k.namespace()))
+            return false;
+
+        this.content.add(k);
+        return true;
+    }
 }
 
 
