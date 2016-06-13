@@ -19,16 +19,16 @@ public class KlassTable {
 
 	public boolean exists(String name, NamespaceInfo ns) {
     for (Klass k : this.content) {
-      if (k.name().equals(name) && k.namespace() == ns)
+      if (k.name().equals(name) && k.namespace().equals(ns))
         return true;
     }
 
     return false;
   }
 
-	public Klass lookup(String name) {
+	public Klass lookup(String name, NamespaceInfo ns) {
 		for (Klass k : this.content) {
-			if (k.name().equals(name))
+			if (k.name().equals(name) && k.namespace().equals(ns))
 				return k;
 		}
 		return null;
