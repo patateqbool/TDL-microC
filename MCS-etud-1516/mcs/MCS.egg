@@ -1092,7 +1092,7 @@ local
 do
 	code := INSTS^machine.generateComment("(27) New instruction:", "\t")
 	      + INST^code
-				+ INSTS^machine.generateComment("(27) End of instruction", "\t")
+				+ INSTS^machine.generateComment("(27) End of instruction.", "\t")
 				+ INSTS1^code;
   INSTS^code := code;
 	write("Regle (27) : fin : " + code + "\n");
@@ -1185,7 +1185,7 @@ do
 			      + AFFX^code
 						+ INST^machine.generateComment("(28) End of Expression to affect, affectation:" ,"\t\t")
 						+ INST^machine.generateStoreVariable(si, AFFX^reg)
-						+ INST^machine.generateComment("(28) En of affectation.", "\t\t");
+						+ INST^machine.generateComment("(28) End of affectation.", "\t\t");
 			write("(28) SI : " + si + "; Code: " + code + "\n");
 		else
 		  error(SHOULD_NOT_HAPPEN_SI_NOT_VI);
