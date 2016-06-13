@@ -278,11 +278,18 @@ public class ARMEngine extends AbstractMachine {
     Register r = getNextUnusedRegister();
     Type t = info.type();
 
+		System.out.println("I has been asked to generate sthing for a loaaaad constant.");
+
     if (t instanceof SimpleType) {
+
+      System.out.println("That sould not be a problem since you usin' same Simple Type (lel).");
+
       Object o = info.value();
 			System.out.println("gLC : " + o.getClass());
 
 			int val = (Integer)o;
+
+      System.out.println("We tried casting the constant into an Integer, there is de result : " + val);
 
       code +=
 				generateInstruction("MOV", r, (val & 0x0000FFFF));
