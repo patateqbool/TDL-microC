@@ -26,6 +26,7 @@ public class KlassTable {
     return false;
   }
 
+	// hahaha je suis caché
 	public Klass lookup(String name, NamespaceInfo ns) {
 		for (Klass k : this.content) {
 			if (k.name().equals(name) && k.namespace().equals(ns))
