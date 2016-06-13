@@ -3846,15 +3846,150 @@ end
 --}
 --
 ---- (104)
---F -> this FX;
+--F -> this #attFX FX #attF ;
+--
+----TODO: faire descendre l'attribut kl jusqu'à F
+--
+---- Attributs inh de FX.
+--#attFX {
+--local
+--  listeDepl : DisplacementList ;
+--	type : Type;
+--  info : SymbolInfo; 
+--do
+--  if (F^kl = null) then
+--	  error(NOT_IN_A_CLASS);
+--	end
+----Initialisations.
+--  listeDepl := new DisplacementList();
+--	type := null;
+--	info := null;
+--	listeDepl.add(0, false);
+--	FX^listeDepl := listeDepl;
+--	FX^estFun := false;
+--	--TODO: Ajouter estKlass partout
+--	FX^estKlass := true;
+--	FX^typeH := type;
+--	FX^nom := F^kl;name();
+--	FX^tvar := F^tvar;
+--	FX^tfun := F^tfun;
+--	FX^talias := F^talias;
+--	FX^machine := F^machine;
+--	FX^ni := F^ni;
+--  FX^indentation := F^indentation + 1 ; 
+--end
+--}
+--
+---- Attributs syn de F.
+--#attF {
+--local
+--  listeDepl : DisplacementList; 
+--  reg : Register;
+--	code : String;
+--do
+--  listeDepl := FX^listeDeplS;
+--  reg := new Register();
+--	code := FX^code; 
+--	if ((listeDepl.size() != 0 )&&(listeDepl.size() != 1)) then --> 1) then
+--    -- Des déplacements ont été ajoutés à la liste en plus de celui de base : on a accédé à des champs!
+--	  -- Le registre contient l'adresse de la variable accédée par FX.
+--    code := code
+--		      + F^machine.generateComment("(71) Make address:", "\t\t") 
+--		      + F^machine.generateMakeAddress(listeDepl, reg)
+--					+ F^machine.generateComment("(71) End make address.", "\t\t");
+--	end
+--    -- Sinon, accès direct à this, on ne génère pas de code.	
+--	F^vi := null;
+--	F^code := code;
+--  F^estVar := false;
+--  F^type := FX^type;
+--	F^reg := reg;
+--end
+--}
+--
 --
 ---- (105) base = super
 --
---F -> base FX;
+--F -> base #attFX FX #attF ;
 --
----- (106) compatible avec null
+----TODO: faire descendre l'attribut kl jusqu'à F
 --
---F -> null2;
+---- Attributs inh de FX.
+--#attFX {
+--local
+--  listeDepl : DisplacementList ;
+--	type : Type;
+--  info : SymbolInfo; 
+--do
+--  if (F^kl = null) then
+--	  error(NOT_IN_A_CLASS);
+--	else
+--		if (F^kl.parent = null) then
+--		  error(NO_PARENT_CLASS,F^kl.name());
+--		end
+--	end
+----Initialisations.
+--  listeDepl := new DisplacementList();
+--	type := null;
+--	info := null;
+--	listeDepl.add(0, false);
+--	FX^listeDepl := listeDepl;
+--	FX^estFun := false;
+--	--TODO: Ajouter estKlass partout
+--	FX^estKlass := true;
+--	FX^typeH := type;
+--	FX^nom := F^kl;name();
+--	FX^tvar := F^tvar;
+--	FX^tfun := F^tfun;
+--	FX^talias := F^talias;
+--	FX^machine := F^machine;
+--	FX^ni := F^ni;
+--  FX^indentation := F^indentation + 1 ; 
+--end
+--}
+--
+---- Attributs syn de F.
+--#attF {
+--local
+--  listeDepl : DisplacementList; 
+--  reg : Register;
+--	code : String;
+--do
+--  listeDepl := FX^listeDeplS;
+--  reg := new Register();
+--	code := FX^code; 
+--	if ((listeDepl.size() != 0 )&&(listeDepl.size() != 1)) then --> 1) then
+--    -- Des déplacements ont été ajoutés à la liste en plus de celui de base : on a accédé à des champs!
+--	  -- Le registre contient l'adresse de la variable accédée par FX.
+--    code := code
+--		      + F^machine.generateComment("(71) Make address:", "\t\t") 
+--		      + F^machine.generateMakeAddress(listeDepl, reg)
+--					+ F^machine.generateComment("(71) End make address.", "\t\t");
+--	end
+--    -- Sinon, accès direct à base, on ne génère pas de code.	
+--	F^vi := null;
+--	F^code := code;
+--  F^estVar := false;
+--  F^type := FX^type;
+--	F^reg := reg;
+--end
+--}
+--
+--
+---- (106) objet null
+--
+--F -> null2 #attF ;
+--
+--#attF {
+--local
+--do
+--	F^estVar := false;
+--	F^vi := null;
+--	F^code := F^machine.generateComment("(67) Null object: NO CODE", "\t\t");
+--	F^type := null;
+--	F^reg := null;
+--end
+--}
 --
 ---- (107)
 --F -> new identc IDC paro ES parf ;
