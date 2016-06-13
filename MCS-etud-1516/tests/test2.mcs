@@ -1,0 +1,16 @@
+struct {
+  int a;
+	char b;
+	struct {
+	  int a;
+		int d;
+	} ste;
+} st;
+
+int testAcces (char c) {
+  st.a = 2;
+	st.b = 'l' + c;
+	st.ste.a = 3;
+	st.ste.d = 5;
+	return ( st.a + 1 ) + st.ste.a + st.ste.d;
+}
