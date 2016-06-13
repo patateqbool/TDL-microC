@@ -1,0 +1,28 @@
+//typedef int Crabe;
+
+int x;
+
+//int test1() {
+//	int b;
+//}
+
+// Test
+int test(int a, int b) {
+	return a;
+}
+
+//void main(int argc) {
+//	int a = 0;
+//	int b;
+//	char c;
+//
+//	b = a*2;
+
+//	c = test(5, a);
+//
+//	return;
+//}
+
+
+
+
