@@ -25,7 +25,7 @@ public class ConstantInfo extends VariableInfo {
     	if (t instanceof IntegerType)
       	this.value = Integer.parseInt((String)v);
     	else if (t instanceof CharacterType)
-      	this.value = ((String)v).charAt(0);
+      	this.value = new Integer((((String)v).charAt(0)));
     	else if (t instanceof StringType)
       	this.value = fromString((String)v);
 			else
