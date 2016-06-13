@@ -2493,7 +2493,7 @@ do
 		code := F^machine.generateComment("(63) Unary operation, expression:", "\t\t")
 		      + F1^code
 					+ F^machine.generateComment("(63) End of expression, operation:", "\t\t")
-					+ F^machine.generateOperation(OPUN^op,F1^reg,reg)
+					+ F^machine.generateOperation(OPUN^op,F1^reg,rw)
 					+ F^machine.generateComment("(63) End of unary operation.", "\t\t");
 	  reg := rw.get();
 	else 
