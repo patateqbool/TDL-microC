@@ -72,7 +72,7 @@ public class ARMEngine extends AbstractMachine {
 		// Generate the init
 		String init =
 			generateComment("Initialize registers", "") +
-			generateInstruction("MOV", ht, "HB") +
+			generateInstruction("MOV", ht, "hb") +
 			generateInstruction("MOV", sb, sp) +
 			"\n";
 
@@ -809,6 +809,20 @@ public class ARMEngine extends AbstractMachine {
 	 * @param enclose enclose the last parameters in brackets (for addressing)
 	 * @return the generated code
 	 */
+	public String generateInstruction(String inst, List<Object> params) throws MCSException {
+		heapbase++;
+		boolean first = true;
+		String code =
+			ARMEngine.Prefix + inst;
+
+		for (Object o : params) {
+			code += (first ? "" : ",") + ARMEngine.Spacing + format(o);
+			if (first) first = false;
+		}
+
+		return code + "\n";
+	}
+
 	public String generateInstruction(String inst, boolean enclose, Object p1, Object p2, Object p3) throws MCSException {
 		heapbase++;
 		String code =
