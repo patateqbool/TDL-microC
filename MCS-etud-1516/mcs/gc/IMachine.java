@@ -4,6 +4,7 @@ import mcs.compiler.MCSException;
 import mcs.symtab.*;
 import mcs.obj.*;
 import mcs.compiler.MCSException;
+import java.util.List;
 
 /**
  * Cette interface décrit une machine cible. A compléter, selon votre modèle
@@ -289,10 +290,11 @@ public interface IMachine {
 	 * @param enclose enclose the last parameters in brackets (for addressing)
 	 * @return the generated code
 	 */
+String generateInstruction(String inst, List<Object> params) throws MCSException;
 	String generateInstruction(String inst, boolean enclose, Object p1, Object p2, Object p3) throws MCSException;
-	String generateInstruction(String inst, Object p1, Object p2, Object p3) throws MCSException;
+String generateInstruction(String inst, Object p1, Object p2, Object p3) throws MCSException;
 	String generateInstruction(String inst, boolean enclose, Object p1, Object p2) throws MCSException;
-	String generateInstruction(String inst, Object p1, Object p2) throws MCSException;
+							String generateInstruction(String inst, Object p1, Object p2) throws MCSException;
 	String generateInstruction(String inst, Object p1) throws MCSException;
 
 	/**

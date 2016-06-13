@@ -1249,11 +1249,13 @@ public class ARMEngine extends AbstractMachine {
     private Register getNextUnusedRegister() throws MCSException {
         // TODO: register use policy
         for (int i = 0; i < registers.size(); i++) {
+            System.out.println(registers.get(i).debug());
             if (registers.get(i).status() == Register.Status.Empty)
                 return registers.get(i);
         }
 
         for (int i = 0; i < registers.size(); i++) {
+            System.out.println(registers.get(i).debug());
             if (registers.get(i).status() == Register.Status.Used)
                 return registers.get(i);
         }

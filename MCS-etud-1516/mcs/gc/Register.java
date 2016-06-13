@@ -7,7 +7,20 @@ package mcs.gc;
  */
 public class Register {
 	public enum Status {
-		Empty, Loaded, Used
+		Empty, Loaded, Used;
+
+    public String toString() {
+        switch (this) {
+            case Empty:
+                return "E";
+            case Loaded:
+                return "L";
+            case Used:
+                return "U";
+            default:
+        }
+        return "";
+    }
 	};
 
 	private String name, alias;
@@ -73,10 +86,7 @@ public class Register {
 	}
 
 	public String debug() {
-		return "Register [name=" + name + "(" + alias + "), num=" + num + "]<" +
-      (status == Status.Empty ? "E" :
-       (status == Status.Loaded ? "L" :
-        "U")) + ">";
+		return "Register [name=" + name + "(" + alias + "), num=" + num + "]<" + this.status + ">";
 	}
 
 }
