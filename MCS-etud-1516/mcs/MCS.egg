@@ -876,7 +876,7 @@ STYPE-> char #attSTYPE ;
 #attSTYPE {
 local
 do
-  write("(60) I has recognizzz char's type.\n");
+  --write("(60) I has recognizzz char's type.\n");
   STYPE^type  := new CharacterType();
 end
 }
@@ -1538,7 +1538,7 @@ local
 	vi : VariableInfo;
 do
 --write("(35) Debut de la fin\n");
-	reg := new Register();
+	reg := null;
 	code := A^code;
 	estVar := false;
 	vi := null;
@@ -1671,7 +1671,7 @@ end
 -- Attributs syn pour A.
 #attA {
 local
-	reg : Register;
+	reg : RegisterWrapper;
 	code : String;
 	vi : VariableInfo;
 	estVar : boolean;
@@ -1679,7 +1679,7 @@ local
 	type : Type;
 do
 	type := null;
-	reg := new Register();
+	reg := new RegisterWrapper();
 	code := R^code;
 	t := R^type;
 --write("(38) R^type = " + t + "\n");
@@ -2404,7 +2404,7 @@ local
 	reg : Register;
 	code : String;
 do
-	 write("(60) This, sir, is a character constant!\n");
+	 --write("(60) This, sir, is a character constant!\n");
 -- Récup du caractère.
 	c := caractere^txt.charAt(1);
 	-- Init du type et du reg.
@@ -2417,7 +2417,7 @@ do
 	-- Une expression de base ne peut representer une variable.
 	-- Donc pas de vi.
   F^code := code;
-	write("Da code you'll need to use this constant is right heere : \n" + code + "\n");
+	--write("(60) Da code you'll need to use this constant is right heere : \n" + code + "\n");
 	F^vi := null;
 	F^estVar := false;
 	F^type := t;
@@ -3325,7 +3325,6 @@ end
 --  end  
 --  -- Pas de code pour cette RP.	
 --	ENTITE^code := "";
---	-- Héritage des params à hériter
 --	ENTITES^machine := ENTITE^machine;
 --	ENTITES^tvar : =ENTITE^tvar;
 --	ENTITES^tfun := ENTITE^tfun;
@@ -3344,9 +3343,9 @@ end
 --local 
 --do
 --  -- On commence la recherche du namespace
---  -- TODO: vérif à faire, obj terminé coté arm, yada yada
+--  -- TODO: vérif à faire
 --	if (ENTITE^tns.exists(identc^txt, ENTITE^ni)) then 
---		-- S'il est possible de continuer (i.e. identc est namespace) on le fait dans IDC
+--		-- S'il est possible de continuer (i.e. identc namespace) on le fait dans IDC
 --	  IDC^rechKlass := false;
 --	  IDC^machine := ENTITE^machine;
 --    IDC^tns := ENTITE^tns;
@@ -3362,7 +3361,7 @@ end
 --#trait {
 --local 
 --do
---  -- TODO: attendre l'arrivée une liste de ni
+--  -- TODO: attendre l'arrivé une liste de ni
 --	ENTITE^ni := ENTITE^ni.add(IDC^niS);
 --end
 --}
@@ -3439,7 +3438,6 @@ end
 --}
 --
 ---- (87) definition d'une classe (peut etre en dehors d'un namespace)
----- TODO: Quoi a remonter dans ENTITE? GC?
 --
 --ENTITE -> ACCES class identc #verif HERITAGE #ajout aco DEFS acf ;
 --
@@ -3448,11 +3446,10 @@ end
 --local
 ---- TODO: vérifier tout ca quand KlassTable & co seront finis
 --do
---  -- Si identc est une clef dans la TDKlass, erreur.
+--  -- Si identc est une clef dans la TDSKlass, erreur.
 --  if tklass.lookup(identc^txt, ENTITE^ni) != null then
 --     error(IDENT_TAKEN, identc^txt);
 --  else
---		-- Pareil pour la TDNamespace
 --    if ENTITE^tns.lookup(identc^txt, ENTITE^ni) != null then
 --      error(IDENT_TAKEN, identc^txt);
 --    else
@@ -3485,7 +3482,7 @@ end
 --}
 --
 --
----- (88) : Acces : on utilise l'entier correspondant dans l'enum
+---- (88) : Acces 
 --ACCES -> #acc public;
 --
 --#acc {
@@ -3567,7 +3564,6 @@ end
 --#passdef {
 --local
 --do
---	-- Passage des paramètres utiles lors du traitement
 --	DEF^machine := DEFS^machine;
 --	DEF^kl :=DEFS^kl;
 --	DEF^ni := DEFS^ni;
@@ -3589,7 +3585,6 @@ end
 --#verifIdent {
 --local
 --do
---	-- On ne doit pas avoir de méthode/attribut au nom de la classe
 --	if (DEF^kl.name() = ident^txt) then
 --		error(DEFINITION_SAME_NAME_CLASS,ident^txt);
 --	end if;
@@ -3600,25 +3595,19 @@ end
 --local
 --	fi : FunctionInfo
 --do
---	-- On teste si on a une méthode ou un attribut
---	if (DECL^funInfo = null) then
---		-- Si c'est un attribut, il ne doit pas déja exister un attribut de ce nom
+--	if (DEF^funInfo = null) then
 --		if (DEF^kl.attributeExists(ident^txt)) then
 --		  error(ALREADY_ATTRIBUTE,ident^txt,DEF^kl.name());			
 --		else
---			-- Dans ce cas, on l'ajoute à la classe
 --		  DEF^kl.addAttribute(DEF^name,DEF^accH,TYPE^type);
 --		end if;
 --	else
---		-- Si c'est une Method, on la cast en tant que telle
 --		fi := DECL^funInfo;
 --		match fi
 --		with MethodInfo then
---			-- On teste si la méthode existe déja avec la même signature
 --			if (DEF^kl.attributeExists(ident^txt,fi)) then
 --		  	error(ALREADY_METHOD,ident^txt,DEF^kl.name());			
 --			else
---				-- On l'ajoute à la classe et on génère son code
 --		 		DEF^kl.addMethod(DEF^name,DEF^accH,DEF^funInfo);		
 --			  DEF^code := DEF^machine.generateMethodDeclaration(fi,DECL^code);			
 --			end if;
@@ -3640,7 +3629,6 @@ end
 --#verifIdentc {
 --local
 --do
---	-- On teste si le constructeur est bien du nom de la classe
 --	if (DEF^kl.name() != identc^txt) then
 --		error(CONSTR_NOT_NAME_CLASS,ident^txt,DEF^kl.name());
 --	end if;
@@ -3652,7 +3640,7 @@ end
 --local
 --do
 --	tvparams := new VariableTable();
---  -- On crée des TDX vide pour les passer à PARFS.
+--  -- On crée une TDSvar vide pour la passer à PARFS.
 --  PARFS^tvar := tvparams;
 --  PARFS^tfun := new FunctionTable();
 --	PARFS^talias := new AliasTable();
@@ -3704,9 +3692,7 @@ end
 --	fi := DECL^funInfo;
 --	match fi
 --	with ConstructorInfo then
---		-- On ajoute le constructeur à la classe et on génère son code
 --		DEF^kl.addConstructor(fi);
---		-- On génère le code avec le "base" effectué en premier
 --	  DEF^code := DEF^machine.generateFunctionDeclaration(fi , BASE^code+BLOC^code);			
 --	else
 --			error(NOT_A_CONSTR);
@@ -3724,7 +3710,6 @@ end
 --#codeVide {
 --local
 --do
---	-- Dans ce cas, pas de code à effectuer avant BLOC
 --	BASE^code := "";
 --end
 --}
@@ -3737,11 +3722,9 @@ end
 --#attES {
 --local
 --do
---	-- Sans classe parent, erreur
 --  if (BASE^kl = null) then
 --	  error(NO_PARENT_CLASS,BASE^kl.name());
 --	end if;
---	-- On initialise les paramètres
 --  ES^typesParams := new ArrayList<Type>();
 --  ES^codeH := "";
 --	ES^tvar := new VariableTable();
@@ -3762,7 +3745,6 @@ end
 --	if (ci = null) then
 --	  error(NO_CONSTR_WITH_SUCH_PARS, BASE^kl.name());
 --	end
---	-- Si c'est le cas on renvoie le code du constructeur
 --	BASE^code := ES^code + FX^machine.generateConstructorCall(ci,true);
 --end
 --}
