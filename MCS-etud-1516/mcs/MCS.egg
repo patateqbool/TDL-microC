@@ -3976,9 +3976,20 @@ end
 --}
 --
 --
----- (106) compatible avec null
+---- (106) objet null
 --
---F -> null2;
+--F -> null2 #attF ;
+--
+--#attF {
+--local
+--do
+--	F^estVar := false;
+--	F^vi := null;
+--	F^code := F^machine.generateComment("(67) Null object: NO CODE", "\t\t");
+--	F^type := null;
+--	F^reg := null;
+--end
+--}
 --
 ---- (107)
 --F -> new identc IDC paro ES parf ;
