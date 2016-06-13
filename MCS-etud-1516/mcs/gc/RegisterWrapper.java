@@ -9,6 +9,10 @@ package mcs.gc;
 public class RegisterWrapper {
     private Register register;
 
+    public RegisterWrapper() {
+        this(null);
+    }
+
     public RegisterWrapper(Register reg) {
         this.register = reg;
     }
