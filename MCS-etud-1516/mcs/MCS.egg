@@ -1671,7 +1671,8 @@ end
 -- Attributs syn pour A.
 #attA {
 local
-	reg : RegisterWrapper;
+	reg : Register;
+	rw : RegisterWrapper;
 	code : String;
 	vi : VariableInfo;
 	estVar : boolean;
@@ -1679,7 +1680,8 @@ local
 	type : Type;
 do
 	type := null;
-	reg := new RegisterWrapper();
+	reg := null;
+	rw := new RegisterWrapper();
 	code := R^code;
 	t := R^type;
 --write("(38) R^type = " + t + "\n");
@@ -1699,8 +1701,9 @@ do
 							+ A^machine.generateComment("(38) End left part, right part:","\t\t")
 							+ AX^code
 							+ A^machine.generateComment("(38) End right part, operation:","\t\t")
-							+ A^machine.generateOperation(AX^oprel,R^reg,AX^reg,reg)
+							+ A^machine.generateOperation(AX^oprel,R^reg,AX^reg,rw)
 							+ A^machine.generateComment("(38) End of comparison.","\t\t");
+				reg := rw.get();
 				-- Une comparaison renvoie un entier (/un booléen)
 				type := new IntegerType();
 			end
@@ -1899,12 +1902,14 @@ end
 local
 	code : String;
 	reg : Register;
+	rw : RegisterWrapper;
 	vi : VariableInfo;
 	estVar : boolean;
 	type : Type;
 do
 	-- Init du registre dans lequel sera stocké le résultat de l'opération.
-	reg := new Register();
+	rw := new RegisterWrapper();
+	reg := null;
 	code := T^code;
 	type := T^type;
 
@@ -1922,8 +1927,9 @@ do
 							+ R^machine.generateComment("(47) End left part, right part:","\t\t") 
 				      + RX^code
 							+ R^machine.generateComment("(47) End right part, operation:","\t\t")
-				      + R^machine.generateOperation(RX^op,T^reg,RX^reg,reg)
+				      + R^machine.generateOperation(RX^op,T^reg,RX^reg,rw)
 							+ R^machine.generateComment("(47) End additive operation.","\t\t");
+				reg := rw.get();
 			end
 		else
 			error(TYPE_NOT_SIMPLE);
@@ -1996,10 +2002,12 @@ end
 #attRX {
 local
 	code : String;
+	rw : RegisterWrapper;
 	reg : Register;
 	type : Type;
 do
-	reg := new Register();
+  reg := null;
+	rw := new RegisterWrapper();
 	type := T^type;
 	-- On met le code de T et RX1.
 	code := T^code;
@@ -2015,8 +2023,9 @@ do
 							+ RX^machine.generateComment("(48) End left part, right part:", "\t\t")
 							+ RX1^code
 							+ RX^machine.generateComment("(48) End right part, operation:", "\t\t")
-							+ RX^machine.generateOperation(RX1^op,T^reg,RX1^reg,reg)
+							+ RX^machine.generateOperation(RX1^op,T^reg,RX1^reg,rw)
 							+ RX^machine.generateComment("(48) End additive operation.", "\t\t");
+			reg := rw.get();
 			end
 		else
 			error(TYPE_NOT_SIMPLE);
@@ -2122,12 +2131,14 @@ end
 #attT {
 local
 	code : String;
+	rw : RegisterWrapper;
 	reg : Register;
 	vi : VariableInfo;
 	estVar : boolean;
 	t : Type;
 do
-	reg := new Register();
+  reg := null;
+	rw := new RegisterWrapper();
 	code := F^code;
 	t := F^type;
 	if (TX^op != 0) then
@@ -2142,8 +2153,9 @@ do
 							+ T^machine.generateComment("(53) End left part, right part:", "\t\t")
 							+ TX^code
 							+ T^machine.generateComment("(53) end right part, operation:", "\t\t")
-  						+ T^machine.generateOperation(TX^op,F^reg,TX^reg,reg)
+  						+ T^machine.generateOperation(TX^op,F^reg,TX^reg,rw)
 							+ T^machine.generateComment("(53) End product operation:", "\t\t");
+			reg := rw.get();
 			end
 		else
 			error(TYPE_NOT_SIMPLE);
@@ -2216,10 +2228,12 @@ end
 #attTX {
 local
 	code : String;
+	rw : RegisterWrapper;
 	reg : Register;
 	type : Type;
 do
-	reg := new Register();
+  reg := null;
+	rw := new RegisterWrapper();
 	code := F^code;
 	type := F^type;
 	if (TX1^op != 0) then
@@ -2234,8 +2248,9 @@ do
 							+ TX^machine.generateComment("(54) End left part, right part:", "\t\t")
 							+ TX1^code
 							+ TX^machine.generateComment("(54) end right part, operation:", "\t\t")
-  						+ TX^machine.generateOperation(TX1^op,F^reg,TX1^reg,reg)
+  						+ TX^machine.generateOperation(TX1^op,F^reg,TX1^reg,rw)
 							+ TX^machine.generateComment("(54) End product operation:", "\t\t");
+			reg := rw.get();
 			end
 		else
 			error(TYPE_NOT_SIMPLE);
@@ -2328,20 +2343,24 @@ F -> entier #attF ;
 #attF {
 local
 	t : IntegerType;
+	rw : RegisterWrapper;
+	reg : Register;
 	r : Register;
   c : ConstantInfo;
 do
 --write("(60) Debut\n");
 	-- Creation du type et du registre.
 	t := new IntegerType();
-	r := new Register();
+	rw := new RegisterWrapper();
+	reg := null;
 	-- Récup de l'entier et conversion au bon format.
 	-- Génération du code, et set de l'attribut le contenant.
 	c := new ConstantInfo(t, entier^txt);
 --write("(60) : ConstantInfo : " + c + "\n");
 	F^code := F^machine.generateComment("(60) Integer constant:", "\t\t")
-	        + F^machine.generateLoadConstant(c, r)
+	        + F^machine.generateLoadConstant(c, rw)
 					+ F^machine.generateComment("(60) End integer constant.", "\t\t"); 
+  reg := rw.get();
 --write("(60) reg : " + r.debug() + "\n");
 	-- Une expression de base ne peut representer une variable.
 	-- Donc pas de vi.
@@ -2350,7 +2369,7 @@ do
 	-- Set de l'attribut type.
 	F^type := t;
 	-- Set de l'attribut registre de F, c'est le registre contenant l'entier.
-	F^reg := r;
+	F^reg := reg;
 end
 }
 
@@ -2364,7 +2383,8 @@ F -> chaine #attF ;
 local
 	l : int;
 	t : StringType;
-	r : Register;
+	reg : Register;
+	rw : RegisterWrapper;
 	s : String;
 do
 	-- Récup de la chaine.
@@ -2376,17 +2396,19 @@ do
 	-- Initialisation du type, en précisant la taille.
 	t := new StringType(l);
 	-- Création du registre.
-	r := new Register();
+	rw := new RegisterWrapper();
+	reg := null;
 	-- Génération du code et set des attributs de F.
 	F^code := F^machine.generateComment("(61) String constant:", "\t\t")
-	        + F^machine.generateLoadConstant(new ConstantInfo(t, s), r)
+	        + F^machine.generateLoadConstant(new ConstantInfo(t, s), rw)
 					+ F^machine.generateComment("(61) End string integer.", "\t\t");
+	reg := rw.get();
 	-- Une expression de base ne peut representer une variable.
 	-- Donc pas de vi.
 	F^vi := null;
 	F^estVar := false;
 	F^type := t;
-	F^reg := r;
+	F^reg := reg;
 end
 }
 
@@ -2402,18 +2424,21 @@ local
 	r : Register;
 	t : Type;
 	reg : Register;
-	code : String;
+  rw : RegisterWrapper;
+  code : String;
 do
 	 --write("(60) This, sir, is a character constant!\n");
 -- Récup du caractère.
 	c := caractere^txt.charAt(1);
 	-- Init du type et du reg.
 	t := new CharacterType();
-	reg := new Register();
+	reg := null;
+	rw := new RegisterWrapper();
 	-- Gen du code et set des attributs de F.
 	code := F^machine.generateComment("(62) Char constant:", "\t\t")
-	        + F^machine.generateLoadConstant(new ConstantInfo(t, c), reg)
+	        + F^machine.generateLoadConstant(new ConstantInfo(t, c), rw)
 					+ F^machine.generateComment("(62) End char constant.", "\t\t");
+	reg := rw.get();
 	-- Une expression de base ne peut representer une variable.
 	-- Donc pas de vi.
   F^code := code;
@@ -2454,11 +2479,13 @@ end
 -- Génération du code pour la déclaration de la variable.
 #attF {
 local
+  rw : RegisterWrapper;
 	reg : Register;
 	code : String;
 	t : Type;
 do
-	reg := new Register();
+	rw := new RegisterWrapper();
+	reg := null;
 	t := F1^type;
 	code := "";
 	match t
@@ -2468,6 +2495,7 @@ do
 					+ F^machine.generateComment("(63) End of expression, operation:", "\t\t")
 					+ F^machine.generateOperation(OPUN^op,F1^reg,reg)
 					+ F^machine.generateComment("(63) End of unary operation.", "\t\t");
+	  reg := rw.get();
 	else 
 		error(TYPE_NOT_SIMPLE);
 	end
@@ -2578,11 +2606,13 @@ local
   estVar : boolean;
 	vi : VariableInfo;
 	dl : DisplacementList;
+	rw : RegisterWrapper;
   code : String;
   reg : Register;
 do
   dl := FX^listeDeplS;
-  reg := new Register();
+  rw := new RegisterWrapper();
+  reg := null;
   code := F^machine.generateComment("(68) Parenthesized expression:", "\t\t")
 		    + E^code
 				+ F^machine.generateComment("(68) End of parenthesized expression.", "\t\t");
@@ -2592,8 +2622,9 @@ do
     -- Les verification d'existence de champs ont été faites dans FX.
     code := code
 		      + F^machine.generateComment("(68) Make address:", "\t\t")
-					+ F^machine.generateMakeAddress(dl, E^reg, reg)
+					+ F^machine.generateMakeAddress(dl, E^reg, rw)
 					+ F^machine.generateComment("(68) End make address.", "\t\t");
+		reg := rw.get();
 	else
 		reg := E^reg;
   end
@@ -2690,10 +2721,12 @@ local
   t : Type;
 	type : Type;
   reg : Register;
+  rw : RegisterWrapper;
 do
 	t := F1^type;
 	type := null; 
-  reg := new Register();
+  rw := new RegisterWrapper();
+	reg := null;
 	-- On vérifie que ce qu'on deref' est un pointeur. 
   match t 
 	with PointerType then
@@ -2707,8 +2740,9 @@ do
 	F^code := F^machine.generateComment("(70) Unreferencing, code of what to unreference:", "\t\t")
 	        + F1^code 
 					+ F^machine.generateComment("(70) Unreferencing:", "\t\t")
-					+ F^machine.generateLoadFromHeap(F1^reg, 0, reg)
+					+ F^machine.generateLoadFromHeap(F1^reg, 0, rw)
 					+ F^machine.generateComment("(70) End of unreferencing.", "\t\t");
+	reg := rw.get();
 	F^vi := null; --TODO
 	F^estVar := true;
 	F^type := type;
@@ -2795,6 +2829,7 @@ end
 local
   listeDepl : DisplacementList; 
   reg : Register;
+	rw : RegisterWrapper;
 	code : String;
 do
 --write("Après Règle 71\n");
@@ -2803,9 +2838,10 @@ do
   --																					- accédé simplement à une variable.
   --               														- accédé à un champ de struct.
   listeDepl := FX^listeDeplS;
-  reg := new Register();
+  rw := new RegisterWrapper();
+	reg := null;
 	code := FX^code;
-	if estFun then
+	if (estFun) then
 	--write("(71).attF C'est une fonction\n");
     -- On a un appel de fonction, peut être suivi d'accés à des champs de struct.
 	  -- regRetourFun est le registre contenant le résultat de l'appel de fonction,
@@ -2813,8 +2849,9 @@ do
 	--write("(71) DL :\n" + listeDepl + "\n     reg : " + FX^reg.debug() + "\n"); 
     code := code
 		      + F^machine.generateComment("(71) Make address:", "\t\t")
-		      + F^machine.generateMakeAddress(listeDepl, FX^reg, reg)
+		      + F^machine.generateMakeAddress(listeDepl, FX^reg, rw)
 					+ F^machine.generateComment("(71) End make address", "\t\t");
+	  reg := rw.get();
 	else 
 	  -- On n'a pas d'appel de fonction. 
 		if ((listeDepl.size() != 0 )&&(listeDepl.size() != 1)) then --> 1) then
@@ -2822,15 +2859,17 @@ do
 		  -- Le registre contient l'adresse de la variable accédée par FX dans le struct.
       code := code
 			      + F^machine.generateComment("(71) Make address:", "\t\t") 
-			      + F^machine.generateMakeAddress(listeDepl, reg)
+			      + F^machine.generateMakeAddress(listeDepl, rw)
 						+ F^machine.generateComment("(71) End make address.", "\t\t");
+			reg := rw.get();
 		else
       -- Accés direct à une variable.
    		-- La VariableInfo est déjà dans varInfo.
       code := code
 			      + F^machine.generateComment("(71) Load value:", "\t\t")
-			      + F^machine.generateLoadValue(varInfo, reg)
+			      + F^machine.generateLoadValue(varInfo, rw)
 						+ F^machine.generateComment("(71) end load value.", "\t\t");
+		  reg := rw.get();
 		end
   end
 	F^vi := varInfo;
