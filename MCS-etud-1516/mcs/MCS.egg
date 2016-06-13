@@ -433,7 +433,7 @@ local
 	b : boolean;
 	code : String;
 do
-	write("À la fin de (5)\n");
+--write("À la fin de (5)\n");
   fi := DECL^funInfo;
   tv := ENTITE^tvar;
 	tf := ENTITE^tfun;
@@ -444,27 +444,27 @@ do
     error(IDENT_TAKEN, ident^txt);
   else
 		t := ENTITE^talias.lookup(ident^txt);
-		write("(5) info not null\n");
+	--write("(5) info not null\n");
 		if (t!= null) then
 		  error(ALREADY_AN_ALIAS, ident^txt);
 	  else
-			write("(5) ident not already taken for type\n");
+		--write("(5) ident not already taken for type\n");
 		  --info := tf.lookup(ident^txt, ENTITE^ni, true);
       if (fi = null) then
-				write("(5) It's a variable declaration\n");
+			--write("(5) It's a variable declaration\n");
 	      -- On a une variable.
         if (tf.exists(ident^txt, ENTITE^ni, fi)) then
 				  -- Dans ce cas, il ne faut pas que l'ident soit pris par une fonction.
           error(IDENT_TAKEN, ident^txt);
         else
-					write("(5) Add variable \\o/\n");
+				--write("(5) Add variable \\o/\n");
 				  -- Si ce n'est pas le cas, on peut add la variable à la tvar.
           tv.insert(ident^txt, TYPE^type, ENTITE^ni);
 					code := ENTITE^machine.generateComment("(5) Variable declaration:", "") + code ;
 				end
 	   else
 		   code := ENTITE^machine.generateComment("(5) Function declaration:", "") + code ;
-			--	write("(5) It's a function declaration\n");
+			----write("(5) It's a function declaration\n");
         -- On a une fonction.
 				-- On ajoute la fonction à la tfun, 
 				-- si la valeur retour est false c'est qu'on avait déjà une fonction
@@ -479,7 +479,7 @@ do
 	-- La talias n'est pas modifiée par cette RP.
 	ENTITE^taliasS := ENTITE^talias ;
   -- Passage du code généré par DECL à ENTITE.
-	write("Code (5) : " + DECL^code + "\n");
+--write("Code (5) : " + DECL^code + "\n");
   ENTITE^code := code + ENTITE^machine.generateComment("(5) End of declaration.", "");
 end
 }
@@ -498,7 +498,7 @@ do
 	code := DECL^machine.generateAllocateInStack(DECL^typeH);
   DECL^code := code;
 	DECL^funInfo := null;
-	write("(6) fin, code: " + code + "\n");
+--write("(6) fin, code: " + code + "\n");
 end
 }
 
@@ -530,7 +530,7 @@ do
 	code := FONCTION^code;
   -- Passage du code de declaration de la fonction à DECL.
   DECL^code := code;
-	write("Code (7) : " + code + "\n");
+--write("Code (7) : " + code + "\n");
 	-- Passage du functionInfo.
 	DECL^funInfo := FONCTION^funInfo;
 end
@@ -559,7 +559,7 @@ do
   PARFS^machine := FONCTION^machine;
 	PARFS^ni := FONCTION^ni;
   PARFS^indentation := FONCTION^indentation + 1;
-	write("Regle (8)\n");
+--write("Regle (8)\n");
 end
 }
 
@@ -584,7 +584,7 @@ do
 	BLOC^talias := FONCTION^talias;
 	BLOC^machine := FONCTION^machine;
 	BLOC^ni := FONCTION^ni;
-	write("Regle (8) : milieu\n");
+--write("Regle (8) : milieu\n");
 end
 }
 
@@ -594,7 +594,7 @@ local
 	code : String;
 do
 	code := FONCTION^machine.generateFunctionDeclaration(PARFS^funInfo , BLOC^code);
-	write("Code (8) : " + code + "\n");
+--write("Code (8) : " + code + "\n");
   FONCTION^code := code; 
 	FONCTION^funInfo := PARFS^funInfo;
 end
@@ -610,7 +610,7 @@ PARFS -> #attPARFS ;
 #attPARFS {
 local
 do
-	write("Regle (9)\n");
+--write("Regle (9)\n");
   -- fin de la liste des parmètres, on transmet le fi 'final'.
   PARFS^funInfo := PARFS^funInfoH ;
 end
@@ -625,7 +625,7 @@ PARFS -> #attPARF PARF #attPARFSX PARFSX #attPARFS ;
 local
   c : int;
 do
-	write("Regle (10)\n");
+--write("Regle (10)\n");
   -- Incrementation du compteur de parametres.
   c := PARFS^cParam + 1;
   PARF^cParam := c;
@@ -647,7 +647,7 @@ local
   fi : FunctionInfo ; 
 do
   PARFSX^funInfoH := PARF^funInfo;
-  write("(10) middle : passage tvar\n" + PARFS^tvar + "\n");
+--write("(10) middle : passage tvar\n" + PARFS^tvar + "\n");
 	PARFSX^tvar := PARFS^tvar;
 	PARFSX^tfun := PARFS^tfun;
 	PARFSX^talias := PARFS^talias;
@@ -748,7 +748,7 @@ local
 	info : SymbolInfo;
   fi : FunctionInfo;
 do
-	write("Regle (13) : " + TYPE^type + " " + ident^txt + " [" + PARF^ni.name() + "]" + "\n");
+--write("Regle (13) : " + TYPE^type + " " + ident^txt + " [" + PARF^ni.name() + "]" + "\n");
   
 	tv := PARF^tvar;
   fi := PARF^funInfoH;
@@ -770,9 +770,9 @@ do
 			else
 			  -- Ajout de ident à la TDS locale et au fi.
 			  fi.add(TYPE^type);
-				write("(13) ns = " + PARF^ni.name() + ", " + fi + "\n");
+			--write("(13) ns = " + PARF^ni.name() + ", " + fi + "\n");
         tv.insert(ident^txt, new VariableInfo(TYPE^type, fi.displacement(PARF^cParam), PARF^ni));
-        write("(13) Après ajout :\n" + tv + "\n");      
+      --write("(13) Après ajout :\n" + tv + "\n");      
 			end
 		end
   end
@@ -876,6 +876,7 @@ STYPE-> char #attSTYPE ;
 #attSTYPE {
 local
 do
+  write("(60) I has recognizzz char's type.\n");
   STYPE^type  := new CharacterType();
 end
 }
@@ -1008,7 +1009,7 @@ BLOC ->  aco #attINSTS INSTS acf #attBLOC ;
 #attINSTS {
 local
 do
-	write("Regle (25)\n");
+--write("Regle (25)\n");
   INSTS^tvar := BLOC^tvar;
   INSTS^tfun := BLOC^tfun;
 	INSTS^talias := BLOC^talias;
@@ -1028,9 +1029,9 @@ do
   code := BLOC^machine.generateComment("(25) Bloc:", "")
 				+ INSTS^code
 				+ BLOC^machine.generateComment("(25) End of bloc.", "");
-	write("Code (25) [pre-flush] : " + code + "\n");
+--write("Code (25) [pre-flush] : " + code + "\n");
   code := code + BLOC^machine.generateFlush(BLOC^tvar);
-	write("Code (25) : " + code + "\n");
+--write("Code (25) : " + code + "\n");
   BLOC^code := code;
 end
 }
@@ -1045,7 +1046,7 @@ INSTS -> #attINSTS ;
 #attINSTS {
 local
 do
-	write("Regle (26)\n");
+--write("Regle (26)\n");
   INSTS^code := INSTS^machine.generateComment("(26) End of instructions for this bloc.", "\t");
 end
 }
@@ -1058,7 +1059,7 @@ INSTS -> #attINST INST #attINSTS1 INSTS #attINSTS ;
 #attINST {
 local
 do
-	write("Regle (27)\n");
+--write("Regle (27)\n");
   INST^funInfoH := INSTS^funInfoH;
 	INSTS1^funInfoH := INSTS^funInfoH;
 	INST^tvar := INSTS^tvar;
@@ -1074,7 +1075,7 @@ end
 #attINSTS1 {
 local
 do
-	write("Regle (27) : milieu : " + INST^code + "\n");
+--write("Regle (27) : milieu : " + INST^code + "\n");
   INSTS1^tvar := INSTS^tvar;
 	-- tfun, talias et machine directement hérité de INSTS.
   INSTS1^tfun := INSTS^tfun; 
@@ -1092,10 +1093,10 @@ local
 do
 	code := INSTS^machine.generateComment("(27) New instruction:", "\t")
 	      + INST^code
-				+ INSTS^machine.generateComment("(27) End of instruction", "\t")
+				+ INSTS^machine.generateComment("(27) End of instruction.", "\t")
 				+ INSTS1^code;
   INSTS^code := code;
-	write("Regle (27) : fin : " + code + "\n");
+--write("Regle (27) : fin : " + code + "\n");
 end
 }
 
@@ -1107,7 +1108,8 @@ INST -> #attTYPE TYPE ident #attAFFX AFFX pv #attINST;
 #attTYPE {
 local
 do
-	write("Regle (28)\n");
+  write("(28) Has you something to declare?\n");
+--write("Regle (28)\n");
   TYPE^talias := INST^talias;
 	TYPE^indentation := INST^indentation + 1 ;
 end
@@ -1117,6 +1119,7 @@ end
 #attAFFX {
 local
 do
+  write("(28) So you declarin' some " + TYPE^type + ", named : " + ident^txt + "...\n"); 
   AFFX^machine := INST^machine;
 	AFFX^tvar := INST^tvar;
 	AFFX^tfun := INST^tfun;
@@ -1142,7 +1145,7 @@ local
 	tv : VariableTable;
 	si : SymbolInfo;
 do
-	write("(28) Debut de la fin; nom : " + ident^txt + "\n");
+--write("(28) Debut de la fin; nom : " + ident^txt + "\n");
   nom := ident^txt;
   tv := INST^tvar;
   --info := INST^tvar.lookup(nom, INST^ni, true);
@@ -1161,18 +1164,18 @@ do
 			if (t != null) then 
 			  error(ALREADY_AN_ALIAS, nom);
 			else
-				write("(28) [" + INST^ni + "] " + ident^txt + " (" + TYPE^type + ") n'existe pas\n");
+			--write("(28) [" + INST^ni + "] " + ident^txt + " (" + TYPE^type + ") n'existe pas\n");
 		    -- Sinon, on ajoute cet id à la tdsvar.
 	   	  tv.insert(nom, TYPE^type, INST^ni);
 				code := INST^machine.generateComment("(28) Allocate in stack:", "\t\t")
 				      + INST^machine.generateAllocateInStack(TYPE^type)
 							+ INST^machine.generateComment("(28) End of allocation.", "\t\t");
-				write("(28) Code (allocation) : " + code + "\n");
+			--write("(28) Code (allocation) : " + code + "\n");
 			end
     end
   end 
 	if !(AFFX^estVar) then
-		write("(28) C'est une variable\n");
+	--write("(28) C'est une variable\n");
     -- On a une affectation.	
 		-- Verification de types inutile, elle est faite dans AFFX.
 		-- On génère le code pour stocker la valeur du registre 
@@ -1185,8 +1188,8 @@ do
 			      + AFFX^code
 						+ INST^machine.generateComment("(28) End of Expression to affect, affectation:" ,"\t\t")
 						+ INST^machine.generateStoreVariable(si, AFFX^reg)
-						+ INST^machine.generateComment("(28) En of affectation.", "\t\t");
-			write("(28) SI : " + si + "; Code: " + code + "\n");
+						+ INST^machine.generateComment("(28) End of affectation.", "\t\t");
+		--write("(28) SI : " + si + "; Code: " + code + "\n");
 		else
 		  error(SHOULD_NOT_HAPPEN_SI_NOT_VI);
 		end
@@ -1434,7 +1437,7 @@ INST ->  retour #attE E pv #attINST ;
 #attE {
 local
 do
-	write("Regle (34)\n");
+--write("Regle (34)\n");
 	E^machine := INST^machine;
 	E^tvar := INST^tvar;
 	E^tfun := INST^tfun;
@@ -1450,20 +1453,20 @@ local
 	typeRet : Type;
 	code : String;
 do
-	write("(34) Début de la fin\n");
+--write("(34) Début de la fin\n");
 	
 	if (INST^funInfoH = null) then
-		write("(34) funInfoH est null !\n");
+	--write("(34) funInfoH est null !\n");
 	end
 
 	typeRet := INST^funInfoH.returnType();
 	-- Si typeRet ne correspond pas à E^type
 	-- alors erreur.
-	write("(34) E^type = " + E^type + "; fi^type = " + typeRet + "\n");
+--write("(34) E^type = " + E^type + "; fi^type = " + typeRet + "\n");
 	if (!typeRet.isEqualTo(E^type)) then
 		error(TYPE_NOT_COMPATIBLE);  
 	end
-	write("(34) Milieu de la fin : " + E^reg.debug() + "\n");
+--write("(34) Milieu de la fin : " + E^reg.debug() + "\n");
 	--Génération du code de retour de la fonction et du flush.
 	code := INST^machine.generateComment("(34) Return:","\t") 
 	      + INST^machine.generateComment("(34) Expression to return:","\t\t")
@@ -1473,7 +1476,7 @@ do
 				+ INST^machine.generateComment("(34) End of flush. Function return:","\t\t")
 	    	+ INST^machine.generateFunctionReturn(INST^funInfoH, E^reg)
 				+ INST^machine.generateComment("(34) End of return.","\t");
-	write("Code (34) : " + code + "\n");
+--write("Code (34) : " + code + "\n");
 	INST^code := code;
 end
 }
@@ -1495,7 +1498,7 @@ E -> #attA A #attAFFX AFFX #attE;
 #attA {
 local
 do
-	write("Regle (35): E\n");
+--write("Regle (35): E\n");
 	A^machine := E^machine;
 	A^tvar := E^tvar;
 	A^tfun := E^tfun;
@@ -1511,7 +1514,7 @@ end
 #attAFFX {
 local
 do
-	write("Regle (35) : milieu : " + A^code + "\n");
+--write("Regle (35) : milieu : " + A^code + "\n");
 	AFFX^machine := E^machine;
 	AFFX^tvar := E^tvar;
 	AFFX^tfun := E^tfun;
@@ -1534,7 +1537,7 @@ local
 	estVar : boolean;
 	vi : VariableInfo;
 do
-	write("(35) Debut de la fin\n");
+--write("(35) Debut de la fin\n");
 	reg := new Register();
 	code := A^code;
 	estVar := false;
@@ -1554,7 +1557,7 @@ do
 			vi := null ;
 			-- On génère le code de l'affectation.
 			-- La compatibilité des types est effectuée dans AFFX.
-			write("(35) Code else : " + code + "\n");
+		--write("(35) Code else : " + code + "\n");
 			code := E^machine.generateComment("(35) Affectation, left part:", "\t\t")
 			      + code
 			      + E^machine.generateComment("(35) End of left part, right part:", "\t\t")
@@ -1567,14 +1570,14 @@ do
 			error(LEFT_PART_NOT_VARIABLE);
 		end
 	end
-	write("(35) reg = " + reg.debug() + "\n");
-	write("(35) type = " + A^type + "\n");
+--write("(35) reg = " + reg.debug() + "\n");
+--write("(35) type = " + A^type + "\n");
 	E^type := A^type;
 	E^reg := reg;
 	E^estVar := estVar;
 	E^vi := vi;
 	E^code := code;
-  write("Code 35: " + code + "\n");
+--write("Code 35: " + code + "\n");
 end
 }
 
@@ -1627,7 +1630,7 @@ AFFX -> #attAFFX ;
 #attAFFX {
 local
 do
-	write("Regle (37)\n");
+--write("Regle (37)\n");
 	AFFX^estVar := true ;
 	AFFX^reg := null;
 	AFFX^type := null;
@@ -1642,7 +1645,7 @@ A -> #attR R #attAX AX #attA ;
 #attR {
 local
 do
-	write("Regle (38)\n");
+--write("Regle (38)\n");
 	R^machine := A^machine;
 	R^tvar := A^tvar;
 	R^tfun := A^tfun;
@@ -1655,7 +1658,7 @@ end
 #attAX {
 local
 do
-	write("Regle (38) : milieu\n");
+--write("Regle (38) : milieu\n");
 	AX^machine := A^machine;
 	AX^tvar := A^tvar;
 	AX^tfun := A^tfun;
@@ -1679,7 +1682,7 @@ do
 	reg := new Register();
 	code := R^code;
 	t := R^type;
-	write("(38) R^type = " + t + "\n");
+--write("(38) R^type = " + t + "\n");
 	-- Si AX n'est pas une variable, on doit générer le code de l'opération.
 	if !(AX^estVar) then
 		-- Le type de A doit être comparable, ie il doit s'agir d'un type simple.
@@ -1726,8 +1729,8 @@ do
 	-- Passage des autres attributs.
 	A^type := type;
 	A^code := code;
-	write("(38) Reg : " + reg.debug() + "\n");
-	write("(38) Code : " + code + "\n");
+--write("(38) Reg : " + reg.debug() + "\n");
+--write("(38) Code : " + code + "\n");
 	A^vi := vi;
 	A^estVar := estVar;
 end
@@ -1778,7 +1781,7 @@ AX -> #attAX ;
 #attAX {
 local
 do
-	write("Regle (40)\n");
+--write("Regle (40)\n");
 	-- L'oprel de AX est null dans ce cas.
 	-- Il faut tout de même l'initialiser comme il s'agit d'un attribut synthétisé.
 	AX^oprel := null;
@@ -1866,7 +1869,7 @@ R -> #attT T #attRX RX #attR ;
 #attT {
 local
 do
-	write("Regle (47)\n");
+--write("Regle (47)\n");
 	T^machine := R^machine;
 	T^talias := R^talias;
 	T^tfun := R^tfun;
@@ -1881,7 +1884,7 @@ end
 #attRX {
 local
 do
-	write("Regle (47) : milieu\n");
+--write("Regle (47) : milieu\n");
 	RX^machine := R^machine;
 	RX^talias := R^talias;
 	RX^tfun := R^tfun;
@@ -1905,7 +1908,7 @@ do
 	code := T^code;
 	type := T^type;
 
-	write("(47) T^type = " + type + "\n");
+--write("(47) T^type = " + type + "\n");
 
 	if (RX^op != 0) then
 		-- Si il y a un opération : verif sur les types.
@@ -1946,8 +1949,8 @@ do
 	R^estVar := estVar;
 	R^vi := vi;
 	R^type := type;
-	write("(47) reg : " + reg.debug() + "\n");
-	write("(47) code : " + code + "\n");
+--write("(47) reg : " + reg.debug() + "\n");
+--write("(47) code : " + code + "\n");
 end
 }
 
@@ -2091,7 +2094,7 @@ T -> #attF F #attTX TX #attT ;
 #attF {
 local
 do
-	write("Regle (53)\n");
+--write("Regle (53)\n");
 	F^machine := T^machine;
 	F^talias := T^talias;
 	F^tfun := T^tfun;
@@ -2105,7 +2108,7 @@ end
 #attTX {
 local
 do
-	write("Regle (53) : milieu\n");
+--write("Regle (53) : milieu\n");
 	TX^machine := T^machine;
 	TX^talias := T^talias;
 	TX^tfun := T^tfun;
@@ -2161,13 +2164,13 @@ do
 		vi := null;
 	end
 	-- Passage des attributs.
-	write("(53) reg : " + reg.debug() + "\n");
+--write("(53) reg : " + reg.debug() + "\n");
 	T^reg := reg;
 	T^code := code;
 	T^vi := vi;
 	T^estVar := estVar;
 	T^type := t;
-	write("(53) code : " + code + "\n");
+--write("(53) code : " + code + "\n");
 end
 }
 
@@ -2328,18 +2331,18 @@ local
 	r : Register;
   c : ConstantInfo;
 do
-  write("(60) Debut\n");
+--write("(60) Debut\n");
 	-- Creation du type et du registre.
 	t := new IntegerType();
 	r := new Register();
 	-- Récup de l'entier et conversion au bon format.
 	-- Génération du code, et set de l'attribut le contenant.
 	c := new ConstantInfo(t, entier^txt);
-	write("(60) : ConstantInfo : " + c + "\n");
+--write("(60) : ConstantInfo : " + c + "\n");
 	F^code := F^machine.generateComment("(60) Integer constant:", "\t\t")
 	        + F^machine.generateLoadConstant(c, r)
 					+ F^machine.generateComment("(60) End integer constant.", "\t\t"); 
-	write("(60) reg : " + r.debug() + "\n");
+--write("(60) reg : " + r.debug() + "\n");
 	-- Une expression de base ne peut representer une variable.
 	-- Donc pas de vi.
 	F^vi := null;
@@ -2399,18 +2402,22 @@ local
 	r : Register;
 	t : Type;
 	reg : Register;
+	code : String;
 do
-	-- Récup du caractère.
+	 write("(60) This, sir, is a character constant!\n");
+-- Récup du caractère.
 	c := caractere^txt.charAt(1);
 	-- Init du type et du reg.
 	t := new CharacterType();
 	reg := new Register();
 	-- Gen du code et set des attributs de F.
-	F^code := F^machine.generateComment("(62) Char constant:", "\t\t")
+	code := F^machine.generateComment("(62) Char constant:", "\t\t")
 	        + F^machine.generateLoadConstant(new ConstantInfo(t, c), reg)
 					+ F^machine.generateComment("(62) End char constant.", "\t\t");
 	-- Une expression de base ne peut representer une variable.
 	-- Donc pas de vi.
+  F^code := code;
+	write("Da code you'll need to use this constant is right heere : \n" + code + "\n");
 	F^vi := null;
 	F^estVar := false;
 	F^type := t;
@@ -2727,18 +2734,18 @@ local
   info : SymbolInfo; 
 do
  
-  write("Regle (71) : " + ident^txt + ", " + F^ni.name() + "\n");
+--write("Regle (71) : " + ident^txt + ", " + F^ni.name() + "\n");
   --Initialisations.
   listeDepl := new DisplacementList();
 	estFun := false;
 	type := null;
 	varInfo := null;
 	info := null;
-	write("(71) VARTABLE :\n" + F^tvar);
+--write("(71) VARTABLE :\n" + F^tvar);
 
 	-- Recherche dans la TVar (globalement).
   if (!(F^tvar.exists(ident^txt, F^ni, false))) then
-		write("(71) " + ident^txt + " not in tvar\n");
+	--write("(71) " + ident^txt + " not in tvar\n");
 	  -- ident n'est pas dans la TVar, F n'est pas une variable.
 		-- On regarde dans la TFun s'il s'agit de l'identifiant d'une fonction.
     if (!(F^tfun.exists(ident^txt, F^ni))) then
@@ -2747,14 +2754,14 @@ do
     else
 		  -- L'id est celui d'une fonction.
 			-- On passe estFun à vrai.
-			write("(71).attFX C'est une fonction\n");
+		--write("(71).attFX C'est une fonction\n");
 			listeDepl.add(0, false);
 			estFun := true;
 			type := null;
     end
   else
 		-- On peut passer le type.
-		write("(71) " + ident^txt + " is a var\n");
+	--write("(71) " + ident^txt + " is a var\n");
 		info := F^tvar.lookup(ident^txt, F^ni, false);
 		match info
 		with VariableInfo then
@@ -2779,7 +2786,7 @@ do
 	FX^machine := F^machine;
 	FX^ni := F^ni;
   FX^indentation := F^indentation + 1 ; 
-	write("Regle 71 : au milieu à peu près\n");
+--write("Regle 71 : au milieu à peu près\n");
 end
 }
 
@@ -2790,7 +2797,7 @@ local
   reg : Register;
 	code : String;
 do
-	write("Après Règle 71\n");
+--write("Après Règle 71\n");
   -- Génération du code.
   -- Traitements différents selon qu'on ait : - éffectué un appel de fonction.
   --																					- accédé simplement à une variable.
@@ -2799,11 +2806,11 @@ do
   reg := new Register();
 	code := FX^code;
 	if estFun then
-		write("(71).attF C'est une fonction\n");
+	--write("(71).attF C'est une fonction\n");
     -- On a un appel de fonction, peut être suivi d'accés à des champs de struct.
 	  -- regRetourFun est le registre contenant le résultat de l'appel de fonction,
 		-- il se trouve dans le FunctionInfo \o/.
-		write("(71) DL :\n" + listeDepl + "\n     reg : " + FX^reg.debug() + "\n"); 
+	--write("(71) DL :\n" + listeDepl + "\n     reg : " + FX^reg.debug() + "\n"); 
     code := code
 		      + F^machine.generateComment("(71) Make address:", "\t\t")
 		      + F^machine.generateMakeAddress(listeDepl, FX^reg, reg)
@@ -2831,8 +2838,8 @@ do
   F^estVar := true;
   F^type := FX^type;
 	F^reg := reg;
-	write("(71) reg : " + reg.debug() + "\n");
-	write("(71) code: " + code + "\n");
+--write("(71) reg : " + reg.debug() + "\n");
+--write("(71) code: " + code + "\n");
 end
 }
 
@@ -2853,7 +2860,7 @@ do
   FX^listeDeplS := FX^listeDepl;
 	FX^estVar := true;
 	FX^reg := null;
-	write("Regle (72) (FX -> /\\)\n");
+--write("Regle (72) (FX -> /\\)\n");
 end
 }
 
@@ -3015,7 +3022,7 @@ local
 do
 	code := "";
 
-	write("Regle (75)\n");
+--write("Regle (75)\n");
   if !(FX^estFun) then
 	  error(NOT_A_FUN);
 	end
@@ -3046,7 +3053,7 @@ do
 	else
 	  -- On cherche avec la fonction qui ne prend pas de booléen, mais une liste de types pour les params.
     si := FX^tfun.lookup(FX^nom, FX^ni, ES^typesParamsS);
-		write("(75) " + si + "\n");
+	--write("(75) " + si + "\n");
 	  if (si = null) then
 	    error(NO_FUN_WITH_SUCH_PARS, FX^nom);
 	  end
@@ -3059,7 +3066,7 @@ do
 						+ FX^machine.generateComment("(75) End of function call.", "\t\t");
 			type := si.returnType();
 			reg := si.register();
-			write("(75) fi : " + si + "\n");
+		--write("(75) fi : " + si + "\n");
   	else 
 	  	error(SHOULD_NOT_HAPPEN_SI_NOT_FI);
 		end
@@ -3079,11 +3086,11 @@ do
 	FX1^talias := FX^talias;
 	FX1^machine := FX^machine;
 	FX^reg := reg;
-	write("(75) Code: " + code + "\n");
+--write("(75) Code: " + code + "\n");
 	if reg = null then
-		write("(75) Reg: NULL\n");
+	--write("(75) Reg: NULL\n");
 	else
-		write("(75) Reg: " + reg + "\n");
+	--write("(75) Reg: " + reg + "\n");
 	end
   FX1^indentation := FX^indentation + 1 ; 
 end
