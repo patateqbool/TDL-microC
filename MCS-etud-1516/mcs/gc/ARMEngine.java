@@ -645,6 +645,19 @@ public class ARMEngine extends AbstractMachine {
         
     }
 
+    /**
+     * Generate the code for copying a variable
+     * @param t type
+     * @param rin address of the original
+     * @param rout address of the copy
+     */
+    public String generateCopy(Type t, Register rin, RegisterWrapper rout) throws MCSException {
+        String code = "";
+
+        if (t instanceof CompositeType) {
+        }
+    }
+
 
     /// Functions related
 
@@ -754,13 +767,11 @@ public class ARMEngine extends AbstractMachine {
      * @param reg register in which the argument is stored
      * @return the generated code
      */
-    public String generateFunctionPushArgument(Register reg) throws MCSException  {
-        
+    public String generateFunctionPushArgument(Register reg) throws MCSException  { 
         String code =
             generateInstruction("PUSH", reg);
         reg.setStatus(Register.Status.Used);
         return code;
-        
     }
 
 
