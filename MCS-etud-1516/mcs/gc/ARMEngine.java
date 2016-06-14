@@ -518,11 +518,16 @@ public class ARMEngine extends AbstractMachine {
         System.out.println("gAIS : allouer " + type + " dans la face");
         String code = "";
 
-        if (type instanceof CompositeType) {
-            System.out.println("gAIS : c'est un type composite");
+        if (type instanceof CompositeType || type instanceof PointerType) {
+            Type t = type;
+
+            if (type instanceof PointerType)
+                t = ((PointerType)type).getType();
+
+            System.out.println("gAIS : c'est un type composite ou un pointeur");
             RegisterWrapper raddr = new RegisterWrapper();
             code +=
-                generateAllocate(type, raddr, null) +
+                generateAllocate(t, raddr, null) +
                 generateInstruction("PUSH", raddr.get());
             raddr.get().setStatus(Register.Status.Used);
         } else {
