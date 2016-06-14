@@ -381,7 +381,7 @@ do
 	-- Les autres tds ne sont pas modifiées.
 	ENTITE^tfunS := ENTITE^tfun;
 	-- Pas de code pour cette RP.
-  ENTITE^code := ENTITE^machine.generateComment("(4) TypeDef: NO CODE.", "");
+  ENTITE^code := ENTITE^machine.generateComment("(4) TypeDef: " + identc^txt + " (" + TYPE^type + ")", "");
 end
 }
 
@@ -461,12 +461,7 @@ do
 				--write("(5) Add variable \\o/\n");
 				  -- Si ce n'est pas le cas, on peut add la variable à la tvar.
           tv.insert(ident^txt, TYPE^type, ENTITE^ni);
-					match TYPE^type
-					with PointerType then
-					  
-					else	
-					  code := ENTITE^machine.generateComment("(5) Variable declaration:", "") + code ;
-				  end
+					code := ENTITE^machine.generateComment("(5) Variable declaration:", "") + code ;
 				end
 	   else
 		   code := ENTITE^machine.generateComment("(5) Function declaration:", "") + code ;
