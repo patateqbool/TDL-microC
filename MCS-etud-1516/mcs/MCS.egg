@@ -281,6 +281,7 @@ end
 local
 do
    machine.writeCode(PROGRAMME^source.getFileName(), ENTITES^code); 
+   write(machine.logRegisters());
 end
 }
 
@@ -1556,7 +1557,7 @@ do
 		reg := A^reg ;
 		code := E^machine.generateComment("(35) Not an affectation.", "\t\t")
 		      + code;
-	else 
+	else
 		if (A^estVar) then
 			-- E ne représente pas de variable.
 			estVar := false ;
@@ -1628,6 +1629,7 @@ do
 	-- On met l'attribut estVar de AFFX à faux car la règle 
 	-- appelante ne pourra pas être une variable suite à cette RP.
 	-- Le registre et le type de AFFX sont ceux de A.
+	A^regAdr.unlock();
 	AFFX^estVar := false;
 	AFFX^reg := A^reg;
 	AFFX^type := A^type;

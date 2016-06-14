@@ -407,6 +407,12 @@ public interface IMachine {
      * @return the generated code
      */
     String generateOperation(int op, Register rin, RegisterWrapper rout) throws MCSException;
+
+
+    /** 
+		 * Returns the status of every registers.
+		 */
+		String logRegisters();
 }
 
 

@@ -296,10 +296,10 @@ public class ARMEngine extends AbstractMachine {
         Type t = info.type();
 
         if (t instanceof SimpleType) {
-            System.out.println("That sould not be a problem since you usin' same Simple Type (lel).");
+            //trace System.out.println("That sould not be a problem since you usin' same Simple Type (lel).");
 
             Object o = info.value();
-            System.out.println("gLC : " + o.getClass());
+            //trace System.out.println("gLC : " + o.getClass());
 
             int val = 0;
 
@@ -308,7 +308,7 @@ public class ARMEngine extends AbstractMachine {
             else if (t instanceof CharacterType)
                 val = Character.getNumericValue((Character)o);
 
-            System.out.println("We tried casting the constant into an Integer, there is de result : " + val);
+            //trace System.out.println("We tried casting the constant into an Integer, there is de result : " + val);
 
             code +=
                 generateInstruction("MOV", r, (val & 0x0000FFFF));
@@ -391,9 +391,13 @@ public class ARMEngine extends AbstractMachine {
      * @return the generated code
      */
     public String generateStoreVariable(VariableInfo vinfo, Register rin) throws MCSException  {
-        
+       
+        System.out.println("generateStoreVariable " + vinfo);
+
         Type t = vinfo.type();
         String code = "";
+
+        System.out.println("generateStoreVariable " + t + " " + rin.debug());
 
         if (t instanceof SimpleType) {
             code +=
@@ -1356,13 +1360,7 @@ public class ARMEngine extends AbstractMachine {
         // TODO: register use policy
         for (int i = 0; i < registers.size(); i++) {
             System.out.println(registers.get(i).debug());
-            if (registers.get(i).status() == Register.Status.Empty)
-                return registers.get(i);
-        }
-
-        for (int i = 0; i < registers.size(); i++) {
-            System.out.println(registers.get(i).debug());
-            if (registers.get(i).status() == Register.Status.Used)
+            if ((registers.get(i).status() == Register.Status.Empty)||(registers.get(i).status() == Register.Status.Used))
                 return registers.get(i);
         }
 
@@ -1376,19 +1374,7 @@ public class ARMEngine extends AbstractMachine {
         
         String txt = "";
         for (Register r : this.registers) {
-            txt += r + " => ";
-            switch (r.status()) {
-                case Empty:
-                    txt += "E";
-                    break;
-                case Loaded:
-                    txt += "L";
-                    break;
-                case Used:
-                    txt += "U";
-                    break;
-            }
-            txt += "\n";
+            txt += r.debug() + "\n";
         }
         return txt;
     

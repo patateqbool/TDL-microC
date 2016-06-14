@@ -79,9 +79,13 @@ public class Register {
     }
 
     public void setStatus(Status s) {
-        if (!this.lck)
+        if (!this.lck){
             this.status = s;
-    }
+						System.out.println("(" + this + ") Status changed.");
+        } else {
+				    System.out.println("(" + this + ") I can not change this status, you put a lock on it!");
+				}
+		}
 
     @Override
     public String toString() {
@@ -89,7 +93,7 @@ public class Register {
     }
 
     public String debug() {
-        return "Register [name=" + name + "(" + alias + "), num=" + num + "]<" + this.status + ">";
+        return "Register [name=" + name + "(" + alias + "), num=" + num + "]<" + this.status + ">" + (this.lck?"Locked":"Unlocked");
     }
 
     public boolean locked() {
@@ -97,10 +101,12 @@ public class Register {
     }
 
     public void lock() {
-        this.lck = true;
+      System.out.println("I'm locking " + this);  
+			this.lck = true;
     }
 
     public void unlock() {
+			System.out.println("I'm unlocking " + this);
         this.lck = false;
     }
 
