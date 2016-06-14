@@ -6,88 +6,103 @@ package mcs.gc;
  * @author marcel
  */
 public class Register {
-	public enum Status {
-		Empty, Loaded, Used;
+    public enum Status {
+        Empty, Loaded, Used;
 
-    public String toString() {
-        switch (this) {
-            case Empty:
-                return "E";
-            case Loaded:
-                return "L";
-            case Used:
-                return "U";
-            default:
+        public String toString() {
+            switch (this) {
+                case Empty:
+                    return "E";
+                case Loaded:
+                    return "L";
+                case Used:
+                    return "U";
+                default:
+            }
+            return "";
         }
-        return "";
+    };
+
+    private String name, alias;
+    private int num;
+    private Status status;
+    private boolean lck;
+
+    /**
+     * @param name
+     * @param num
+     */
+    public Register(String name, int num, String alias) {
+        this.name = name;
+        this.num = num;
+        this.status = Status.Empty;
+        this.alias = alias;
+        this.lck = false;
     }
-	};
 
-	private String name, alias;
-	private int num;
-	private Status status;
+    public Register(String name, int num) {
+        this(name, num, "");
+    }
 
-	/**
-	 * @param name
-	 * @param num
-	 */
-  public Register(String name, int num, String alias) {
-    this.name = name;
-		this.num = num;
-		this.status = Status.Empty;
-    this.alias = alias;
-  }
+    public Register(String name) {
+        this(name, -1);
+    }
 
-	public Register(String name, int num) {
-    this(name, num, "");
-	}
+    public Register() {
+        this("", -1);
+    }
 
-	public Register(String name) {
-		this(name, -1);
-	}
+    public void copy(Register other) {
+        this.name = other.name;
+        this.num = other.num;
+        this.status = other.status;
+    }
 
-	public Register() {
-		this("", -1);
-	}
+    public String alias() {
+        return this.alias;
+    }
 
-	public void copy(Register other) {
-		this.name = other.name;
-		this.num = other.num;
-		this.status = other.status;
-	}
+    public boolean hasAlias() {
+        return this.alias.length() > 0;
+    }
 
-  public String alias() {
-    return this.alias;
-  }
+    public String name() {
+        return this.name + (this.num == -1 ? "" : this.num);
+    }
 
-	public boolean hasAlias() {
-		return this.alias.length() > 0;
-	}
+    public int num() {
+        return this.num;
+    }
 
-	public String name() {
-		return this.name + (this.num == -1 ? "" : this.num);
-	}
+    public Status status() {
+        return this.status;
+    }
 
-	public int num() {
-		return this.num;
-	}
+    public void setStatus(Status s) {
+        if (!this.lck)
+            this.status = s;
+    }
 
-	public Status status() {
-		return this.status;
-	}
+    @Override
+    public String toString() {
+        return (alias.length() == 0 ? name + (num >= 0 ? num : "") : alias);
+    }
 
-	public void setStatus(Status s) {
-		this.status = s;
-	}
+    public String debug() {
+        return "Register [name=" + name + "(" + alias + "), num=" + num + "]<" + this.status + ">";
+    }
 
-	@Override
-	public String toString() {
-		return (alias.length() == 0 ? name + (num >= 0 ? num : "") : alias);
-	}
+    public boolean locked() {
+        return this.lck;
+    }
 
-	public String debug() {
-		return "Register [name=" + name + "(" + alias + "), num=" + num + "]<" + this.status + ">";
-	}
+    public void lock() {
+        this.lck = true;
+    }
+
+    public void unlock() {
+        this.lck = false;
+    }
 
 }
 
