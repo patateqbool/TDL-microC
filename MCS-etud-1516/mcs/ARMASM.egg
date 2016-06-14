@@ -2,12 +2,12 @@ option version = 1.0.1;
 option k = 2;
 option auto = true;
 
-syn code_asm	: STRING for  ASM, INSTS, INST, OPCODE, PAR, SHIFTOP, SHIFTTYPE, ADDR, ADDRSEC, ADDRSUFF, VARIABLE,
+syn code_asm	: STRING for  ASM, INSTS, INST, OPCODE, PAR, SHIFTOP, SHIFTTYPE, ADDR, ADDRSEC, ADDRSUFF, VARIABLE, REGORNUM,
                             NUMBER, REGISTER, NINST, VINST, CC, S, SM, SMX, SMLX, SMLXA, SMMX, SMMLX, SMUX, SMULX,
                             SMBT, SMW, LDSTR, LSX, LSRX, LSRXX, LSMX;
 inh namespace : NamespaceInfo for ASM, INSTS, INST, PAR, PARS, PARSX, ADDR, VARIABLE;
 inh tds_asm		: VariableTable for ASM, INSTS, INST, PAR, PARS, PARSX, ADDR, VARIABLE;
-inh mach_asm	:	AbstractMachine for ASM, INSTS, INST, PAR, PARS, PARSX, ADDR, ADDRSEC, REGISTER, NUMBER, VARIABLE;
+inh mach_asm	:	AbstractMachine for ASM, INSTS, INST, PAR, PARS, PARSX, ADDR, ADDRSEC, REGISTER, NUMBER, VARIABLE, REGORNUM;
 inh parlist		: List<Object> for PAR, PARS, PARSX;
 
 -- Separators
@@ -496,17 +496,16 @@ PAR -> #init ADDR #gen ;
     end
 }
 
-PAR -> SHIFTOP REGISTER #gen ;
-#gen {
+PAR -> SHIFTOP #init REGORNUM #gen ;
+#init {
     do
-        PAR^code_asm := SHIFTOP^code_asm + REGISTER^code_asm;
+        REGORNUM^mach_asm := PAR^mach_asm;
     end
 }
 
-PAR -> SHIFTOP NUMBER #gen ;
 #gen {
     do
-        PAR^code_asm := SHIFTOP^code_asm + NUMBER^code_asm;
+        PAR^code_asm := SHIFTOP^code_asm + REGORNUM^code_asm;
     end
 }
 
@@ -594,29 +593,16 @@ ADDRSEC -> #gen ;
     end
 }
 
-ADDRSEC -> coma spce #init REGISTER #gen ;
+ADDRSEC -> coma spce #init REGORNUM #gen ;
 #init {
 do
-    REGISTER^mach_asm := ADDRSEC^mach_asm;
+    REGORNUM^mach_asm := ADDRSEC^mach_asm;
 end
 }
 
 #gen {
 do
-    ADDRSEC^code_asm := ", " + REGISTER^code_asm;
-end
-}
-
-ADDRSEC -> coma spce #init NUMBER #gen ;
-#init {
-do
-    NUMBER^mach_asm := ADDRSEC^mach_asm;
-end
-}
-
-#gen {
-do
-    ADDRSEC^code_asm := NUMBER^code_asm;
+    ADDRSEC^code_asm := ", " + REGORNUM^code_asm;
 end
 }
 
@@ -658,6 +644,33 @@ do
         end
     end
 end
+}
+
+-- Registre
+REGORNUM -> #init REGISTER #gen ;
+#init {
+    do
+        REGISTER^mach_asm := REGORNUM^mach_asm;
+    end
+}
+
+#gen {
+    do
+        REGORNUM^code_asm := REGISTER^code_asm;
+    end
+}
+
+REGORNUM -> #init NUMBER #gen ;
+#init {
+    do
+        NUMBER^mach_asm := REGORNUM^mach_asm;
+    end
+}
+
+#gen {
+    do
+        REGORNUM^code_asm := NUMBER^code_asm;
+    end
 }
 
 -- Numbers
