@@ -1,7 +1,7 @@
 #--------------------------------------------------------
 # la grammaire (voir src)
 XLANG=MCS
-ALANG=ASM
+ALANG=ARMASM
 #--------------------------------------------------------
 # repertoires contenant egg
 EDIR=.
@@ -14,9 +14,13 @@ JDIR=/usr/bin
 #--------------------------------------------------------
 all : src att class
 
-src :
+src: lang asm
+
+lang:
 	(cd mcs ; $(JDIR)/java -cp ../$(GJAR) mg.egg.eggc.compiler.EGGC $(XLANG).egg)
-	#(cd mcs ; $(JDIR)/java -cp ../$(GJAR) mg.egg.eggc.compiler.EGGC $(ALANG).egg)
+
+asm:
+	(cd mcs ; $(JDIR)/java -cp ../$(GJAR) mg.egg.eggc.compiler.EGGC $(ALANG).egg)
 
 att :
 	$(JDIR)/javac -classpath $(GJAR) mcs/symtab/*.java

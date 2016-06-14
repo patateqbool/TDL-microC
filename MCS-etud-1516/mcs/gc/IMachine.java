@@ -312,11 +312,25 @@ public interface IMachine {
     String generateDirect(int value) throws MCSException;
 
     /**
+     * Generate a direct constant for use in instructions, from a string
+     * @param val value of the constant
+     * @return the generated code
+     */
+    String generateDirect(String val) throws MCSException;
+
+    /**
      * Generate a register
      * @param reg the register
      * @return the generated code
      */
     String generateRegister(Register reg) throws MCSException;
+
+    /**
+     * Generate a register from a string
+     * @param reg the register
+     * @return the generated code
+     */
+    String generateRegister(String reg) throws MCSException;
 
     /**
      * Generate the code for making an address from a list of displacement pair; the 
