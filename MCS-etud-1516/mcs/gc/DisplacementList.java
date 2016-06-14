@@ -19,8 +19,9 @@ public class DisplacementList extends ArrayList<DisplacementPair> {
 		this.add(new DisplacementPair(disp, deref));
 	}
 
-  public void pop_back() {
+  public DisplacementList pop_back() {
       this.remove(this.size() - 1);
+      return this;
   }
 
 	public String toString() {
