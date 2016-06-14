@@ -4018,6 +4018,53 @@ end
 --}
 --
 ---- (107)
---F -> new identc IDC paro ES parf ;
+--F -> new identc #passIdentc IDC #instES paro ES parf #validGC ;
+--
+--#passIdentc{
+--local 
+--do
+--  -- On commence la recherche de la classe à instancier
+--  -- TODO: vérif quand la partie arm est clean
+--	if (F^tklass.exists(identc^txt, HERITAGE^ni) or F^tns.exists(identc^txt, HERITAGE^ni)) then 
+--		-- S'il est possible de continuer (i.e. identc ou namespace ou classe) on le fait dans IDC
+--	  IDC^rechKlass := true;
+--	  IDC^machine := HERITAGE^machine;
+--    IDC^tns := HERITAGE^tns;
+--  	IDC^tklass := HERITAGE^tklass;
+--		IDC^nomIDC := identc^txt;
+--		IDC^ni := HERITAGE^ni;
+--	else
+--		error(IDENT_UNDEFINED, identc^txt);
+--	end
+--end
+--}
+--
+--#instES{
+--local 
+--do
+--  ES^typesParams := new ArrayList<Type>();
+--  ES^codeH := "";
+--	ES^tvar := F^tvar;
+--	ES^tfun := F^tfun;
+--	ES^talias := F^talias;
+--	ES^machine := F^machine;
+--	ES^ni := F^ni;
+--  ES^indentation := FX^indentation + 1 ; 
+--end
+--}
+--
+---- Verification qu'il existe bien un constructeur avec cette signature.
+--#validGC {
+--local
+--	ci : ConstructorInfo;
+--do
+--  ci := IDC^klassHerit.lookupConstructor(ES^typesParamsS);
+--	if (ci = null) then
+--	  error(NO_CONSTR_WITH_SUCH_PARS, BASE^kl.name());
+--	end
+--	F^code := ES^code + F^machine.generateConstructorCall(ci,true);
+--end
+--}
+--
 
 end
