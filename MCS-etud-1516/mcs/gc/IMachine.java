@@ -394,3 +394,6 @@ public interface IMachine {
      */
     String generateOperation(int op, Register rin, RegisterWrapper rout) throws MCSException;
 }
+
+
+

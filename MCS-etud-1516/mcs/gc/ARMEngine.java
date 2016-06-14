@@ -950,15 +950,32 @@ public class ARMEngine extends AbstractMachine {
     }
 
     /**
+     * Generate a direct constant for use in instructions, from a string
+     * @param val value of the constant
+     * @return the generated code
+     */
+    public String generateDirect(String val) throws MCSException {
+        return "$" + val;
+    }
+
+    /**
      * Generate a register
      * @param reg the register
      * @return the generated code
      */
     public String generateRegister(Register reg) throws MCSException {
-        
-        return "%" + reg.toString();
-        
+        return "%" + reg.toString();   
     }
+
+    /**
+     * Generate a register from a string
+     * @param reg the register
+     * @return the generated code
+     */
+    public String generateRegister(String reg) throws MCSException {
+        return "%" + reg;
+    }
+
 
     private String format(Object o) throws MCSException {
         
