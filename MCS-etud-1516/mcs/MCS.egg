@@ -112,7 +112,10 @@ syn oprel : Integer for -- : RelationalOperator for
 syn reg : Register for
 				 F, FX, T, TX, R, RX, E, AFFX, A, AX
 				 ;
-				 
+
+syn regAdr : Register for 
+         A, R, T, F;
+
 syn estVar : boolean for
          R, RX, FX, T, TX, E, A, AFFX, AX, F
 				 ;
@@ -1499,7 +1502,7 @@ E -> #attA A #attAFFX AFFX #attE;
 #attA {
 local
 do
---write("Regle (35): E\n");
+  write("Regle (35): A AFFX\n");
 	A^machine := E^machine;
 	A^tvar := E^tvar;
 	A^tfun := E^tfun;
@@ -1526,6 +1529,7 @@ do
 	-- Le type de cette afectation doit être le même que A.
 	AFFX^typeH := A^type;
   AFFX^indentation := E^indentation + 1 ;
+  write("(35) Code de A :\n" + A^code + "\n");
 end
 }
 
@@ -1539,7 +1543,8 @@ local
 	vi : VariableInfo;
 do
 --write("(35) Debut de la fin\n");
-	reg := null;
+  write("(35) Code de AFFX :\n" + AFFX^code + "\n");
+  reg := null;
 	code := A^code;
 	estVar := false;
 	vi := null;
@@ -1553,6 +1558,7 @@ do
 		      + code;
 	else 
 		if (A^estVar) then
+		  write("(35) AFFFFFFECTANCE.\n");
 			-- E ne représente pas de variable.
 			estVar := false ;
 			vi := null ;
@@ -1563,9 +1569,16 @@ do
 			      + code
 			      + E^machine.generateComment("(35) End of left part, right part:", "\t\t")
 						+ AFFX^code
-						+ E^machine.generateComment("(35) End of right part, store:", "\t\t")
-						+ E^machine.generateStoreVariable(A^vi,AFFX^reg)
-						+ E^machine.generateComment("(35) End of store.", "\t\t");
+						+ E^machine.generateComment("(35) End of right part, store:", "\t\t");
+			if (A^regAdr = null) then
+			  code := code  
+				      + E^machine.generateStoreVariable(A^vi,AFFX^reg)
+						  + E^machine.generateComment("(35) End of store (direct).", "\t\t");
+			else 
+			  code := code 
+				      + E^machine.generateStoreInHeap(A^regAdr, 0, AFFX^reg)
+							+ E^machine.generateComment("(35) End of store (at the address indicated).", "\t\t");
+			end
 			reg := AFFX^reg;
 		else
 			error(LEFT_PART_NOT_VARIABLE);
@@ -1578,7 +1591,7 @@ do
 	E^estVar := estVar;
 	E^vi := vi;
 	E^code := code;
---write("Code 35: " + code + "\n");
+  write("(35) Code de l'affectation : " + code + "\n");
 end
 }
 
@@ -1724,6 +1737,7 @@ do
 	if (R^estVar)&&(AX^estVar) then 
 		estVar := true;
 		vi := R^vi;
+		write("(38) A^vi : " + R^vi + "\n");
 	else
 		estVar := false;
 		vi := null;
@@ -1737,6 +1751,7 @@ do
 --write("(38) Code : " + code + "\n");
 	A^vi := vi;
 	A^estVar := estVar;
+  A^regAdr := R^regAdr;
 end
 }
 
@@ -1956,6 +1971,7 @@ do
 	R^estVar := estVar;
 	R^vi := vi;
 	R^type := type;
+	R^regAdr := T^regAdr;
 --write("(47) reg : " + reg.debug() + "\n");
 --write("(47) code : " + code + "\n");
 end
@@ -2125,6 +2141,7 @@ do
 	TX^tvar := T^tvar;
 	TX^ni := T^ni;
   TX^indentation := T^indentation + 1 ; 
+--write("(53) Code de F :\n" + F^code + "\n");
 end
 }
 
@@ -2183,6 +2200,7 @@ do
 	T^vi := vi;
 	T^estVar := estVar;
 	T^type := t;
+  T^regAdr := F^regAdr;
 --write("(53) code : " + code + "\n");
 end
 }
@@ -2371,6 +2389,7 @@ do
 	F^type := t;
 	-- Set de l'attribut registre de F, c'est le registre contenant l'entier.
 	F^reg := reg;
+  F^regAdr := null;
 end
 }
 
@@ -2410,6 +2429,7 @@ do
 	F^estVar := false;
 	F^type := t;
 	F^reg := reg;
+	F^regAdr := null;
 end
 }
 
@@ -2448,6 +2468,7 @@ do
 	F^estVar := false;
 	F^type := t;
 	F^reg := reg;
+	F^regAdr := null;
 end
 }
 
@@ -2507,6 +2528,7 @@ do
 	F^vi := null;
 	F^type := t; 
 	F^reg := reg;
+  F^regAdr := null; -- Pas d'adresse.
 end
 }
 
@@ -2556,7 +2578,8 @@ do
 	F^vi := null;
 	F^code := F^machine.generateComment("(67) Null pointer: NO CODE", "\t\t");
 	F^type := null;
-	F^reg := null; -- TODO
+	F^reg := null; 
+  F^regAdr := null;
 end
 }
 
@@ -2644,6 +2667,8 @@ do
 	F^estVar := estVar;
 	F^type := FX^type;
 	F^reg := reg;
+	-- Pas d'adresse à faire remonter.
+  F^regAdr := null;
 end
 }
 
@@ -2695,6 +2720,7 @@ do
 	F^vi := vi;
 	F^type := t;
 	F^reg := F1^reg;
+	F^regAdr := null; -- TODO : Est ce que ça a du sens ?
 end
 }
 
@@ -2706,6 +2732,7 @@ F -> mult #attF1 F #attF;
 #attF1 {
 local
 do
+  write("(70) Dereferencement.\n");
   F1^machine := F^machine;
 	F1^talias := F^talias;
 	F1^tfun := F^tfun;
@@ -2723,6 +2750,7 @@ local
 	type : Type;
   reg : Register;
   rw : RegisterWrapper;
+	code : String;
 do
 	t := F1^type;
 	type := null; 
@@ -2736,18 +2764,25 @@ do
 	  error(SHOULD_BE_A_POINTER);
 	end
   -- A la suite du code généré par F1, on load le champ pointé.
-	-- TODO : gérer ça suivant qu'on veuille l'addrese pour changer la valeur pointée
-	--        ou la valeur pointée directement.
-	F^code := F^machine.generateComment("(70) Unreferencing, code of what to unreference:", "\t\t")
-	        + F1^code 
-					+ F^machine.generateComment("(70) Unreferencing:", "\t\t")
-					+ F^machine.generateLoadFromHeap(F1^reg, 0, rw)
-					+ F^machine.generateComment("(70) End of unreferencing.", "\t\t");
+	code := F^machine.generateComment("(70) Unreferencing, code of what to unreference:", "\t\t")
+	      + F1^code 
+	  		+ F^machine.generateComment("(70) Unreferencing:", "\t\t")
+				+ F^machine.generateLoadFromHeap(F1^reg, 0, rw)
+				+ F^machine.generateComment("(70) End of unreferencing.", "\t\t");
+	
+	write("(70) Code après déréf' : \n" + code + "\n");
 	reg := rw.get();
-	F^vi := null; --TODO
+	F^code := code;
+	F^vi := null;
 	F^estVar := true;
 	F^type := type;
 	F^reg := reg;
+	if (F1^regAdr = null) then
+	  F^regAdr := reg;
+	else
+	  F^regAdr := F1^regAdr;
+	end
+  write("(70) Fin deref.\n");
 end
 }
 
@@ -2869,7 +2904,7 @@ do
       code := code
 			      + F^machine.generateComment("(71) Load value:", "\t\t")
 			      + F^machine.generateLoadValue(varInfo, rw)
-						+ F^machine.generateComment("(71) end load value.", "\t\t");
+						+ F^machine.generateComment("(71) End load value.", "\t\t");
 		  reg := rw.get();
 		end
   end
@@ -2878,6 +2913,7 @@ do
   F^estVar := true;
   F^type := FX^type;
 	F^reg := reg;
+	F^regAdr := null; -- Pas d'adresse à faire remonter.
 --write("(71) reg : " + reg.debug() + "\n");
 --write("(71) code: " + code + "\n");
 end
