@@ -1502,7 +1502,7 @@ E -> #attA A #attAFFX AFFX #attE;
 #attA {
 local
 do
-  write("Regle (35): A AFFX\n");
+--write("Regle (35): A AFFX\n");
 	A^machine := E^machine;
 	A^tvar := E^tvar;
 	A^tfun := E^tfun;
@@ -1529,7 +1529,7 @@ do
 	-- Le type de cette afectation doit être le même que A.
 	AFFX^typeH := A^type;
   AFFX^indentation := E^indentation + 1 ;
-  write("(35) Code de A :\n" + A^code + "\n");
+--write("(35) Code de A :\n" + A^code + "\n");
 end
 }
 
@@ -1543,7 +1543,7 @@ local
 	vi : VariableInfo;
 do
 --write("(35) Debut de la fin\n");
-  write("(35) Code de AFFX :\n" + AFFX^code + "\n");
+--write("(35) Code de AFFX :\n" + AFFX^code + "\n");
   reg := null;
 	code := A^code;
 	estVar := false;
@@ -1558,7 +1558,6 @@ do
 		      + code;
 	else 
 		if (A^estVar) then
-		  write("(35) AFFFFFFECTANCE.\n");
 			-- E ne représente pas de variable.
 			estVar := false ;
 			vi := null ;
@@ -1591,7 +1590,7 @@ do
 	E^estVar := estVar;
 	E^vi := vi;
 	E^code := code;
-  write("(35) Code de l'affectation : " + code + "\n");
+--write("(35) Code de l'affectation : " + code + "\n");
 end
 }
 
@@ -1737,7 +1736,6 @@ do
 	if (R^estVar)&&(AX^estVar) then 
 		estVar := true;
 		vi := R^vi;
-		write("(38) A^vi : " + R^vi + "\n");
 	else
 		estVar := false;
 		vi := null;
