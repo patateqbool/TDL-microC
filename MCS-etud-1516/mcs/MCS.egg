@@ -1227,7 +1227,7 @@ do
 	-- Remontée du code.
 	INST^code := INST^machine.generateComment("(29) Expression:", "\t")
 	           + E^code
-						 + INST^machine.generateComment("(29) End of expression", "\t");
+						 + INST^machine.generateComment("(29) End of expression.", "\t");
 end
 }
 
@@ -1530,7 +1530,7 @@ do
 	-- Le type de cette afectation doit être le même que A.
 	AFFX^typeH := A^type;
   AFFX^indentation := E^indentation + 1 ;
---write("(35) Code de A :\n" + A^code + "\n");
+  write("(35) Code de A :\n" + A^code + "\n");
 end
 }
 
@@ -1544,7 +1544,7 @@ local
 	vi : VariableInfo;
 do
 --write("(35) Debut de la fin\n");
---write("(35) Code de AFFX :\n" + AFFX^code + "\n");
+  write("(35) Code de AFFX :\n" + AFFX^code + "\n");
   reg := null;
 	code := A^code;
 	estVar := false;
@@ -1603,6 +1603,7 @@ AFFX -> affect #attA A #attAFFX ;
 #attA {
 local
 do
+  write("(36) Affectation.");
 	A^machine := AFFX^machine;
 	A^tvar := AFFX^tvar;
 	A^tfun := AFFX^tfun;
@@ -2142,7 +2143,7 @@ do
 	TX^tvar := T^tvar;
 	TX^ni := T^ni;
   TX^indentation := T^indentation + 1 ; 
---write("(53) Code de F :\n" + F^code + "\n");
+  write("(53) Code de F :\n" + F^code + "\n");
 end
 }
 
