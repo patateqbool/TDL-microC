@@ -1,6 +1,7 @@
 ----------------------------------------------------
 -- Grammaires de MC  et MCS                       --
 ----------------------------------------------------
+-- Je suis un commentaire caché
 
 --options
 option auto = true;
