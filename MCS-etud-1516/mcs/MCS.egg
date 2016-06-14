@@ -2896,11 +2896,13 @@ do
 	--write("(71) DL :\n" + listeDepl + "\n     reg : " + FX^reg.debug() + "\n"); 
     code := code
 		      + F^machine.generateComment("(71) Make address:", "\t\t")
-		      + F^machine.generateMakeAddress(listeDepl, FX^reg, rw);
+		      + F^machine.generateMakeAddress(listeDepl, FX^reg, rw)
+				  + F^machine.generateComment("(71) End make address.", "\t\t"); 
 		reg := rw.get();
 		code := code 
+  		    + F^machine.generateComment("(71) Make address:", "\t\t") 
 		      + F^machine.generateMakeAddress(listeDepl.pop_back(), FX^reg, rw)
-					+ F^machine.generateComment("(71) End make address", "\t\t");
+	 				+ F^machine.generateComment("(71) End make address", "\t\t");
 	  regAdr := rw.get();
 	else 
 	  -- On n'a pas d'appel de fonction. 
@@ -2909,12 +2911,14 @@ do
 		  -- Le registre contient l'adresse de la variable accédée par FX dans le struct.
       code := code
 			      + F^machine.generateComment("(71) Make address:", "\t\t") 
-			      + F^machine.generateMakeAddress(listeDepl, rw);
+			      + F^machine.generateMakeAddress(listeDepl, rw)	
+						+ F^machine.generateComment("(71) End make address.", "\t\t");
 			reg := rw.get();
       code := code 
+						+ F^machine.generateComment("(71) Get address", "\t\t")
 			      + F^machine.generateMakeAddress(listeDepl.pop_back(), rw)
-						+ F^machine.generateComment("(71) End make address.", "\t\t");
-			regAdr := rw.get();
+						+ F^machine.generateComment("(71) End get address.", "\t\t");
+		  regAdr := rw.get();
 		else
       -- Accés direct à une variable.
    		-- La VariableInfo est déjà dans varInfo.
