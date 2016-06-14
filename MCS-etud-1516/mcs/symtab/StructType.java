@@ -30,7 +30,7 @@ public class StructType extends CompositeType {
 	 * toString();
 	 */
 	public String toString() {
-		return "struct { " + this.fields + " }";
+    return "st[" + this.fields + "]";
 	}
 
 	/**

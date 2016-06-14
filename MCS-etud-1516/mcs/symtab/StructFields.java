@@ -133,7 +133,7 @@ public class StructFields {
 	public String toString() {
 		String str = "";
 		for (String n : this.fields.keySet())
-			str = str + n + ": " + this.fields.get(n) + ";";
+			str = str + n + "!" + this.fields.get(n) + ":";
 		return str;
 	}
 
