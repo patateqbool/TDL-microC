@@ -1,18 +1,22 @@
+option version = 1.0.1;
 option k = 2;
 option auto = true;
 
-syn code_asm	: STRING for INSTS, INST;
-inh tds_asm		: VariableTable for ASM, INSTS, INST, PAR, PARS, PARSX, VARIABLE;
-inh mach_asm	:	AbstractMachine for ASM, INSTS, INST, PAR, PARS, PARSX, NUMBER, ADDR, ADDRSEC, REGISTER, NUMBER;
+syn code_asm	: STRING for  ASM, INSTS, INST, OPCODE, PAR, SHIFTOP, SHIFTTYPE, ADDR, ADDRSEC, ADDRSUFF, VARIABLE,
+                            NUMBER, REGISTER, NINST, VINST, CC, S, SM, SMX, SMLX, SMLXA, SMMX, SMMLX, SMUX, SMULX,
+                            SMBT, SMW, LDSTR, LSX, LSRX, LSRXX, LSMX;
+inh namespace : NamespaceInfo for ASM, INSTS, INST, PAR, PARS, PARSX, ADDR, VARIABLE;
+inh tds_asm		: VariableTable for ASM, INSTS, INST, PAR, PARS, PARSX, ADDR, VARIABLE;
+inh mach_asm	:	AbstractMachine for ASM, INSTS, INST, PAR, PARS, PARSX, ADDR, ADDRSEC, REGISTER, NUMBER, VARIABLE;
 inh parlist		: List<Object> for PAR, PARS, PARSX;
 
 -- Separators
-sugar	separ		is	"[\t ]+";
+sugar	spce		is	"[\t ]+";
 sugar nl			is	"(\n|\r)";
 sugar	column	is	"\:";
 sugar semicol	is	";";
 sugar coma		is	",";
-sugar excl		is 	"!";
+sugar excl		is 	"\!";
 sugar equ			is 	"=";
 sugar	sharp		is	"#";
 sugar dollar  is  "\$";
@@ -26,307 +30,310 @@ sugar ccbrack	is	"\}";
 sugar commbeg is  "\/\/";
 
 -- Opcodes
-sugar	adc				"ADC";	
-sugar	add				"ADD";	
-sugar	adr				"ADR";	
-sugar	and				"AND";	
-sugar	asr				"ASR";	
-sugar	bfc				"BFC";	
-sugar	bfi				"BFI";	
-sugar bic				"BIC";	
-sugar	b					"B";		
-sugar	bl				"BL";		
-sugar	blx				"BLX";	
-sugar	bx				"BX";		
-sugar	bxj				"BXJ";		
-sugar	cbnz			"CBNZ";		
-sugar	cbz				"CBZ";		
-sugar	cdp				"CDP";		
-sugar	cdp2			"CDP2";		
-sugar clrex			"CLREX";		
-sugar	clz				"CLZ";
-sugar cmn				"CMN";
-sugar cmp				"CMP";
-sugar	cps				"CPS";
-sugar	dbg				"DBG";
-sugar dmb				"DMB";
-sugar dsb				"DSB";
-sugar	eor				"EOR";
-sugar	eret			"ERET";
-sugar	hvc				"HVC";
-sugar isb				"ISB";
-sugar it				"IT";
-sugar ld				"LD";
-sugar lsl				"LSL";
-sugar lsr				"LSR";
-sugar mcr				"MCR";
-sugar mcr2			"MCR2";
-sugar mcrr			"MCRR";
-sugar mcrr2			"MCRR2";
-sugar mla				"MLA";
-sugar mls				"MLS";
-sugar mov				"MOV";
-sugar movt			"MOVT";
-sugar mrc				"MRC";
-sugar mrc2			"MRC2";
-sugar mrrc			"MRRC";
-sugar mrrc2			"MRRC2";
-sugar mrs				"MRS";
-sugar mul				"MUL";
-sugar mvn				"MVN";
-sugar neg				"NEG";
-sugar nop				"NOP";
-sugar orn				"ORN";
-sugar orr				"ORR";
-sugar pkh				"PKH";
-sugar pld				"PLD";
-sugar pldw			"PLDW";
-sugar pli				"PLI";
-sugar pop				"POP";
-sugar push			"PUSH";
-sugar qadd			"QADD";
-sugar qadd16		"QADD16";
-sugar qadd8			"QADD8";
-sugar qasx			"QASX";
-sugar qdadd			"QDADD";
-sugar qdsub			"QDSUB";
-sugar qsax			"QSAX";
-sugar qsub			"QSUB";
-sugar qsub16		"QSUB16";
-sugar qsub8			"QSUB8";
-sugar rbit			"RBIT";
-sugar rev				"REV";
-sugar rev16			"REV16";
-sugar revsh			"REVSH";
-sugar rfe				"RFE";
-sugar ror				"ROR";
-sugar rrx				"RRX";
-sugar rsb				"RSB";
-sugar rsc				"RSC";
-sugar sadd16		"SADD16";
-sugar sadd8			"SADD8";
-sugar sasx			"SASX";
-sugar sbc				"SBC";
-sugar sbfx			"SBFX";
-sugar sdiv			"SDIV";
-sugar sel				"SEL";
-sugar sev				"SEV";
-sugar shadd16		"SHADD16";
-sugar shadd8		"SHADD8";
-sugar shasx			"SHASX";
-sugar shsub16		"SHSUB16";
-sugar shsub8		"SHSUB8";
-sugar sm				"SM";
-sugar smc				"SMC";
-sugar srs				"SRS";
-sugar ssat			"SSAT";
-sugar ssat16		"SSAT16";
-sugar ssax			"SSAX";
-sugar ssub16		"SSUB16";
-sugar ssub8			"SSUB8";
-sugar st				"ST";
-sugar sub				"SUB";
-sugar svc				"SVC";
-sugar swp				"SWP";
-sugar swpb			"SWPB";
-sugar sxtab			"SXTAB";
-sugar sxtab16		"SXTAB16";
-sugar	sxtah			"SXTAH";
-sugar sxtb			"SXTB";
-sugar sxtb16		"SXTB16";
-sugar sxth			"SXTH";
-sugar tbb				"TBB";
-sugar tbh				"TBH";
-sugar teq				"TEQ";
-sugar tst				"TST";
-sugar uadd16		"UADD16";
-sugar uadd8			"UADD8";
-sugar uasx			"UASX";
-sugar ubfx			"UBFX";
-sugar udf				"UDF";
-sugar udiv			"UDIV";
-sugar uhadd16		"UHADD16";
-sugar uhadd8		"UHADD8";
-sugar uhasx			"UHASX";
-sugar uhsax			"UHSAX";
-sugar uhsub16		"UHSUB16";
-sugar uhsub8		"UHSUB8";
-sugar umaal			"UMAAL";
-sugar umlal			"UMLAL";
-sugar umull			"UMULL";
-sugar uqadd16		"UQADD16";
-sugar uqadd8		"UQADD8";
-sugar uqasx			"UQASX";
-sugar uqsax			"UQSAX";
-sugar usqub16		"USQUB16";
-sugar uqsub8		"UQSUB8";
-sugar usad8			"USAD8";
-sugar usada8		"USADA8";
-sugar usat			"USAT";
-sugar usat16		"USAT16";
-sugar usax			"USAX";
-sugar usub16		"USUB16";
-sugar usub8			"USUB8";
-sugar uxtab			"UXTAB";
-sugar uxtah			"UXTAH";
-sugar uxtb			"UXTB";
-sugar uxtb16		"UXTB16";
-sugar uxth			"UXTH";
-sugar vaba			"VABA";
-sugar vabal			"VABAL";
-sugar vabd			"VABD";
-sugar vabdl			"VABDL";
-sugar vacge			"VACGE";
-sugar vacgt			"VACGT";
-sugar vacle			"VACLE";
-sugar vaclt			"VACLT";
-sugar vceq			"VCEQ";
-sugar vcge			"VCGE";
-sugar vcgt			"VCGT";
-sugar vcle			"VCLE";
-sugar vcls			"VCLS";
-sugar vclt			"VCLT";
-sugar vcmpe			"VCMPE";
-sugar vcnt			"VCNT";
-sugar vcvt			"VCVT";
-sugar vcvtr			"VCVTR";
-sugar vcvtb			"VCVTB";
-sugar vcvtt			"VCVTT";
-sugar vdup			"VDUP";
-sugar vfma			"VFMA";
-sugar vfms			"VFMS";
-sugar vfnma			"VFNMA";
-sugar vfnms			"VFNMS";
-sugar vhadd			"VHADD";
-sugar vhsub			"VHSUB";
-sugar vld1			"VLD1";
-sugar vld2			"VLD2";
-sugar vld3			"VLD3";
-sugar vld4			"VLD4";
-sugar vmax			"VMAX";
-sugar vmin			"VMIN";
-sugar vmla			"VMLA";
-sugar vmlal			"VMLAL";
-sugar vmls			"VMLS";
-sugar vmlsl			"VMLSL";
-sugar vmovl			"VMOVL";
-sugar vmovn			"VMOVN";
-sugar vmull			"VMULL";
-sugar vnmla			"VNMLA";
-sugar vnmls			"VNMLS";
-sugar vnmul			"VNMUL";
-sugar vpadal		"VPADAL";
-sugar vpadd			"VPADD";
-sugar vpaddl		"VPADDL";
-sugar vpmax			"VPMAX";
-sugar vpmin			"VPMIN";
-sugar vraddhn		"VRADDHN";
-sugar vrecpe		"VRECPE";
-sugar vrecps		"VRECPS";
-sugar vrev16		"VREV16";
-sugar vrev32		"VREV32";
-sugar vrev64		"VREV64";
-sugar vrhadd		"VRHADD";
-sugar vrshl			"VRSHL";
-sugar vrshr			"VRSHR";
-sugar vrshrn		"VRSHRN";
-sugar vrsqrte		"VRSQRTE";
-sugar vrsqrts		"VRSQRTS";
-sugar vrsra			"VRSRA";
-sugar vrsubhn		"VRSUBHN";
-sugar vshl			"VSHL";
-sugar vshll			"VSHLL";
-sugar vshr			"VSHR";
-sugar vshrn			"VSHRN";
-sugar vsli			"VSLI";
-sugar vsqrt			"VSQRT";
-sugar vsra			"VSRA";
-sugar vsri			"VSRI";
-sugar vst1			"VST1";
-sugar vst2			"VST2";
-sugar vst3			"VST3";
-sugar vst4			"VST4";
-sugar vsubhn		"VSUBHN";
-sugar vsubl			"VSUBL";
-sugar vsubw			"VSUBW";
-sugar vtbl			"VTBL";
-sugar vtbx			"VTBX";
-sugar vtrn			"VTRN";
-sugar vuzp			"VUZP";
-sugar vzip			"VZIP";
-sugar wfe				"WFE";
-sugar wfi				"WFI";
-sugar yield			"YIELD";
-sugar v					"V";
+sugar	adc			is	"ADC";	
+sugar	add			is	"ADD";	
+sugar	adr			is	"ADR";	
+sugar	and			is	"AND";	
+sugar	asr			is	"ASR";	
+sugar	bfc			is	"BFC";	
+sugar	bfi			is	"BFI";	
+sugar bic			is	"BIC";	
+sugar	b				is	"B";		
+sugar	bl			is	"BL";		
+sugar	blx			is	"BLX";	
+sugar	bx			is	"BX";		
+sugar	bxj			is	"BXJ";		
+sugar	cbnz		is	"CBNZ";		
+sugar	cbz			is	"CBZ";		
+sugar	cdp			is	"CDP";		
+sugar	cdp2		is	"CDP2";		
+sugar clrex		is	"CLREX";		
+sugar	clz			is	"CLZ";
+sugar cmn			is	"CMN";
+sugar cmp			is	"CMP";
+sugar	cps			is	"CPS";
+sugar	dbg			is	"DBG";
+sugar dmb			is	"DMB";
+sugar dsb			is	"DSB";
+sugar	eor			is	"EOR";
+sugar	eret		is	"ERET";
+sugar	hvc			is	"HVC";
+sugar isb			is	"ISB";
+sugar it			is	"IT";
+sugar ld			is	"LD";
+sugar lsl			is	"LSL";
+sugar lsr			is	"LSR";
+sugar mcr			is	"MCR";
+sugar mcr2		is	"MCR2";
+sugar mcrr		is	"MCRR";
+sugar mcrr2		is	"MCRR2";
+sugar mla			is	"MLA";
+sugar mls			is	"MLS";
+sugar mov			is	"MOV";
+sugar movt		is	"MOVT";
+sugar mrc			is	"MRC";
+sugar mrc2		is	"MRC2";
+sugar mrrc		is	"MRRC";
+sugar mrrc2		is	"MRRC2";
+sugar mrs			is	"MRS";
+sugar mul			is	"MUL";
+sugar mvn			is	"MVN";
+sugar neg			is	"NEG";
+sugar nop			is	"NOP";
+sugar orn			is	"ORN";
+sugar orr			is	"ORR";
+sugar pkh			is	"PKH";
+sugar pld			is	"PLD";
+sugar pldw		is	"PLDW";
+sugar pli			is	"PLI";
+sugar pop			is	"POP";
+sugar push		is	"PUSH";
+sugar qadd		is	"QADD";
+sugar qadd16	is	"QADD16";
+sugar qadd8		is	"QADD8";
+sugar qasx		is	"QASX";
+sugar qdadd		is	"QDADD";
+sugar qdsub		is	"QDSUB";
+sugar qsax		is	"QSAX";
+sugar qsub		is	"QSUB";
+sugar qsub16	is	"QSUB16";
+sugar qsub8		is	"QSUB8";
+sugar rbit		is	"RBIT";
+sugar rev			is	"REV";
+sugar rev16		is	"REV16";
+sugar revsh		is	"REVSH";
+sugar rfe			is	"RFE";
+sugar ror			is	"ROR";
+sugar rrx			is	"RRX";
+sugar rsb			is	"RSB";
+sugar rsc			is	"RSC";
+sugar sadd16	is	"SADD16";
+sugar sadd8		is	"SADD8";
+sugar sasx		is	"SASX";
+sugar sbc			is	"SBC";
+sugar sbfx		is	"SBFX";
+sugar sdiv		is	"SDIV";
+sugar sel			is	"SEL";
+sugar sev			is	"SEV";
+sugar shadd16	is	"SHADD16";
+sugar shadd8	is	"SHADD8";
+sugar shasx		is	"SHASX";
+sugar shsub16	is	"SHSUB16";
+sugar shsub8	is	"SHSUB8";
+sugar sm			is	"SM";
+sugar smc			is	"SMC";
+sugar srs			is	"SRS";
+sugar ssat		is	"SSAT";
+sugar ssat16	is	"SSAT16";
+sugar ssax		is	"SSAX";
+sugar ssub16	is	"SSUB16";
+sugar ssub8		is	"SSUB8";
+sugar st			is	"ST";
+sugar sub			is	"SUB";
+sugar svc			is	"SVC";
+sugar swp			is	"SWP";
+sugar swpb		is	"SWPB";
+sugar sxtab		is	"SXTAB";
+sugar sxtab16	is	"SXTAB16";
+sugar	sxtah		is	"SXTAH";
+sugar sxtb		is	"SXTB";
+sugar sxtb16	is	"SXTB16";
+sugar sxth		is	"SXTH";
+sugar tbb			is	"TBB";
+sugar tbh			is	"TBH";
+sugar teq			is	"TEQ";
+sugar tst			is	"TST";
+sugar uadd16	is	"UADD16";
+sugar uadd8		is	"UADD8";
+sugar uasx		is	"UASX";
+sugar ubfx		is	"UBFX";
+sugar udf			is	"UDF";
+sugar udiv		is	"UDIV";
+sugar uhadd16	is	"UHADD16";
+sugar uhadd8	is	"UHADD8";
+sugar uhasx		is	"UHASX";
+sugar uhsax		is	"UHSAX";
+sugar uhsub16	is	"UHSUB16";
+sugar uhsub8	is	"UHSUB8";
+sugar umaal		is	"UMAAL";
+sugar umlal		is	"UMLAL";
+sugar umull		is	"UMULL";
+sugar uqadd16	is	"UQADD16";
+sugar uqadd8	is	"UQADD8";
+sugar uqasx		is	"UQASX";
+sugar uqsax		is	"UQSAX";
+sugar usqub16	is	"USQUB16";
+sugar uqsub8	is	"UQSUB8";
+sugar usad8		is	"USAD8";
+sugar usada8	is	"USADA8";
+sugar usat		is	"USAT";
+sugar usat16	is	"USAT16";
+sugar usax		is	"USAX";
+sugar usub16	is	"USUB16";
+sugar usub8		is	"USUB8";
+sugar uxtab		is	"UXTAB";
+sugar uxtah		is	"UXTAH";
+sugar uxtb		is	"UXTB";
+sugar uxtb16	is	"UXTB16";
+sugar uxth		is	"UXTH";
+sugar vaba		is	"VABA";
+sugar vabal		is	"VABAL";
+sugar vabd		is	"VABD";
+sugar vabdl		is	"VABDL";
+sugar vacge		is	"VACGE";
+sugar vacgt		is	"VACGT";
+sugar vacle		is	"VACLE";
+sugar vaclt		is	"VACLT";
+sugar vceq		is	"VCEQ";
+sugar vcge		is	"VCGE";
+sugar vcgt		is	"VCGT";
+sugar vcle		is	"VCLE";
+sugar vcls		is	"VCLS";
+sugar vclt		is	"VCLT";
+sugar vcmpe		is	"VCMPE";
+sugar vcnt		is	"VCNT";
+sugar vcvt		is	"VCVT";
+sugar vcvtr		is	"VCVTR";
+sugar vcvtb		is	"VCVTB";
+sugar vcvtt		is	"VCVTT";
+sugar vdup		is	"VDUP";
+sugar vfma		is	"VFMA";
+sugar vfms		is	"VFMS";
+sugar vfnma		is	"VFNMA";
+sugar vfnms		is	"VFNMS";
+sugar vhadd		is	"VHADD";
+sugar vhsub		is	"VHSUB";
+sugar vld1		is	"VLD1";
+sugar vld2		is	"VLD2";
+sugar vld3		is	"VLD3";
+sugar vld4		is	"VLD4";
+sugar vmax		is	"VMAX";
+sugar vmin		is	"VMIN";
+sugar vmla		is	"VMLA";
+sugar vmlal		is	"VMLAL";
+sugar vmls		is	"VMLS";
+sugar vmlsl		is	"VMLSL";
+sugar vmovl		is	"VMOVL";
+sugar vmovn		is	"VMOVN";
+sugar vmull		is	"VMULL";
+sugar vnmla		is	"VNMLA";
+sugar vnmls		is	"VNMLS";
+sugar vnmul		is	"VNMUL";
+sugar vpadal	is	"VPADAL";
+sugar vpadd		is	"VPADD";
+sugar vpaddl	is	"VPADDL";
+sugar vpmax		is	"VPMAX";
+sugar vpmin		is	"VPMIN";
+sugar vraddhn	is	"VRADDHN";
+sugar vrecpe	is	"VRECPE";
+sugar vrecps	is	"VRECPS";
+sugar vrev16	is	"VREV16";
+sugar vrev32	is	"VREV32";
+sugar vrev64	is	"VREV64";
+sugar vrhadd	is	"VRHADD";
+sugar vrshl		is	"VRSHL";
+sugar vrshr		is	"VRSHR";
+sugar vrshrn	is	"VRSHRN";
+sugar vrsqrte	is	"VRSQRTE";
+sugar vrsqrts	is	"VRSQRTS";
+sugar vrsra		is	"VRSRA";
+sugar vrsubhn	is	"VRSUBHN";
+sugar vshl		is	"VSHL";
+sugar vshll		is	"VSHLL";
+sugar vshr		is	"VSHR";
+sugar vshrn		is	"VSHRN";
+sugar vsli		is	"VSLI";
+sugar vsqrt		is	"VSQRT";
+sugar vsra		is	"VSRA";
+sugar vsri		is	"VSRI";
+sugar vst1		is	"VST1";
+sugar vst2		is	"VST2";
+sugar vst3		is	"VST3";
+sugar vst4		is	"VST4";
+sugar vsubhn	is	"VSUBHN";
+sugar vsubl		is	"VSUBL";
+sugar vsubw		is	"VSUBW";
+sugar vtbl		is	"VTBL";
+sugar vtbx		is	"VTBX";
+sugar vtrn		is	"VTRN";
+sugar vuzp		is	"VUZP";
+sugar vzip		is	"VZIP";
+sugar wfe			is	"WFE";
+sugar wfi			is	"WFI";
+sugar yield		is	"YIELD";
+sugar v				is	"V";
 
 -- Load and store instructions
-sugar ls_c		"C";
-sugar	ls_c2		"C2";
-sugar ls_ia		"IA";
-sugar ls_fd		"FD";
-sugar ls_da		"DA";
-sugar ls_fa		"FA";
-sugar ls_db		"DB";
-sugar ls_ea		"EA";
-sugar ls_ib		"IB";
-sugar ls_ed		"ED";
-sugar ls_r		"R";
-sugar ls_m		"M";
-sugar ls_b		"B";
-sugar ls_d		"D";
-sugar ls_h		"H";
-sugar ls_bt		"BT";
-sugar ls_ht		"HT";
-sugar ls_ex		"EX";
-sugar ls_s		"S";
+sugar ls_c		is "C";
+sugar	ls_c2		is "C2";
+sugar ls_ia		is "IA";
+sugar ls_fd		is "FD";
+sugar ls_da		is "DA";
+sugar ls_fa		is "FA";
+sugar ls_db		is "DB";
+sugar ls_ea		is "EA";
+sugar ls_ib		is "IB";
+sugar ls_ed		is "ED";
+sugar ls_r		is "R";
+sugar ls_m		is "M";
+sugar ls_b		is "B";
+sugar ls_d		is "D";
+sugar ls_h		is "H";
+sugar ls_bt		is "BT";
+sugar ls_ht		is "HT";
+sugar ls_ex		is "EX";
+sugar ls_s		is "S";
 
 -- signed multiplication instructions
-sugar sm_l		"L";
-sugar sm_a		"A";
-sugar sm_m		"M";
-sugar sm_u		"U";
-sugar sm_d		"D";
-sugar sm_s		"S";
-sugar sm_bb		"BB";
-sugar sm_bt		"BT";
-sugar sm_tb		"TB";
-sugar sm_tt		"TT";
-sugar sm_sd		"SD";
-sugar sm_sld	"SLD";
-sugar sm_ad		"AD";
+sugar sm_l		is "L";
+sugar sm_a		is "A";
+sugar sm_m		is "M";
+sugar sm_u		is "U";
+sugar sm_d		is "D";
+sugar sm_s		is "S";
+sugar sm_bb		is "BB";
+sugar sm_bt		is "BT";
+sugar sm_tb		is "TB";
+sugar sm_tt		is "TT";
+sugar sm_sd		is "SD";
+sugar sm_sld	is "SLD";
+sugar sm_ad		is "AD";
+sugar sm_wt   is "WT";
+sugar sm_wb   is "WB";
+sugar sm_ul   is "UL";
 
 -- Conditions and suffixes
-sugar	eq	"EQ";
-sugar ne	"NE";
-sugar cs	"CS";
-sugar cc	"CC";
-sugar mi	"MI";
-sugar pl	"PL";
-sugar vs	"VS";
-sugar vc	"VC";
-sugar hi	"HI";
-sugar ls	"LS";
-sugar ge	"GE";
-sugar lt	"LT";
-sugar gt	"GT";
-sugar le	"LE";
-sugar al	"AL";
-sugar	s		"S";
+sugar	eq	is "EQ";
+sugar ne	is "NE";
+sugar cs	is "CS";
+sugar cc	is "CC";
+sugar mi	is "MI";
+sugar pl	is "PL";
+sugar vs	is "VS";
+sugar vc	is "VC";
+sugar hi	is "HI";
+sugar ls	is "LS";
+sugar ge	is "GE";
+sugar lt	is "LT";
+sugar gt	is "GT";
+sugar le	is "LE";
+sugar al	is "AL";
+sugar	s		is "S";
 
 -- Shift types
-sugar st_asr	"ASR";
-sugar st_lsl	"LSL";
-sugar st_lsr	"LSR";
-sugar st_ror	"ROR";
+sugar st_asr	is "ASR";
+sugar st_lsl	is "LSL";
+sugar st_lsr	is "LSR";
+sugar st_ror	is "ROR";
 
 -- Registers
-sugar	sp	"sp";
-sugar lr	"lr";
-sugar pc	"pc";
-sugar ht	"ht";
-sugar oi	"oi";
-sugar sb	"sb";
-sugar fr	"fr";
+sugar	sp	is "sp";
+sugar lr	is "lr";
+sugar pc	is "pc";
+sugar ht	is "ht";
+sugar oi	is "oi";
+sugar sb	is "sb";
+sugar fr	is "fr";
 
 -- Terms
 term	str			is	"\"([^\"]|\\.)*\"";
@@ -340,8 +347,11 @@ term 	comm 		is	"[^\n]*\n";
 -- Rules
 ASM -> ocbrack #init INSTS ccbrack #gen ;
 #init {
-    INSTS^mach_asm := ASM^mach_asm;
-    INSTS^tds_asm := ASM^tds_asm;
+    do
+        INSTS^mach_asm := ASM^mach_asm;
+        INSTS^tds_asm := ASM^tds_asm;
+        INSTS^namespace := ASM^namespace;
+    end
 }
 
 #gen {
@@ -355,7 +365,9 @@ INSTS -> #init INST INSTS #gen ;
 #init {
     do
         INST^tds_asm := INSTS^tds_asm;
-    INSTS1^tds_asm := INSTS^tds_asm;
+        INSTS1^tds_asm := INSTS^tds_asm;
+        INST^namespace := INSTS^namespace;
+        INSTS1^namespace := INSTS^namespace;
     end
 }
 
@@ -365,75 +377,83 @@ INSTS -> #init INST INSTS #gen ;
     end
 }
 
-INST -> space nl #gen ;
+INST -> spce nl #gen ;
 #gen {
     do
-        INST^code := "\n";
+        INST^code_asm := "\n";
     end
 }
 
-INST -> OPCODE S CC space #init PARS #gen ;
-#init {
+INST -> OPCODE S CC spce #init PARS #gen ;
+global
+    pl : ArrayList<Object>;
+
+#init {
     do
-        PARS^parlist := new ArrayList<Object>();
-    PARS^tds_asm := INST^tds_asm;
+        pl := new ArrayList<Object>();
+        PARS^parlist := pl;
+        PARS^tds_asm := INST^tds_asm;
+        PARS^namespace := INST^namespace;
     end
 }
 
 #gen {
     do
-        INST^code_asm := INST^mach_asm.generateInstruction(OPCODE^code_asm + S^code_asm + CC^code_asm, PARS^parlist) + "\n";
+        INST^code_asm := INST^mach_asm.generateInstruction(OPCODE^code_asm + S^code_asm + CC^code_asm, pl) + "\n";
     end
 }
 
 INST -> commbeg comm #gen ;
 #gen {
     do
-        INST^code := INST^mach_asm.generateComment(comm^txt);
+        INST^code_asm := INST^mach_asm.generateComment(comm^txt);
     end
 }
 
 OPCODE -> SM #gen ;
 #gen {
     do
-        OPCODE^code_asm := SM^asm;
+        OPCODE^code_asm := SM^code_asm;
     end
 }
 
 OPCODE -> LDSTR #gen ;
 #gen {
     do
-        OPCODE^code_asm := LDSTR^asm;
+        OPCODE^code_asm := LDSTR^code_asm;
     end
 }
 
 OPCODE -> VINST #gen ;
 #gen {
     do
-        OPCODE^code_asm := VINST^asm;
+        OPCODE^code_asm := VINST^code_asm;
     end
 }
 
 OPCODE -> NINST #gen ;
 #gen {
     do
-        OPCODE^code_asm := NINST^asm;
+        OPCODE^code_asm := NINST^code_asm;
     end
 }
 
 -- Parameters
-PARS -> space ;
+PARS -> spce ;
 --#gen {
     --do
         --	PARS^code_asm := "":
         --end
         --}
 
-        PARS -> #init PAR #gen PARSX ;
+PARS -> #init PAR #gen PARSX ;
 #init {
     do
+        PAR^tds_asm := PARS^tds_asm;
+        PAR^namespace := PARS^namespace;
         PARSX^parlist := PARS^parlist;
-    PARSX^tds_asm := PARS^tds_asm;
+        PARSX^tds_asm := PARS^tds_asm;
+        PARSX^namespace := PARS^namespace;
     end
 }
 
@@ -443,20 +463,22 @@ PARS -> space ;
     end
 }
 
-PARSX -> space ;
+PARSX -> spce ;
 
-PARSX -> space coma space #init PAR #gen PARSX ;
+PARSX -> spce coma spce #init PAR #gen PARSX ;
 #init {
     do
+        PAR^namespace := PARSX^namespace;
         PAR^tds_asm := PARSX^tds_asm;
-    PARSX1^tds_asm := PARSX^tds_asm;
+        PARSX1^namespace := PARSX^namespace;
+        PARSX1^tds_asm := PARSX^tds_asm;
     end
 }
 
-#gen {
+#gen {
     do
         PARSX^parlist.add(PAR^code_asm);
-    PARSX1^parlist := PARSX^parlist;
+        PARSX1^parlist := PARSX^parlist;
     end
 }
 
@@ -464,6 +486,7 @@ PAR -> #init ADDR #gen ;
 #init {
     do
         ADDR^tds_asm := PAR^tds_asm;
+        ADDR^namespace := PAR^namespace;
     end
 }
 
@@ -483,7 +506,7 @@ PAR -> SHIFTOP REGISTER #gen ;
 PAR -> SHIFTOP NUMBER #gen ;
 #gen {
     do
-        PAR^code_asm := SHIFTOP^code_asm + REGISTER^code_asm;
+        PAR^code_asm := SHIFTOP^code_asm + NUMBER^code_asm;
     end
 }
 
@@ -495,38 +518,38 @@ SHIFTOP -> #gen ;
     end
 }
 
-SHIFTOP -> SHIFTTYPE space #gen ;
+SHIFTOP -> SHIFTTYPE spce #gen ;
 #gen {
     do
         SHIFTOP^code_asm := SHIFTTYPE^code_asm + " ";
-    end;
+    end
 }
 
 SHIFTTYPE -> st_asr #gen ;
 #gen {
     do
-        SHIFTTYPE^code_asm := st_asr^txt;
+        SHIFTTYPE^code_asm := "ASR";
     end
 }
 
 SHIFTTYPE -> st_lsl #gen ;
 #gen {
     do
-        SHIFTTYPE^code_asm := st_lsl^txt;
+        SHIFTTYPE^code_asm := "LSL";
     end
 }
 
 SHIFTTYPE -> st_lsr #gen ;
 #gen {
     do
-        SHIFTTYPE^code_asm := st_lsr^txt;
+        SHIFTTYPE^code_asm := "LSR";
     end
 }
 
 SHIFTTYPE -> st_ror #gen ;
 #gen {
     do
-        SHIFTTYPE^code_asm := st_ror^txt;
+        SHIFTTYPE^code_asm := "ROR";
     end
 }
 
@@ -536,7 +559,7 @@ SHIFTTYPE -> st_ror #gen ;
 --		[Reg, Reg]
 --		[Reg, #<num>]
 -- With an optionnal additionnal '!'
-ADDR -> obrack space #init REGISTER space ADDRSEC space cbrack ADDRSUFF #gen ;
+ADDR -> obrack spce #init REGISTER spce ADDRSEC spce cbrack ADDRSUFF #gen ;
 #init {
 do
     REGISTER^mach_asm := ADDR^mach_asm;
@@ -550,10 +573,17 @@ end
     end
 }
 
-ADDR -> VARIABLE #gen;
-#gen {
+ADDR -> #init VARIABLE #gen;
+#init {
     do
         VARIABLE^tds_asm := ADDR^tds_asm;
+        VARIABLE^namespace := ADDR^namespace;
+    end
+}
+
+#gen {
+    do
+        ADDR^code_asm := VARIABLE^code_asm;
     end
 }
 
@@ -564,7 +594,7 @@ ADDRSEC -> #gen ;
     end
 }
 
-ADDRSEC -> coma space #init REGISTER #gen ;
+ADDRSEC -> coma spce #init REGISTER #gen ;
 #init {
 do
     REGISTER^mach_asm := ADDRSEC^mach_asm;
@@ -577,7 +607,7 @@ do
 end
 }
 
-ADDRSEC -> coma space #init NUMBER #gen ;
+ADDRSEC -> coma spce #init NUMBER #gen ;
 #init {
 do
     NUMBER^mach_asm := ADDRSEC^mach_asm;
@@ -607,8 +637,26 @@ end
 -- Variables
 VARIABLE -> sharp var #gen ;
 #gen {
+local
+    si : SymbolInfo;
 do
-    -- TODO
+    if VARIABLE^tds_asm = null then
+        error(ASM_ERROR_NO_TDS);
+    else
+        si := VARIABLE^tds_asm.lookup(var^txt, VARIABLE^namespace, false);
+
+        if si = null then
+            error(VARIABLE_UNKNOWN, var^txt);
+        else
+            match si
+                with VariableInfo then
+                    VARIABLE^code_asm :=
+                        "[sb, " + VARIABLE^mach_asm.generateDirect(-si.displacement()) + "]";
+                else
+                    error(NOT_A_VARIABLE, var^txt);
+            end
+        end
+    end
 end
 }
 
@@ -631,375 +679,2176 @@ end
 REGISTER -> sp #gen ;
 #gen {
 do
-    REGISTER^code_asm := REGISTER^mach_asm.generateRegister(sp^txt);
+    REGISTER^code_asm := REGISTER^mach_asm.generateRegister("sp");
 end
 }
 
 REGISTER -> lr #gen ;
 #gen {
 do
-    REGISTER^code_asm := REGISTER^mach_asm.generateRegister(lr^txt);
+    REGISTER^code_asm := REGISTER^mach_asm.generateRegister("lr");
 end
 }
 
 REGISTER -> pc #gen ;
 #gen {
 do
-    REGISTER^code_asm := REGISTER^mach_asm.generateRegister(pc^txt);
+    REGISTER^code_asm := REGISTER^mach_asm.generateRegister("pc");
 end
 }
 
 REGISTER -> ht #gen ;
 #gen {
 do
-    REGISTER^code_asm := REGISTER^mach_asm.generateRegister(ht^txt);
+    REGISTER^code_asm := REGISTER^mach_asm.generateRegister("ht");
 end
 } 
 
 REGISTER -> oi #gen ;
 #gen {
 do
-    REGISTER^code_asm := REGISTER^mach_asm.generateRegister(oi^txt);
+    REGISTER^code_asm := REGISTER^mach_asm.generateRegister("oi");
 end
 }
 
 REGISTER -> sb #gen ;
 #gen {
 do
-    REGISTER^code_asm := REGISTER^mach_asm.generateRegister(sb^txt);
+    REGISTER^code_asm := REGISTER^mach_asm.generateRegister("sb");
 end
 } 
 
 REGISTER -> fr #gen ;
 #gen {
 do
-    REGISTER^code_asm := REGISTER^mach_asm.generateRegister(fr^txt);
+    REGISTER^code_asm := REGISTER^mach_asm.generateRegister("fr");
 end
 } 
 
 
-NINST ->	adc ;
-NINST ->	add ;
-NINST ->	adr ;
-NINST ->	and ;
-NINST ->	asr ;
-NINST ->	bfc ;
-NINST ->	bfi ;
-NINST -> bic ;
-NINST ->	b ;
-NINST ->	bl ;
-NINST ->	blx ;
-NINST ->	bx ;
-NINST ->	bxj ;
-NINST ->	cbnz ;
-NINST ->	cbz ;
-NINST ->	cdp ;
-NINST ->	cdp2 ;
-NINST -> clrex ;
-NINST ->	clz ;
-NINST -> cmn ;
-NINST -> cmp ;
-NINST ->	cps ;
-NINST ->	dbg ;
-NINST -> dmb ;
-NINST -> dsb ;
-NINST ->	eor ;
-NINST ->	eret ;
-NINST ->	hvc ;
-NINST -> isb ;
-NINST -> it ;
-NINST -> ld ;
-NINST -> lsl ;
-NINST -> lsr ;
-NINST -> mcr ;
-NINST -> mcr2 ;
-NINST -> mcrr ;
-NINST -> mcrr2 ;
-NINST -> mla ;
-NINST -> mls ;
-NINST -> mov ;
-NINST -> movt ;
-NINST -> mrc ;
-NINST -> mrc2 ;
-NINST -> mrrc ;
-NINST -> mrrc2 ;
-NINST -> mrs ;
-NINST -> mul ;
-NINST -> mvn ;
-NINST -> neg ;
-NINST -> nop ;
-NINST -> orn ;
-NINST -> orr ;
-NINST -> pkh ;
-NINST -> pld ;
-NINST -> pldw ;
-NINST -> pli ;
-NINST -> pop ;
-NINST -> push ;
-NINST -> qadd ;
-NINST -> qadd16 ;
-NINST -> qadd8 ;
-NINST -> qasx ;
-NINST -> qdadd ;
-NINST -> qdsub ;
-NINST -> qsax ;
-NINST -> qsub ;
-NINST -> qsub16 ;
-NINST -> qsub8 ;
-NINST -> rbit ;
-NINST -> rev ;
-NINST -> rev16 ;
-NINST -> revsh ;
-NINST -> rfe ;
-NINST -> ror ;
-NINST -> rrx ;
-NINST -> rsb ;
-NINST -> rsc ;
-NINST -> sadd16 ;
-NINST -> sadd8 ;
-NINST -> sasx ;
-NINST -> sbc ;
-NINST -> sbfx ;
-NINST -> sdiv ;
-NINST -> sel ;
-NINST -> sev ;
-NINST -> shadd16 ;
-NINST -> shadd8 ;
-NINST -> shasx ;
-NINST -> shsub16 ;
-NINST -> shsub8 ;
-NINST -> sm ;
-NINST -> smc ;
-NINST -> srs ;
-NINST -> ssat ;
-NINST -> ssat16 ;
-NINST -> ssax ;
-NINST -> ssub16 ;
-NINST -> ssub8 ;
-NINST -> st ;
-NINST -> sub ;
-NINST -> svc ;
-NINST -> swp ;
-NINST -> swpb ;
-NINST -> sxtab ;
-NINST -> sxtab16 ;
-NINST ->	sxtah ;
-NINST -> sxtb ;
-NINST -> sxtb16 ;
-NINST -> sxth ;
-NINST -> tbb ;
-NINST -> tbh ;
-NINST -> teq ;
-NINST -> tst ;
-NINST -> uadd16 ;
-NINST -> uadd8 ;
-NINST -> uasx ;
-NINST -> ubfx ;
-NINST -> udf ;
-NINST -> udiv ;
-NINST -> uhadd16 ;
-NINST -> uhadd8 ;
-NINST -> uhasx ;
-NINST -> uhsax ;
-NINST -> uhsub16 ;
-NINST -> uhsub8 ;
-NINST -> umaal ;
-NINST -> umlal ;
-NINST -> umull ;
-NINST -> uqadd16 ;
-NINST -> uqadd8 ;
-NINST -> uqasx ;
-NINST -> uqsax ;
-NINST -> usqub16 ;
-NINST -> uqsub8 ;
-NINST -> usad8 ;
-NINST -> usada8 ;
-NINST -> usat ;
-NINST -> usat16 ;
-NINST -> usax ;
-NINST -> usub16 ;
-NINST -> usub8 ;
-NINST -> uxtab ;
-NINST -> uxtah ;
-NINST -> uxtb ;
-NINST -> uxtb16 ;
-NINST -> uxth ;
-NINST -> wfe ;
-NINST -> wfi ;
-NINST -> yield ;
+NINST ->	adc #gen ;
+#gen {
+do
+    NINST^code_asm := "ADC";
+end
+}
 
-VINST -> v NINST ;
-VINST -> vaba ;
-VINST -> vabal ;
-VINST -> vabd ;
-VINST -> vabdl ;
-VINST -> vacge ;
-VINST -> vacgt ;
-VINST -> vacle ;
-VINST -> vaclt ;
-VINST -> vceq ;
-VINST -> vcge ;
-VINST -> vcgt ;
-VINST -> vcle ;
-VINST -> vcls ;
-VINST -> vclt ;
-VINST -> vcmpe ;
-VINST -> vcnt ;
-VINST -> vcvt ;
-VINST -> vcvtr ;
-VINST -> vcvtb ;
-VINST -> vcvtt ;
-VINST -> vdup ;
-VINST -> vfma ;
-VINST -> vfms ;
-VINST -> vfnma ;
-VINST -> vfnms ;
-VINST -> vhadd ;
-VINST -> vhsub ;
-VINST -> vld1 ;
-VINST -> vld2 ;
-VINST -> vld3 ;
-VINST -> vld4 ;
-VINST -> vmax ;
-VINST -> vmin ;
-VINST -> vmla ;
-VINST -> vmlal ;
-VINST -> vmls ;
-VINST -> vmlsl ;
-VINST -> vmovl ;
-VINST -> vmovn ;
-VINST -> vmull ;
-VINST -> vnmla ;
-VINST -> vnmls ;
-VINST -> vnmul ;
-VINST -> vpadal ;
-VINST -> vpadd ;
-VINST -> vpaddl ;
-VINST -> vpmax ;
-VINST -> vpmin ;
-VINST -> vraddhn ;
-VINST -> vrecpe ;
-VINST -> vrecps ;
-VINST -> vrev16 ;
-VINST -> vrev32 ;
-VINST -> vrev64 ;
-VINST -> vrhadd ;
-VINST -> vrshl ;
-VINST -> vrshr ;
-VINST -> vrshrn ;
-VINST -> vrsqrte ;
-VINST -> vrsqrts ;
-VINST -> vrsra ;
-VINST -> vrsubhn ;
-VINST -> vshl ;
-VINST -> vshll ;
-VINST -> vshr ;
-VINST -> vshrn ;
-VINST -> vsli ;
-VINST -> vsqrt ;
-VINST -> vsra ;
-VINST -> vsri ;
-VINST -> vst1 ;
-VINST -> vst2 ;
-VINST -> vst3 ;
-VINST -> vst4 ;
-VINST -> vsubhn ;
-VINST -> vsubl ;
-VINST -> vsubw ;
-VINST -> vtbl ;
-VINST -> vtbx ;
-VINST -> vtrn ;
-VINST -> vuzp ;
-VINST -> vzip ;
+NINST ->	add #gen ;
+#gen {
+do
+    NINST^code_asm := "ADD";
+end
+}
+
+NINST ->	adr #gen ;
+#gen {
+do
+    NINST^code_asm := "ADR";
+end
+}
+
+NINST ->	and #gen ;
+#gen {
+do
+    NINST^code_asm := "AND";
+end
+}
+
+NINST ->	asr #gen ;
+#gen {
+do
+    NINST^code_asm := "ASR";
+end
+}
+
+NINST ->	bfc #gen ;
+#gen {
+do
+    NINST^code_asm := "BFC";
+end
+}
+
+NINST ->	bfi #gen ;
+#gen {
+do
+    NINST^code_asm := "BFI";
+end
+}
+
+NINST -> bic #gen ;
+#gen {
+do
+    NINST^code_asm := "BIC";
+end
+}
+
+NINST ->	b #gen ;
+#gen {
+do
+    NINST^code_asm := "B";
+end
+}
+
+NINST ->	bl #gen ;
+#gen {
+do
+    NINST^code_asm := "BL";
+end
+}
+
+NINST ->	blx #gen ;
+#gen {
+do
+    NINST^code_asm := "BLX";
+end
+}
+
+NINST ->	bx #gen ;
+#gen {
+do
+    NINST^code_asm := "BX";
+end
+}
+
+NINST ->	bxj #gen ;
+#gen {
+do
+    NINST^code_asm := "BXJ";
+end
+}
+
+NINST ->	cbnz #gen ;
+#gen {
+do
+    NINST^code_asm := "CBNZ";
+end
+}
+
+NINST ->	cbz #gen ;
+#gen {
+do
+    NINST^code_asm := "CBZ";
+end
+}
+
+NINST ->	cdp #gen ;
+#gen {
+do
+    NINST^code_asm := "CDP";
+end
+}
+
+NINST ->	cdp2 #gen ;
+#gen {
+do
+    NINST^code_asm := "CDP2";
+end
+}
+
+NINST -> clrex #gen ;
+#gen {
+do
+    NINST^code_asm := "CLREX";
+end
+}
+
+NINST ->	clz #gen ;
+#gen {
+do
+    NINST^code_asm := "CLZ";
+end
+}
+
+NINST -> cmn #gen ;
+#gen {
+do
+    NINST^code_asm := "CMN";
+end
+}
+
+NINST -> cmp #gen ;
+#gen {
+do
+    NINST^code_asm := "CMP";
+end
+}
+
+NINST ->	cps #gen ;
+#gen {
+do
+    NINST^code_asm := "CPS";
+end
+}
+
+NINST ->	dbg #gen ;
+#gen {
+do
+    NINST^code_asm := "DBG";
+end
+}
+
+NINST -> dmb #gen ;
+#gen {
+do
+    NINST^code_asm := "DMB";
+end
+}
+
+NINST -> dsb #gen ;
+#gen {
+do
+    NINST^code_asm := "DSB";
+end
+}
+
+NINST ->	eor #gen ;
+#gen {
+do
+    NINST^code_asm := "EOR";
+end
+}
+
+NINST ->	eret #gen ;
+#gen {
+do
+    NINST^code_asm := "ERET";
+end
+}
+
+NINST ->	hvc #gen ;
+#gen {
+do
+    NINST^code_asm := "HVC";
+end
+}
+
+NINST -> isb #gen ;
+#gen {
+do
+    NINST^code_asm := "ISB";
+end
+}
+
+NINST -> it #gen ;
+#gen {
+do
+    NINST^code_asm := "IT";
+end
+}
+
+NINST -> ld #gen ;
+#gen {
+do
+    NINST^code_asm := "LD";
+end
+}
+
+NINST -> lsl #gen ;
+#gen {
+do
+    NINST^code_asm := "LSL";
+end
+}
+
+NINST -> lsr #gen ;
+#gen {
+do
+    NINST^code_asm := "LSR";
+end
+}
+
+NINST -> mcr #gen ;
+#gen {
+do
+    NINST^code_asm := "MCR";
+end
+}
+
+NINST -> mcr2 #gen ;
+#gen {
+do
+    NINST^code_asm := "MCR2";
+end
+}
+
+NINST -> mcrr #gen ;
+#gen {
+do
+    NINST^code_asm := "MCRR";
+end
+}
+
+NINST -> mcrr2 #gen ;
+#gen {
+do
+    NINST^code_asm := "MCRR2";
+end
+}
+
+NINST -> mla #gen ;
+#gen {
+do
+    NINST^code_asm := "MLA";
+end
+}
+
+NINST -> mls #gen ;
+#gen {
+do
+    NINST^code_asm := "MLS";
+end
+}
+
+NINST -> mov #gen ;
+#gen {
+do
+    NINST^code_asm := "MOV";
+end
+}
+
+NINST -> movt #gen ;
+#gen {
+do
+    NINST^code_asm := "MOVT";
+end
+}
+
+NINST -> mrc #gen ;
+#gen {
+do
+    NINST^code_asm := "MRC";
+end
+}
+
+NINST -> mrc2 #gen ;
+#gen {
+do
+    NINST^code_asm := "MRC2";
+end
+}
+
+NINST -> mrrc #gen ;
+#gen {
+do
+    NINST^code_asm := "MRRC";
+end
+}
+
+NINST -> mrrc2 #gen ;
+#gen {
+do
+    NINST^code_asm := "MRRC2";
+end
+}
+
+NINST -> mrs #gen ;
+#gen {
+do
+    NINST^code_asm := "MRS";
+end
+}
+
+NINST -> mul #gen ;
+#gen {
+do
+    NINST^code_asm := "MUL";
+end
+}
+
+NINST -> mvn #gen ;
+#gen {
+do
+    NINST^code_asm := "MVN";
+end
+}
+
+NINST -> neg #gen ;
+#gen {
+do
+    NINST^code_asm := "NEG";
+end
+}
+
+NINST -> nop #gen ;
+#gen {
+do
+    NINST^code_asm := "NOP";
+end
+}
+
+NINST -> orn #gen ;
+#gen {
+do
+    NINST^code_asm := "ORN";
+end
+}
+
+NINST -> orr #gen ;
+#gen {
+do
+    NINST^code_asm := "ORR";
+end
+}
+
+NINST -> pkh #gen ;
+#gen {
+do
+    NINST^code_asm := "PKH";
+end
+}
+
+NINST -> pld #gen ;
+#gen {
+do
+    NINST^code_asm := "PLD";
+end
+}
+
+NINST -> pldw #gen ;
+#gen {
+do
+    NINST^code_asm := "PLDW";
+end
+}
+
+NINST -> pli #gen ;
+#gen {
+do
+    NINST^code_asm := "PLI";
+end
+}
+
+NINST -> pop #gen ;
+#gen {
+do
+    NINST^code_asm := "POP";
+end
+}
+
+NINST -> push #gen ;
+#gen {
+do
+    NINST^code_asm := "PUSH";
+end
+}
+
+NINST -> qadd #gen ;
+#gen {
+do
+    NINST^code_asm := "QADD";
+end
+}
+
+NINST -> qadd16 #gen ;
+#gen {
+do
+    NINST^code_asm := "QADD16";
+end
+}
+
+NINST -> qadd8 #gen ;
+#gen {
+do
+    NINST^code_asm := "QADD8";
+end
+}
+
+NINST -> qasx #gen ;
+#gen {
+do
+    NINST^code_asm := "QASX";
+end
+}
+
+NINST -> qdadd #gen ;
+#gen {
+do
+    NINST^code_asm := "QDADD";
+end
+}
+
+NINST -> qdsub #gen ;
+#gen {
+do
+    NINST^code_asm := "QDSUB";
+end
+}
+
+NINST -> qsax #gen ;
+#gen {
+do
+    NINST^code_asm := "QSAX";
+end
+}
+
+NINST -> qsub #gen ;
+#gen {
+do
+    NINST^code_asm := "QSUB";
+end
+}
+
+NINST -> qsub16 #gen ;
+#gen {
+do
+    NINST^code_asm := "QSUB16";
+end
+}
+
+NINST -> qsub8 #gen ;
+#gen {
+do
+    NINST^code_asm := "QSUB8";
+end
+}
+
+NINST -> rbit #gen ;
+#gen {
+do
+    NINST^code_asm := "RBIT";
+end
+}
+
+NINST -> rev #gen ;
+#gen {
+do
+    NINST^code_asm := "REV";
+end
+}
+
+NINST -> rev16 #gen ;
+#gen {
+do
+    NINST^code_asm := "REV16";
+end
+}
+
+NINST -> revsh #gen ;
+#gen {
+do
+    NINST^code_asm := "REVSH";
+end
+}
+
+NINST -> rfe #gen ;
+#gen {
+do
+    NINST^code_asm := "RFE";
+end
+}
+
+NINST -> ror #gen ;
+#gen {
+do
+    NINST^code_asm := "ROR";
+end
+}
+
+NINST -> rrx #gen ;
+#gen {
+do
+    NINST^code_asm := "RRX";
+end
+}
+
+NINST -> rsb #gen ;
+#gen {
+do
+    NINST^code_asm := "RSB";
+end
+}
+
+NINST -> rsc #gen ;
+#gen {
+do
+    NINST^code_asm := "RSC";
+end
+}
+
+NINST -> sadd16 #gen ;
+#gen {
+do
+    NINST^code_asm := "SADD16";
+end
+}
+
+NINST -> sadd8 #gen ;
+#gen {
+do
+    NINST^code_asm := "SADD8";
+end
+}
+
+NINST -> sasx #gen ;
+#gen {
+do
+    NINST^code_asm := "SASX";
+end
+}
+
+NINST -> sbc #gen ;
+#gen {
+do
+    NINST^code_asm := "SBC";
+end
+}
+
+NINST -> sbfx #gen ;
+#gen {
+do
+    NINST^code_asm := "SBFX";
+end
+}
+
+NINST -> sdiv #gen ;
+#gen {
+do
+    NINST^code_asm := "SDIV";
+end
+}
+
+NINST -> sel #gen ;
+#gen {
+do
+    NINST^code_asm := "SEL";
+end
+}
+
+NINST -> sev #gen ;
+#gen {
+do
+    NINST^code_asm := "SEV";
+end
+}
+
+NINST -> shadd16 #gen ;
+#gen {
+do
+    NINST^code_asm := "SHADD16";
+end
+}
+
+NINST -> shadd8 #gen ;
+#gen {
+do
+    NINST^code_asm := "SHADD8";
+end
+}
+
+NINST -> shasx #gen ;
+#gen {
+do
+    NINST^code_asm := "SHASX";
+end
+}
+
+NINST -> shsub16 #gen ;
+#gen {
+do
+    NINST^code_asm := "SHSUB16";
+end
+}
+
+NINST -> shsub8 #gen ;
+#gen {
+do
+    NINST^code_asm := "SHSUB8";
+end
+}
+
+NINST -> sm #gen ;
+#gen {
+do
+    NINST^code_asm := "SM";
+end
+}
+
+NINST -> smc #gen ;
+#gen {
+do
+    NINST^code_asm := "SMC";
+end
+}
+
+NINST -> srs #gen ;
+#gen {
+do
+    NINST^code_asm := "SRS";
+end
+}
+
+NINST -> ssat #gen ;
+#gen {
+do
+    NINST^code_asm := "SSAT";
+end
+}
+
+NINST -> ssat16 #gen ;
+#gen {
+do
+    NINST^code_asm := "SSAT16";
+end
+}
+
+NINST -> ssax #gen ;
+#gen {
+do
+    NINST^code_asm := "SSAX";
+end
+}
+
+NINST -> ssub16 #gen ;
+#gen {
+do
+    NINST^code_asm := "SSUB16";
+end
+}
+
+NINST -> ssub8 #gen ;
+#gen {
+do
+    NINST^code_asm := "SSUB8";
+end
+}
+
+NINST -> st #gen ;
+#gen {
+do
+    NINST^code_asm := "ST";
+end
+}
+
+NINST -> sub #gen ;
+#gen {
+do
+    NINST^code_asm := "SUB";
+end
+}
+
+NINST -> svc #gen ;
+#gen {
+do
+    NINST^code_asm := "SVC";
+end
+}
+
+NINST -> swp #gen ;
+#gen {
+do
+    NINST^code_asm := "SWP";
+end
+}
+
+NINST -> swpb #gen ;
+#gen {
+do
+    NINST^code_asm := "SWPB";
+end
+}
+
+NINST -> sxtab #gen ;
+#gen {
+do
+    NINST^code_asm := "SXTAB";
+end
+}
+
+NINST -> sxtab16 #gen ;
+#gen {
+do
+    NINST^code_asm := "SXTAB16";
+end
+}
+
+NINST -> sxtah #gen ;
+#gen {
+do
+    NINST^code_asm := "SXTAH";
+end
+}
+
+NINST -> sxtb #gen ;
+#gen {
+do
+    NINST^code_asm := "SXTB";
+end
+}
+
+NINST -> sxtb16 #gen ;
+#gen {
+do
+    NINST^code_asm := "SXTB16";
+end
+}
+
+NINST -> sxth #gen ;
+#gen {
+do
+    NINST^code_asm := "SXTH";
+end
+}
+
+NINST -> tbb #gen ;
+#gen {
+do
+    NINST^code_asm := "TBB";
+end
+}
+
+NINST -> tbh #gen ;
+#gen {
+do
+    NINST^code_asm := "TBH";
+end
+}
+
+NINST -> teq #gen ;
+#gen {
+do
+    NINST^code_asm := "TEQ";
+end
+}
+
+NINST -> tst #gen ;
+#gen {
+do
+    NINST^code_asm := "TST";
+end
+}
+
+NINST -> uadd16 #gen ;
+#gen {
+do
+    NINST^code_asm := "UADD16";
+end
+}
+
+NINST -> uadd8 #gen ;
+#gen {
+do
+    NINST^code_asm := "UADD8";
+end
+}
+
+NINST -> uasx #gen ;
+#gen {
+do
+    NINST^code_asm := "UASX";
+end
+}
+
+NINST -> ubfx #gen ;
+#gen {
+do
+    NINST^code_asm := "UBFX";
+end
+}
+
+NINST -> udf #gen ;
+#gen {
+do
+    NINST^code_asm := "UDF";
+end
+}
+
+NINST -> udiv #gen ;
+#gen {
+do
+    NINST^code_asm := "UDIV";
+end
+}
+
+NINST -> uhadd16 #gen ;
+#gen {
+do
+    NINST^code_asm := "UHADD16";
+end
+}
+
+NINST -> uhadd8 #gen ;
+#gen {
+do
+    NINST^code_asm := "UHADD8";
+end
+}
+
+NINST -> uhasx #gen ;
+#gen {
+do
+    NINST^code_asm := "UHASX";
+end
+}
+
+NINST -> uhsax #gen ;
+#gen {
+do
+    NINST^code_asm := "UHSAX";
+end
+}
+
+NINST -> uhsub16 #gen ;
+#gen {
+do
+    NINST^code_asm := "UHSUB16";
+end
+}
+
+NINST -> uhsub8 #gen ;
+#gen {
+do
+    NINST^code_asm := "UHSUB8";
+end
+}
+
+NINST -> umaal #gen ;
+#gen {
+do
+    NINST^code_asm := "UMAAL";
+end
+}
+
+NINST -> umlal #gen ;
+#gen {
+do
+    NINST^code_asm := "UMLAL";
+end
+}
+
+NINST -> umull #gen ;
+#gen {
+do
+    NINST^code_asm := "UMULL";
+end
+}
+
+NINST -> uqadd16 #gen ;
+#gen {
+do
+    NINST^code_asm := "UQADD16";
+end
+}
+
+NINST -> uqadd8 #gen ;
+#gen {
+do
+    NINST^code_asm := "UQADD8";
+end
+}
+
+NINST -> uqasx #gen ;
+#gen {
+do
+    NINST^code_asm := "UQASX";
+end
+}
+
+NINST -> uqsax #gen ;
+#gen {
+do
+    NINST^code_asm := "UQSAX";
+end
+}
+
+NINST -> usqub16 #gen ;
+#gen {
+do
+    NINST^code_asm := "USQUB16";
+end
+}
+
+NINST -> uqsub8 #gen ;
+#gen {
+do
+    NINST^code_asm := "UQSUB8";
+end
+}
+
+NINST -> usad8 #gen ;
+#gen {
+do
+    NINST^code_asm := "USAD8";
+end
+}
+
+NINST -> usada8 #gen ;
+#gen {
+do
+    NINST^code_asm := "USADA8";
+end
+}
+
+NINST -> usat #gen ;
+#gen {
+do
+    NINST^code_asm := "USAT";
+end
+}
+
+NINST -> usat16 #gen ;
+#gen {
+do
+    NINST^code_asm := "USAT16";
+end
+}
+
+NINST -> usax #gen ;
+#gen {
+do
+    NINST^code_asm := "USAX";
+end
+}
+
+NINST -> usub16 #gen ;
+#gen {
+do
+    NINST^code_asm := "USUB16";
+end
+}
+
+NINST -> usub8 #gen ;
+#gen {
+do
+    NINST^code_asm := "USUB8";
+end
+}
+
+NINST -> uxtab #gen ;
+#gen {
+do
+    NINST^code_asm := "UXTAB";
+end
+}
+
+NINST -> uxtah #gen ;
+#gen {
+do
+    NINST^code_asm := "UXTAH";
+end
+}
+
+NINST -> uxtb #gen ;
+#gen {
+do
+    NINST^code_asm := "UXTB";
+end
+}
+
+NINST -> uxtb16 #gen ;
+#gen {
+do
+    NINST^code_asm := "UXTB16";
+end
+}
+
+NINST -> uxth #gen ;
+#gen {
+do
+    NINST^code_asm := "UXTH";
+end
+}
+
+NINST -> wfe #gen ;
+#gen {
+do
+    NINST^code_asm := "WFE";
+end
+}
+
+NINST -> wfi #gen ;
+#gen {
+do
+    NINST^code_asm := "WFI";
+end
+}
+
+NINST -> yield #gen ;
+#gen {
+do
+    NINST^code_asm := "YIELD";
+end
+}
+
+
+-- Vectorial instructions
+VINST -> v NINST #gen ;
+#gen {
+do
+    VINST^code_asm := "V" + NINST^code_asm;
+end
+}
+
+VINST -> vaba #gen ;
+#gen {
+do
+    VINST^code_asm := "VABA";
+end
+}
+
+VINST -> vabal #gen ;
+#gen {
+do
+    VINST^code_asm := "VABAL";
+end
+}
+
+VINST -> vabd #gen ;
+#gen {
+do
+    VINST^code_asm := "VABD";
+end
+}
+
+VINST -> vabdl #gen ;
+#gen {
+do
+    VINST^code_asm := "VABDL";
+end
+}
+
+VINST -> vacge #gen ;
+#gen {
+do
+    VINST^code_asm := "VACGE";
+end
+}
+
+VINST -> vacgt #gen ;
+#gen {
+do
+    VINST^code_asm := "VACGT";
+end
+}
+
+VINST -> vacle #gen ;
+#gen {
+do
+    VINST^code_asm := "VACLE";
+end
+}
+
+VINST -> vaclt #gen ;
+#gen {
+do
+    VINST^code_asm := "VACLT";
+end
+}
+
+VINST -> vceq #gen ;
+#gen {
+do
+    VINST^code_asm := "VCEQ";
+end
+}
+
+VINST -> vcge #gen ;
+#gen {
+do
+    VINST^code_asm := "VCGE";
+end
+}
+
+VINST -> vcgt #gen ;
+#gen {
+do
+    VINST^code_asm := "VCGT";
+end
+}
+
+VINST -> vcle #gen ;
+#gen {
+do
+    VINST^code_asm := "VCLE";
+end
+}
+
+VINST -> vcls #gen ;
+#gen {
+do
+    VINST^code_asm := "VCLS";
+end
+}
+
+VINST -> vclt #gen ;
+#gen {
+do
+    VINST^code_asm := "VCLT";
+end
+}
+
+VINST -> vcmpe #gen ;
+#gen {
+do
+    VINST^code_asm := "VCMPE";
+end
+}
+
+VINST -> vcnt #gen ;
+#gen {
+do
+    VINST^code_asm := "VCNT";
+end
+}
+
+VINST -> vcvt #gen ;
+#gen {
+do
+    VINST^code_asm := "VCVT";
+end
+}
+
+VINST -> vcvtr #gen ;
+#gen {
+do
+    VINST^code_asm := "VCVTR";
+end
+}
+
+VINST -> vcvtb #gen ;
+#gen {
+do
+    VINST^code_asm := "VCVTB";
+end
+}
+
+VINST -> vcvtt #gen ;
+#gen {
+do
+    VINST^code_asm := "VCVTT";
+end
+}
+
+VINST -> vdup #gen ;
+#gen {
+do
+    VINST^code_asm := "VDUP";
+end
+}
+
+VINST -> vfma #gen ;
+#gen {
+do
+    VINST^code_asm := "VFMA";
+end
+}
+
+VINST -> vfms #gen ;
+#gen {
+do
+    VINST^code_asm := "VFMS";
+end
+}
+
+VINST -> vfnma #gen ;
+#gen {
+do
+    VINST^code_asm := "VFNMA";
+end
+}
+
+VINST -> vfnms #gen ;
+#gen {
+do
+    VINST^code_asm := "VFNMS";
+end
+}
+
+VINST -> vhadd #gen ;
+#gen {
+do
+    VINST^code_asm := "VHADD";
+end
+}
+
+VINST -> vhsub #gen ;
+#gen {
+do
+    VINST^code_asm := "VHSUB";
+end
+}
+
+VINST -> vld1 #gen ;
+#gen {
+do
+    VINST^code_asm := "VLD1";
+end
+}
+
+VINST -> vld2 #gen ;
+#gen {
+do
+    VINST^code_asm := "VLD2";
+end
+}
+
+VINST -> vld3 #gen ;
+#gen {
+do
+    VINST^code_asm := "VLD3";
+end
+}
+
+VINST -> vld4 #gen ;
+#gen {
+do
+    VINST^code_asm := "VLD4";
+end
+}
+
+VINST -> vmax #gen ;
+#gen {
+do
+    VINST^code_asm := "VMAX";
+end
+}
+
+VINST -> vmin #gen ;
+#gen {
+do
+    VINST^code_asm := "VMIN";
+end
+}
+
+VINST -> vmla #gen ;
+#gen {
+do
+    VINST^code_asm := "VMLA";
+end
+}
+
+VINST -> vmlal #gen ;
+#gen {
+do
+    VINST^code_asm := "VMLAL";
+end
+}
+
+VINST -> vmls #gen ;
+#gen {
+do
+    VINST^code_asm := "VMLS";
+end
+}
+
+VINST -> vmlsl #gen ;
+#gen {
+do
+    VINST^code_asm := "VMLSL";
+end
+}
+
+VINST -> vmovl #gen ;
+#gen {
+do
+    VINST^code_asm := "VMOVL";
+end
+}
+
+VINST -> vmovn #gen ;
+#gen {
+do
+    VINST^code_asm := "VMOVN";
+end
+}
+
+VINST -> vmull #gen ;
+#gen {
+do
+    VINST^code_asm := "VMULL";
+end
+}
+
+VINST -> vnmla #gen ;
+#gen {
+do
+    VINST^code_asm := "VNMLA";
+end
+}
+
+VINST -> vnmls #gen ;
+#gen {
+do
+    VINST^code_asm := "VNMLS";
+end
+}
+
+VINST -> vnmul #gen ;
+#gen {
+do
+    VINST^code_asm := "VNMUL";
+end
+}
+
+VINST -> vpadal #gen ;
+#gen {
+do
+    VINST^code_asm := "VPADAL";
+end
+}
+
+VINST -> vpadd #gen ;
+#gen {
+do
+    VINST^code_asm := "VPADD";
+end
+}
+
+VINST -> vpaddl #gen ;
+#gen {
+do
+    VINST^code_asm := "VPADDL";
+end
+}
+
+VINST -> vpmax #gen ;
+#gen {
+do
+    VINST^code_asm := "VPMAX";
+end
+}
+
+VINST -> vpmin #gen ;
+#gen {
+do
+    VINST^code_asm := "VPMIN";
+end
+}
+
+VINST -> vraddhn #gen ;
+#gen {
+do
+    VINST^code_asm := "VRADDHN";
+end
+}
+
+VINST -> vrecpe #gen ;
+#gen {
+do
+    VINST^code_asm := "VRECPE";
+end
+}
+
+VINST -> vrecps #gen ;
+#gen {
+do
+    VINST^code_asm := "VRECPS";
+end
+}
+
+VINST -> vrev16 #gen ;
+#gen {
+do
+    VINST^code_asm := "VREV16";
+end
+}
+
+VINST -> vrev32 #gen ;
+#gen {
+do
+    VINST^code_asm := "VREV32";
+end
+}
+
+VINST -> vrev64 #gen ;
+#gen {
+do
+    VINST^code_asm := "VREV64";
+end
+}
+
+VINST -> vrhadd #gen ;
+#gen {
+do
+    VINST^code_asm := "VRHADD";
+end
+}
+
+VINST -> vrshl #gen ;
+#gen {
+do
+    VINST^code_asm := "VRSHL";
+end
+}
+
+VINST -> vrshr #gen ;
+#gen {
+do
+    VINST^code_asm := "VRSHR";
+end
+}
+
+VINST -> vrshrn #gen ;
+#gen {
+do
+    VINST^code_asm := "VRSHRN";
+end
+}
+
+VINST -> vrsqrte #gen ;
+#gen {
+do
+    VINST^code_asm := "VRSQRTE";
+end
+}
+
+VINST -> vrsqrts #gen ;
+#gen {
+do
+    VINST^code_asm := "VRSQRTS";
+end
+}
+
+VINST -> vrsra #gen ;
+#gen {
+do
+    VINST^code_asm := "VRSRA";
+end
+}
+
+VINST -> vrsubhn #gen ;
+#gen {
+do
+    VINST^code_asm := "VRSUBHN";
+end
+}
+
+VINST -> vshl #gen ;
+#gen {
+do
+    VINST^code_asm := "VSHL";
+end
+}
+
+VINST -> vshll #gen ;
+#gen {
+do
+    VINST^code_asm := "VSHLL";
+end
+}
+
+VINST -> vshr #gen ;
+#gen {
+do
+    VINST^code_asm := "VSHR";
+end
+}
+
+VINST -> vshrn #gen ;
+#gen {
+do
+    VINST^code_asm := "VSHRN";
+end
+}
+
+VINST -> vsli #gen ;
+#gen {
+do
+    VINST^code_asm := "VSLI";
+end
+}
+
+VINST -> vsqrt #gen ;
+#gen {
+do
+    VINST^code_asm := "VSQRT";
+end
+}
+
+VINST -> vsra #gen ;
+#gen {
+do
+    VINST^code_asm := "VSRA";
+end
+}
+
+VINST -> vsri #gen ;
+#gen {
+do
+    VINST^code_asm := "VSRI";
+end
+}
+
+VINST -> vst1 #gen ;
+#gen {
+do
+    VINST^code_asm := "VST1";
+end
+}
+
+VINST -> vst2 #gen ;
+#gen {
+do
+    VINST^code_asm := "VST2";
+end
+}
+
+VINST -> vst3 #gen ;
+#gen {
+do
+    VINST^code_asm := "VST3";
+end
+}
+
+VINST -> vst4 #gen ;
+#gen {
+do
+    VINST^code_asm := "VST4";
+end
+}
+
+VINST -> vsubhn #gen ;
+#gen {
+do
+    VINST^code_asm := "VSUBHN";
+end
+}
+
+VINST -> vsubl #gen ;
+#gen {
+do
+    VINST^code_asm := "VSUBL";
+end
+}
+
+VINST -> vsubw #gen ;
+#gen {
+do
+    VINST^code_asm := "VSUBW";
+end
+}
+
+VINST -> vtbl #gen ;
+#gen {
+do
+    VINST^code_asm := "VTBL";
+end
+}
+
+VINST -> vtbx #gen ;
+#gen {
+do
+    VINST^code_asm := "VTBX";
+end
+}
+
+VINST -> vtrn #gen ;
+#gen {
+do
+    VINST^code_asm := "VTRN";
+end
+}
+
+VINST -> vuzp #gen ;
+#gen {
+do
+    VINST^code_asm := "VUZP";
+end
+}
+
+VINST -> vzip #gen ;
+#gen {
+do
+    VINST^code_asm := "VZIP";
+end
+}
+
 
 -- Conditions
-CC -> eq ;
-CC -> ne ;
-CC -> cs ;
-CC -> cc ;
-CC -> mi ;
-CC -> pl ;
-CC -> vs ;
-CC -> vc ;
-CC -> hi ;
-CC -> ls ;
-CC -> ge ;
-CC -> lt ;
-CC -> gt ;
-CC -> le ;
-CC -> al ;
-CC -> ;
+CC -> eq #gen ;
+#gen {
+do
+    CC^code_asm := "EQ";
+end
+}
+
+CC -> ne #gen ;
+#gen {
+do
+    CC^code_asm := "NE";
+end
+}
+
+CC -> cs #gen ;
+#gen {
+do
+    CC^code_asm := "CS";
+end
+}
+
+CC -> cc #gen ;
+#gen {
+do
+    CC^code_asm := "CC";
+end
+}
+
+CC -> mi #gen ;
+#gen {
+do
+    CC^code_asm := "MI";
+end
+}
+
+CC -> pl #gen ;
+#gen {
+do
+    CC^code_asm := "PL";
+end
+}
+
+CC -> vs #gen ;
+#gen {
+do
+    CC^code_asm := "VS";
+end
+}
+
+CC -> vc #gen ;
+#gen {
+do
+    CC^code_asm := "VC";
+end
+}
+
+CC -> hi #gen ;
+#gen {
+do
+    CC^code_asm := "HI";
+end
+}
+
+CC -> ls #gen ;
+#gen {
+do
+    CC^code_asm := "LS";
+end
+}
+
+CC -> ge #gen ;
+#gen {
+do
+    CC^code_asm := "GE";
+end
+}
+
+CC -> lt #gen ;
+#gen {
+do
+    CC^code_asm := "LT";
+end
+}
+
+CC -> gt #gen ;
+#gen {
+do
+    CC^code_asm := "GT";
+end
+}
+
+CC -> le #gen ;
+#gen {
+do
+    CC^code_asm := "LE";
+end
+}
+
+CC -> al #gen ;
+#gen {
+do
+    CC^code_asm := "AL";
+end
+}
+
+CC -> #gen ;
+#gen {
+do
+    CC^code_asm := "";
+end
+}
+
 
 -- Change condition codes
-S -> s ;
-S -> ;
+S -> s #gen ;
+#gen {
+do
+    S^code_asm := "S";
+end
+}
+
+S -> #gen ;
+#gen {
+do
+    S^code_asm := "";
+end
+}
 
 -- Signed multiplications
-SM -> sm SMX ;
+SM -> sm SMX #gen ;
+#gen {
+do
+    SM^code_asm := "SM" + SMX^code_asm;
+end
+}
 
-SMX -> sm_l SMLX ;
-SMX -> sm_m SMMX ;
-SMX -> sm_u SMUX ;
+SMX -> sm_l SMLX #gen ;
+#gen {
+do
+    SMX^code_asm := "L" + SMLX^code_asm;
+end
+}
 
-SMXL -> sm_a SMXLA ;
-SMXL -> sm_sd ;
-SMXL -> sm_sld ;
+SMX -> sm_m SMMX #gen ;
+#gen {
+do
+    SMX^code_asm := "M" + SMMX^code_asm;
+end
+}
 
-SMXLA -> SMBT ;
-SMXLA -> SMW ;
-SMXLA -> sm_l SMBT ;
-SMXLA -> sm_l ;
+SMX -> sm_u SMUX #gen ;
+#gen {
+do
+    SMX^code_asm := "U" + SMUX^code_asm;
+end
+}
 
-SMMX -> sm_ul ;
-SMMX -> sm_l SMMLX ;
 
-SMMLX -> sm_a ;
-SMMLX -> sm_s ;
+SMLX -> sm_a SMLXA #gen ;
+#gen {
+do
+    SMLX^code_asm := "A" + SMLXA^code_asm;
+end
+}
 
-SMUX -> sm_sd ;
-SMUX -> sm_ad ;
-SMUX -> sm_l SMULX ;
+SMLX -> sm_sd #gen ;
+#gen {
+do
+    SMLX^code_asm := "D";
+end
+}
 
-SMULX -> SMBT ;
-SMULX -> sm_l ;
-SMULX -> SMW ;
+SMLX -> sm_sld #gen ;
+#gen {
+do
+    SMLX^code_asm := "SLD";
+end
+}
 
-SMBT -> sm_bb ;
-SMBT -> sm_bt ;
-SMBT -> sm_tb ;
-SMBT -> sm_tt ;
-SMBT -> sm_d ;
 
-SMW -> sm_wb ;
-SMW -> sm_wt ;
+SMLXA -> SMBT #gen ;
+#gen {
+do
+    SMLXA^code_asm := SMBT^code_asm;
+end
+}
+
+SMLXA -> SMW #gen ;
+#gen {
+do
+    SMLXA^code_asm := SMW^code_asm;
+end
+}
+
+SMLXA -> sm_l SMBT #gen ;
+#gen {
+do
+    SMLXA^code_asm := "L" + SMBT^code_asm;
+end
+}
+
+SMLXA -> sm_l #gen ;
+#gen {
+do
+    SMLXA^code_asm := "L";
+end
+}
+
+
+SMMX -> sm_ul #gen ;
+#gen {
+do
+    SMMX^code_asm := "UL";
+end
+}
+
+SMMX -> sm_l SMMLX #gen ;
+#gen {
+do
+    SMMX^code_asm := "L" + SMMLX^code_asm;
+end
+}
+
+SMMLX -> sm_a #gen ;
+#gen {
+do
+    SMMLX^code_asm := "A";
+end
+}
+
+SMMLX -> sm_s #gen ;
+#gen {
+do
+    SMMLX^code_asm := "S";
+end
+}
+
+SMUX -> sm_sd #gen ;
+#gen {
+do
+    SMUX^code_asm := "SD";
+end
+}
+
+SMUX -> sm_ad #gen ;
+#gen {
+do
+    SMUX^code_asm := "AD";
+end
+}
+
+SMUX -> sm_l SMULX #gen ;
+#gen {
+do
+    SMUX^code_asm := "L" + SMULX^code_asm;
+end
+}
+
+SMULX -> SMBT #gen ;
+#gen {
+do
+    SMULX^code_asm := SMBT^code_asm;
+end
+}
+
+SMULX -> sm_l #gen ;
+#gen {
+do
+    SMULX^code_asm := "L";
+end
+}
+
+SMULX -> SMW #gen ;
+#gen {
+do
+    SMULX^code_asm := SMW^code_asm;
+end
+}
+
+SMBT -> sm_bb #gen ;
+#gen {
+do
+    SMBT^code_asm := "BB";
+end
+}
+
+SMBT -> sm_bt #gen ;
+#gen {
+do
+    SMBT^code_asm := "BT";
+end
+}
+
+SMBT -> sm_tb #gen ;
+#gen {
+do
+    SMBT^code_asm := "TB";
+end
+}
+
+SMBT -> sm_tt #gen ;
+#gen {
+do
+    SMBT^code_asm := "TT";
+end
+}
+
+SMBT -> sm_d #gen ;
+#gen {
+do
+    SMBT^code_asm := "D";
+end
+}
+
+SMW -> sm_wb #gen ;
+#gen {
+do
+    SMW^code_asm := "WB";
+end
+}
+
+SMW -> sm_wt #gen ;
+#gen {
+do
+    SMW^code_asm := "WT";
+end
+}
 
 -- Load and store instructions
-LDSTR -> ld LSX ;
+LDSTR -> ld LSX #gen ;
+#gen {
+do
+    LDSTR^code_asm := "LD" + LSX^code_asm;
+end
+}
 
-LSX -> ls_r LSRX ;
-LSX -> ls_c ;
-LSX -> ls_c2 ;
-LSX -> ls_m LSMX ;
 
-LSRX -> ls_ex LSRXX ;
-LSRX -> ls_s LSRXX ;
-LSRX -> LSRXX ;
+LSX -> ls_r LSRX #gen ;
+#gen {
+do
+    LSX^code_asm := "R" + LSRX^code_asm;
+end
+}
 
-LSRXX -> ls_b ;
-LSRXX -> ls_d ;
-LSRXX -> ls_h ;
-LSRXX -> ls_bt ;
-LSRXX -> ls_ht ;
-LSRXX -> ;
+LSX -> ls_c #gen ;
+#gen {
+do
+    LSX^code_asm := "C";
+end
+}
 
-LSMX -> ls_ia ;
-LSMX -> ls_fd ;
-LSMX -> ls_da ;
-LSMX -> ls_fa ;
-LSMX -> ls_db ;
-LSMX -> ls_ea ;
-LSMX -> ls_ib ;
-LSMX -> ls_ed ;
-LSMX -> ;
+LSX -> ls_c2 #gen ;
+#gen {
+do
+    LSX^code_asm := "C2";
+end
+}
+
+LSX -> ls_m LSMX #gen ;
+#gen {
+do
+    LSX^code_asm := "M" + LSMX^code_asm;
+end
+}
+
+
+LSRX -> ls_ex LSRXX #gen ;
+#gen {
+do
+    LSRX^code_asm := "EX" + LSRXX^code_asm;
+end
+}
+
+LSRX -> ls_s LSRXX #gen ;
+#gen {
+do
+    LSRX^code_asm := "S" + LSRXX^code_asm;
+end
+}
+
+LSRX -> LSRXX #gen ;
+#gen {
+do
+    LSRX^code_asm := LSRXX^code_asm;
+end
+}
+
+
+LSRXX -> ls_b #gen ;
+#gen {
+do
+    LSRXX^code_asm := "B";
+end
+}
+
+LSRXX -> ls_d #gen ;
+#gen {
+do
+    LSRXX^code_asm := "D";
+end
+}
+
+LSRXX -> ls_h #gen ;
+#gen {
+do
+    LSRXX^code_asm := "H";
+end
+}
+
+LSRXX -> ls_bt #gen ;
+#gen {
+do
+    LSRXX^code_asm := "BT";
+end
+}
+
+LSRXX -> ls_ht #gen ;
+#gen {
+do
+    LSRXX^code_asm := "HT";
+end
+}
+
+LSRXX -> #gen ;
+#gen {
+do
+    LSRXX^code_asm := "";
+end
+}
+
+LSMX -> ls_ia #gen ;
+#gen {
+do
+    LSMX^code_asm := "IA";
+end
+}
+
+LSMX -> ls_fd #gen ;
+#gen {
+do
+    LSMX^code_asm := "FD";
+end
+}
+
+LSMX -> ls_da #gen ;
+#gen {
+do
+    LSMX^code_asm := "DA";
+end
+}
+
+LSMX -> ls_fa #gen ;
+#gen {
+do
+    LSMX^code_asm := "FA";
+end
+}
+
+LSMX -> ls_db #gen ;
+#gen {
+do
+    LSMX^code_asm := "DB";
+end
+}
+
+LSMX -> ls_ea #gen ;
+#gen {
+do
+    LSMX^code_asm := "EA";
+end
+}
+
+LSMX -> ls_ib #gen ;
+#gen {
+do
+    LSMX^code_asm := "IB";
+end
+}
+
+LSMX -> ls_ed #gen ;
+#gen {
+do
+    LSMX^code_asm := "ED";
+end
+}
+
+LSMX -> #gen ;
+#gen {
+do
+    LSMX^code_asm := "";
+end
+}
+
+
+
+end
 
 
