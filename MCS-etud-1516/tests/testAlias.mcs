@@ -1,0 +1,18 @@
+typedef struct { int x ;
+                 int y ;
+							 } Point;
+
+typedef struct { Point p;
+                 char n;
+							 } PointNomme;
+
+PointNomme a;
+Point b;
+
+int x(Point p) {
+  return p.x;
+}
+
+void main(){
+  x(b);
+}
