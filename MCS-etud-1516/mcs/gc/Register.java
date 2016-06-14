@@ -7,7 +7,30 @@ package mcs.gc;
  */
 public class Register {
     public enum Status {
-        Empty, Loaded, Used;
+        Empty(0), Loaded(1), Used(2);
+
+        private final int value;
+
+        private Status(int v) {
+            this.value = v;
+        }
+
+        public int value() {
+            return this.value;
+        }
+
+        public static Status fromInt(int value) {
+            switch (value) {
+                case 0:
+                    return Empty;
+                case 1:
+                    return Loaded;
+                case 2:
+                    return Used;
+                default:
+                    return Empty;
+            }
+        }
 
         public String toString() {
             switch (this) {
@@ -27,6 +50,7 @@ public class Register {
     private int num;
     private Status status;
     private boolean lck;
+    private int usability;
 
     /**
      * @param name
@@ -79,13 +103,18 @@ public class Register {
     }
 
     public void setStatus(Status s) {
+        Status old = this.status;;
         if (!this.lck){
             this.status = s;
-						System.out.println("(" + this + ") Status changed.");
+						System.out.println("(" + this + ") Status changed : " + old + " => " + s);
         } else {
-				    System.out.println("(" + this + ") I can not change this status, you put a lock on it!");
+				    System.out.println("(" + this + ") I can not change this status, you put a lock on it! My status is still " + this.status);
 				}
 		}
+
+    public void setStatus(int s) {
+        this.setStatus(Status.fromInt(s));
+    }
 
     @Override
     public String toString() {

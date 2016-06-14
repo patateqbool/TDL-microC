@@ -8,6 +8,7 @@ struct {
 } st;
 
 int testAcces (char c) {
+// STORE ? Oo
   st.a = 2;
 	st.b = 'l' + c;
 	st.ste.a = 3;
