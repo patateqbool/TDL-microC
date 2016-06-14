@@ -2730,7 +2730,7 @@ F -> mult #attF1 F #attF;
 #attF1 {
 local
 do
-  write("(70) Dereferencement.\n");
+--write("(70) Dereferencement.\n");
   F1^machine := F^machine;
 	F1^talias := F^talias;
 	F1^tfun := F^tfun;
@@ -2768,7 +2768,7 @@ do
 				+ F^machine.generateLoadFromHeap(F1^reg, 0, rw)
 				+ F^machine.generateComment("(70) End of unreferencing.", "\t\t");
 	
-	write("(70) Code après déréf' : \n" + code + "\n");
+--write("(70) Code après déréf' : \n" + code + "\n");
 	reg := rw.get();
 	F^code := code;
 	F^vi := null;
@@ -2780,7 +2780,7 @@ do
 	else
 	  F^regAdr := F1^regAdr;
 	end
-  write("(70) Fin deref.\n");
+--write("(70) Fin deref.\n");
 end
 }
 
