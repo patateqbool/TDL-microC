@@ -460,7 +460,12 @@ do
 				--write("(5) Add variable \\o/\n");
 				  -- Si ce n'est pas le cas, on peut add la variable à la tvar.
           tv.insert(ident^txt, TYPE^type, ENTITE^ni);
-					code := ENTITE^machine.generateComment("(5) Variable declaration:", "") + code ;
+					match TYPE^type
+					with PointerType then
+					  
+					else	
+					  code := ENTITE^machine.generateComment("(5) Variable declaration:", "") + code ;
+				  end
 				end
 	   else
 		   code := ENTITE^machine.generateComment("(5) Function declaration:", "") + code ;
