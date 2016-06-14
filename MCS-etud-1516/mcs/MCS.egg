@@ -1574,6 +1574,7 @@ do
 				      + E^machine.generateStoreVariable(A^vi,AFFX^reg)
 						  + E^machine.generateComment("(35) End of store (direct).", "\t\t");
 			else 
+			  A^regAdr.unlock();
 			  code := code 
 				      + E^machine.generateStoreInHeap(A^regAdr, 0, AFFX^reg)
 							+ E^machine.generateComment("(35) End of store (at the address indicated).", "\t\t");
@@ -2776,6 +2777,7 @@ do
 	F^type := type;
 	F^reg := reg;
 	if (F1^regAdr = null) then
+	  reg.lock();
 	  F^regAdr := reg;
 	else
 	  F^regAdr := F1^regAdr;
