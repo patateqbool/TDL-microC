@@ -6,7 +6,7 @@
  */
 package mcs.symtab;
 
-public class BooleanType extends Type {
+public class BooleanType extends SimpleType {
   public BooleanType() {
     super(4); // ?
   }
