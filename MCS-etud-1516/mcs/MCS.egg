@@ -186,9 +186,10 @@ inh ni : NamespaceInfo for
 --				 IDC
 --				 ;
 -- ces attributs permettent de recuperer les instructions du code ASM inline       
-syn code_asm : STRING for ARMASM;
--- la TDS courante
-inh tds_asm : VariableTable for ARMASM;
+syn code_asm : STRING for AASM;
+inh tds_asm : VariableTable for AASM;
+inh namespace_asm : NamespaceInfo for AASM;
+inh mach_asm : AbstractMachine for AASM;
 
 --terminals
 space separateur is  "[\r\n\t ]+";     
@@ -252,7 +253,7 @@ term identc is  "[A-Z][_0-9A-Za-z]*";
 
 -- pour les instructions en assembleur TAM 'inline'
 -- TODO décommenter plus tard.
-compil ARMASM;
+compil AASM;
 
 -- (1) : REGLES DE PRODUCTION
 PROGRAMME -> #attENTITES ENTITES #attPROGRAMME;
@@ -3351,19 +3352,22 @@ end
 -------------------------------------------
 --
 ---- (80)
-ENTITE -> asm #tds ARMASM #gen; 
+ENTITE -> asm #tds AASM #gen; 
 #tds {
 do 
   -- A faire : Remplacer 'null' par la table courante pour que
   -- le code ASM puisse acceder aux variables de MC ou MCS
-  ARMASM^tds_asm := ENTITE^tvar; 
+  write("There is an asm block !\n");
+  AASM^tds_asm := ENTITE^tvar;
+  AASM^mach_asm := ENTITE^machine;
+  AASM^namespace_asm := ENTITE^ni;
 end
 }
 
 #gen {
 do
   -- On recupere le code assembleur 'inline' dans : ASM^code_asm ;
-  ENTITE^code := ARMASM^code_asm;
+  ENTITE^code := AASM^code_asm;
   ENTITE^taliasS := ENTITE^talias;
   ENTITE^tfunS := ENTITE^tfun;
 end
@@ -3371,12 +3375,14 @@ end
 
 
 -- (81)
-INST ->  asm   #tds ARMASM #gen ;
+INST ->  asm   #tds AASM #gen ;
 #tds {
 do
   -- A remplacer par la table courante pour que
   -- l'assembleur puisse acceder aux variables
-  ARMASM^tds_asm := INST^tvar; 
+  AASM^tds_asm := INST^tvar;
+  AASM^mach_asm := INST^machine;
+  AASM^namespace_asm := INST^ni;
 end
 }
 
@@ -3385,7 +3391,7 @@ do
   -- ASM^code_asm contient le code assembleur inline
   -- dans lequel les noms de variables ont ete remplaces
   -- par leurs adresses.
-  INST^code := ARMASM^code_asm;
+  INST^code := AASM^code_asm;
 end
 }
 

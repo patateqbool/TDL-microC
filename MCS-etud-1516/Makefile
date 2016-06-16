@@ -14,7 +14,7 @@ JDIR=/usr/bin
 #--------------------------------------------------------
 all : src att class
 
-src: lang asm
+src: asm lang
 
 lang:
 	(cd mcs ; $(JDIR)/java -cp ../$(GJAR) mg.egg.eggc.compiler.EGGC $(XLANG).egg)
