@@ -1,0 +1,342 @@
+option version = 1.0.1;
+option k = 2;
+option auto = true;
+
+syn code_asm	: STRING for  ASM, INSTS, INST, PAR, SHIFTOP, SHIFTTYPE, ADDR, ADDRSEC, ADDRSUFF, VARIABLE, REGORNUM, NUMBER, REGISTER;
+inh namespace_asm : NamespaceInfo for ASM, INSTS, INST, PAR, PARS, PARSX, ADDR, VARIABLE;
+inh tds_asm		: VariableTable for ASM, INSTS, INST, PAR, PARS, PARSX, ADDR, VARIABLE;
+inh mach_asm	:	AbstractMachine for ASM, INSTS, INST, PAR, PARS, PARSX, ADDR, ADDRSEC, REGISTER, NUMBER, VARIABLE, REGORNUM;
+inh parlist		: List<Object> for PAR, PARS, PARSX;
+
+-- Separators
+space	spce		is	"[\t ]+";
+sugar nl			is	"(\n|\r)";
+sugar	column	is	"\:";
+sugar semicol	is	";";
+sugar coma		is	",";
+sugar excl		is 	"\!";
+sugar equ			is 	"=";
+sugar	sharp		is	"#";
+sugar dollar  is  "\$";
+sugar point		is 	"\.";
+sugar minus		is	"\-";
+sugar plus		is	"\+";
+sugar	obrack	is	"\[";
+sugar cbrack	is 	"\]";
+sugar ocbrack	is	"\{";
+sugar ccbrack	is	"\}";
+sugar commbeg is  "\/\/";
+
+-- Shift types
+sugar st_asr	is "ASR";
+sugar st_lsl	is "LSL";
+sugar st_lsr	is "LSR";
+sugar st_ror	is "ROR";
+
+-- Registers
+sugar	sp	is "sp";
+sugar lr	is "lr";
+sugar pc	is "pc";
+sugar ht	is "ht";
+sugar oi	is "oi";
+sugar sb	is "sb";
+sugar fr	is "fr";
+
+-- Terms
+term	str			is	"\"([^\"]|\\.)*\"";
+term 	num			is	"((\-|\+)?[0-9]+|0x[0-9a-fA-F]+|0b[0-1]+)";
+term	var			is	"[A-Za-z][A-Za-z0-9_]*";
+term  ident		is	"[0-9a-zA-Z_\$@#\.\?\<\>]+";
+term	direct	is	"\.[a-z0-9_\.]+";
+term	genreg	is	"r[0-9]";
+term 	comm 		is	"[^\n]*\n";
+term  opcode  is  "[A-Z][A-Z0-9]*";
+
+-- Rules
+ASM -> ocbrack #init INSTS ccbrack #gen ;
+#init {
+    do
+        write("I'm in ASM\n");
+    end
+}
+
+#gen {
+    do
+        ASM^code_asm := ASM^mach_asm.generateComment("Inline ASM", "\t\t") + INSTS^code_asm;
+    end
+}
+
+-- Instructions and opcode
+INSTS -> INST INSTS #gen ;
+#gen {
+    do
+        INSTS^code_asm := INST^code_asm + "\n" + INSTS1^code_asm;
+    end
+}
+
+INSTS -> #gen ;
+#gen {
+    do
+        INSTS^code_asm := "\n";
+    end
+}
+
+INST -> opcode #init PARS #gen ;
+global
+    pl : ArrayList<Object>;
+
+#init {
+    do
+        pl := new ArrayList<Object>();
+        PARS^parlist := pl;
+    end
+}
+
+#gen {
+    do
+        INST^code_asm := INST^mach_asm.generateInstruction(opcode^txt, pl) + "\n";
+    end
+}
+
+INST -> commbeg comm #gen ;
+#gen {
+    do
+        INST^code_asm := INST^mach_asm.generateComment(comm^txt, "\t\t");
+    end
+}
+
+-- Parameters
+PARS -> ;
+
+PARS -> PAR #gen PARSX ;
+#gen {
+    do
+        PARS^parlist.add(PAR^code_asm);
+    end
+}
+
+PARSX -> ;
+
+PARSX -> coma PAR #gen PARSX ;
+#gen {
+    do
+        PARSX^parlist.add(PAR^code_asm);
+        PARSX1^parlist := PARSX^parlist;
+    end
+}
+
+PAR -> ADDR #gen ;
+#gen {
+    do
+        PAR^code_asm := ADDR^code_asm;
+    end
+}
+
+PAR -> SHIFTOP REGORNUM #gen ;
+#gen {
+    do
+        PAR^code_asm := SHIFTOP^code_asm + REGORNUM^code_asm;
+    end
+}
+
+-- Shift operations
+SHIFTOP -> #gen ;
+#gen {
+    do
+        SHIFTOP^code_asm := "";
+    end
+}
+
+SHIFTOP -> SHIFTTYPE #gen ;
+#gen {
+    do
+        SHIFTOP^code_asm := SHIFTTYPE^code_asm + " ";
+    end
+}
+
+SHIFTTYPE -> st_asr #gen ;
+#gen {
+    do
+        SHIFTTYPE^code_asm := "ASR";
+    end
+}
+
+SHIFTTYPE -> st_lsl #gen ;
+#gen {
+    do
+        SHIFTTYPE^code_asm := "LSL";
+    end
+}
+
+SHIFTTYPE -> st_lsr #gen ;
+#gen {
+    do
+        SHIFTTYPE^code_asm := "LSR";
+    end
+}
+
+SHIFTTYPE -> st_ror #gen ;
+#gen {
+    do
+        SHIFTTYPE^code_asm := "ROR";
+    end
+}
+
+
+-- An address can be of the form :
+-- 		[Reg]
+--		[Reg, Reg]
+--		[Reg, #<num>]
+-- With an optionnal additionnal '!'
+ADDR -> obrack REGISTER ADDRSEC cbrack ADDRSUFF #gen ;
+#gen {
+    do
+        ADDR^code_asm := "[" + REGISTER^code_asm + ADDRSEC^code_asm + "]" + ADDRSUFF^code_asm;
+    end
+}
+
+ADDR -> VARIABLE #gen;
+#gen {
+    do
+        ADDR^code_asm := VARIABLE^code_asm;
+    end
+}
+
+ADDRSEC -> #gen ;
+#gen {
+    do
+        ADDRSEC^code_asm := "";
+    end
+}
+
+ADDRSEC -> coma REGORNUM #gen ;
+#gen {
+do
+    ADDRSEC^code_asm := ", " + REGORNUM^code_asm;
+end
+}
+
+ADDRSUFF -> excl #gen ;
+#gen {
+do
+    ADDRSUFF^code_asm := "!";
+end
+}
+
+ADDRSUFF -> #gen ;
+#gen {
+do
+    ADDRSUFF^code_asm := "";
+end
+}
+
+-- Variables
+VARIABLE -> sharp var #gen ;
+#gen {
+local
+    si : SymbolInfo;
+do
+    if VARIABLE^tds_asm = null then
+        error(ASM_ERROR_NO_TDS);
+    else
+        si := VARIABLE^tds_asm.lookup(var^txt, VARIABLE^namespace_asm, false);
+
+        if si = null then
+            error(VARIABLE_UNKNOWN, var^txt);
+        else
+            match si
+                with VariableInfo then
+                    VARIABLE^code_asm :=
+                        "[sb, " + VARIABLE^mach_asm.generateDirect(-si.displacement()) + "]";
+                else
+                    error(NOT_A_VARIABLE, var^txt);
+            end
+        end
+    end
+end
+}
+
+-- Registre
+REGORNUM -> REGISTER #gen ;
+#gen {
+    do
+        REGORNUM^code_asm := REGISTER^code_asm;
+    end
+}
+
+REGORNUM -> NUMBER #gen ;
+#gen {
+    do
+        REGORNUM^code_asm := NUMBER^code_asm;
+    end
+}
+
+-- Numbers
+NUMBER -> dollar num #gen ;
+#gen {
+do
+    NUMBER^code_asm := NUMBER^mach_asm.generateDirect(num^txt);
+end
+}
+
+-- Registers
+REGISTER -> genreg #gen ;
+#gen {
+do
+    REGISTER^code_asm := REGISTER^mach_asm.generateRegister(genreg^txt);
+end
+}
+
+REGISTER -> sp #gen ;
+#gen {
+do
+    REGISTER^code_asm := REGISTER^mach_asm.generateRegister("sp");
+end
+}
+
+REGISTER -> lr #gen ;
+#gen {
+do
+    REGISTER^code_asm := REGISTER^mach_asm.generateRegister("lr");
+end
+}
+
+REGISTER -> pc #gen ;
+#gen {
+do
+    REGISTER^code_asm := REGISTER^mach_asm.generateRegister("pc");
+end
+}
+
+REGISTER -> ht #gen ;
+#gen {
+do
+    REGISTER^code_asm := REGISTER^mach_asm.generateRegister("ht");
+end
+} 
+
+REGISTER -> oi #gen ;
+#gen {
+do
+    REGISTER^code_asm := REGISTER^mach_asm.generateRegister("oi");
+end
+}
+
+REGISTER -> sb #gen ;
+#gen {
+do
+    REGISTER^code_asm := REGISTER^mach_asm.generateRegister("sb");
+end
+} 
+
+REGISTER -> fr #gen ;
+#gen {
+do
+    REGISTER^code_asm := REGISTER^mach_asm.generateRegister("fr");
+end
+} 
+
+
+end
+
+
