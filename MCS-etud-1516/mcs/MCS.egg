@@ -2638,13 +2638,17 @@ local
   estVar : boolean;
 	vi : VariableInfo;
 	dl : DisplacementList;
-	rw : RegisterWrapper;
+	rv : RegisterWrapper;
+	ra : RegisterWrapper;
   code : String;
-  reg : Register;
+  regAdr : Register;
+	regVal : Register;
 do
   dl := FX^listeDeplS;
-  rw := new RegisterWrapper();
-  reg := null;
+  rv := new RegisterWrapper();
+	ra := new RegisterWrapper();
+  regVal := null;
+	regAdr := null;
   code := F^machine.generateComment("(68) Parenthesized expression:", "\t\t")
 		    + E^code
 				+ F^machine.generateComment("(68) End of parenthesized expression.", "\t\t");
@@ -2654,11 +2658,12 @@ do
     -- Les verification d'existence de champs ont été faites dans FX.
     code := code
 		      + F^machine.generateComment("(68) Make address:", "\t\t")
-					+ F^machine.generateMakeAddress(dl, E^reg, rw)
+					+ F^machine.generateMakeAddress(dl, E^reg, rv, ra)
 					+ F^machine.generateComment("(68) End make address.", "\t\t");
-		reg := rw.get();
+		regVal := rv.get();
+		regAdr := ra.get();
 	else
-		reg := E^reg;
+		regVal := E^reg;
   end
   -- F est une variable si E l'est et FX ne l'empeche pas.
   -- Dans ce cas, vi de F prend celui de E. Dans le cas
@@ -2674,9 +2679,8 @@ do
 	F^vi := vi;
 	F^estVar := estVar;
 	F^type := FX^type;
-	F^reg := reg;
-	-- Pas d'adresse à faire remonter.
-  F^regAdr := null;
+	F^reg := regVal;
+  F^regAdr := regAdr;
 end
 }
 
@@ -2875,7 +2879,8 @@ local
   listeDepl : DisplacementList; 
   reg : Register;
 	regAdr : Register;
-	rw : RegisterWrapper;
+	rv : RegisterWrapper;
+	ra : RegisterWrapper;
 	code : String;
 do
 --write("Après Règle 71\n");
@@ -2884,7 +2889,8 @@ do
   --																					- accédé simplement à une variable.
   --               														- accédé à un champ de struct.
   listeDepl := FX^listeDeplS;
-  rw := new RegisterWrapper();
+  rv := new RegisterWrapper();
+	ra := new RegisterWrapper();
 	reg := null;
 	regAdr := null;
 	code := FX^code;
@@ -2896,14 +2902,10 @@ do
 	--write("(71) DL :\n" + listeDepl + "\n     reg : " + FX^reg.debug() + "\n"); 
     code := code
 		      + F^machine.generateComment("(71) Make address:", "\t\t")
-		      + F^machine.generateMakeAddress(listeDepl, FX^reg, rw)
+		      + F^machine.generateMakeAddress(listeDepl, FX^reg, rv, ra)
 				  + F^machine.generateComment("(71) End make address.", "\t\t"); 
-		reg := rw.get();
-		code := code 
-  		    + F^machine.generateComment("(71) Make address:", "\t\t") 
-		      + F^machine.generateMakeAddress(listeDepl.pop_back(), FX^reg, rw)
-	 				+ F^machine.generateComment("(71) End make address", "\t\t");
-	  regAdr := rw.get();
+		reg := rv.get();
+	  regAdr := ra.get();
 	else 
 	  -- On n'a pas d'appel de fonction. 
 		if ((listeDepl.size() != 0 )&&(listeDepl.size() != 1)) then --> 1) then
@@ -2911,22 +2913,18 @@ do
 		  -- Le registre contient l'adresse de la variable accédée par FX dans le struct.
       code := code
 			      + F^machine.generateComment("(71) Make address:", "\t\t") 
-			      + F^machine.generateMakeAddress(listeDepl, rw)	
+			      + F^machine.generateMakeAddress(listeDepl, rv, ra)	
 						+ F^machine.generateComment("(71) End make address.", "\t\t");
-			reg := rw.get();
-      code := code 
-						+ F^machine.generateComment("(71) Get address", "\t\t")
-			      + F^machine.generateMakeAddress(listeDepl.pop_back(), rw)
-						+ F^machine.generateComment("(71) End get address.", "\t\t");
-		  regAdr := rw.get();
+			reg := rv.get();
+		  regAdr := ra.get();
 		else
       -- Accés direct à une variable.
    		-- La VariableInfo est déjà dans varInfo.
       code := code
 			      + F^machine.generateComment("(71) Load value:", "\t\t")
-			      + F^machine.generateLoadValue(varInfo, rw)
+			      + F^machine.generateLoadValue(varInfo, rv)
 						+ F^machine.generateComment("(71) End load value.", "\t\t");
-		  reg := rw.get();
+		  reg := rv.get();
 		end
   end
 	F^vi := varInfo;
