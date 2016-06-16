@@ -189,6 +189,7 @@ syn code_asm : STRING for AASM;
 inh tds_asm : VariableTable for AASM;
 inh namespace_asm : NamespaceInfo for AASM;
 inh mach_asm : AbstractMachine for AASM;
+inh listeni_asm : List<NamespaceInfo> for AASM;
 
 --terminals
 space separateur is  "[\r\n\t ]+";     
@@ -3360,6 +3361,7 @@ do
   AASM^tds_asm := ENTITE^tvar;
   AASM^mach_asm := ENTITE^machine;
   AASM^namespace_asm := ENTITE^ni;
+  AASM^listeni_asm := ENTITE^listeNi;
 end
 }
 
@@ -3382,6 +3384,7 @@ do
   AASM^tds_asm := INST^tvar;
   AASM^mach_asm := INST^machine;
   AASM^namespace_asm := INST^ni;
+  AASM^listeni_asm := INST^listeNi;
 end
 }
 

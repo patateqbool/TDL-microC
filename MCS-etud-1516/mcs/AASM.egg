@@ -4,6 +4,7 @@ option auto = true;
 
 syn code_asm	: STRING for  ASM, INSTS, INST, PAR, SHIFTOP, SHIFTTYPE, ADDR, ADDRSEC, ADDRSUFF, VARIABLE, REGORNUM, NUMBER, REGISTER;
 inh namespace_asm : NamespaceInfo for ASM, INSTS, INST, PAR, PARS, PARSX, ADDR, VARIABLE;
+inh listeni_asm : List<NamespaceInfo> for ASM, INSTS, INST, PAR, PARS, PARSX, ADDR, VARIABLE;
 inh tds_asm		: VariableTable for ASM, INSTS, INST, PAR, PARS, PARSX, ADDR, VARIABLE;
 inh mach_asm	:	AbstractMachine for ASM, INSTS, INST, PAR, PARS, PARSX, ADDR, ADDRSEC, REGISTER, NUMBER, VARIABLE, REGORNUM;
 inh parlist		: List<Object> for PAR, PARS, PARSX;
@@ -239,7 +240,7 @@ do
     if VARIABLE^tds_asm = null then
         error(ASM_ERROR_NO_TDS);
     else
-        si := VARIABLE^tds_asm.lookup(var^txt, VARIABLE^namespace_asm, false);
+        si := VARIABLE^tds_asm.lookup(var^txt, VARIABLE^namespace_asm, VARIABLE^listeni_asm, false);
 
         if si = null then
             error(VARIABLE_UNKNOWN, var^txt);
