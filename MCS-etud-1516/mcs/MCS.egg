@@ -157,7 +157,7 @@ inh ni : NamespaceInfo for
 inh listeNi : NamespaceInfoList for
          ENTITE, PARF, INST, F, FX, ENTITES, FONCTION, DECL,
 				 PARFS, PARFSX, INSTS, BLOC, AFFX, E, SIX, A, R, AX, T, RX,
-				 TX, ES, ESX, HERITAGE, DEFS, DEF, BASE
+				 TX, ES, ESX, HERITAGE, IDC, DEFS, DEF, BASE
 				 ;
 
 inh tklass : KlassTable for
@@ -166,8 +166,10 @@ inh tklass : KlassTable for
 				 ;	
 
 inh tns : NamespaceTable for
-				 ENTITES, ENTITE, BLOC, F, INSTS, INST, SIX, E, AFFX, A, AX, DECL, FONCTION, PARFS, PARF, PARFSX,
-				 R, RX, T, TX, FX, ES, ESX, IDC, HERITAGE, DEFS, DEF, BASE 
+         PROGRAMME, ENTITES, ENTITE, DECL, FONCTION, BLOC, SIX, INSTS, INST,  
+				 PARFS, PARF, PARFSX, TYPE, STYPE, CHAMPS, CHAMP,       
+				 E, AFFX, A, AX, R, RX, T, TX, F, FX, ES, ESX,
+         DEFS, DEF, BASE, IDC, HERITAGE 
 				 ;	
 
 syn niS : NamespaceInfo for
@@ -182,9 +184,12 @@ inh accH : Integer for
          DEF
 				 ;
 
-inh klass : Klass for 
-         IDC, ENTITE, ENTITES, DEFS, DEF, BASE, F
-				 ;
+inh klass : Klass for
+         PROGRAMME, ENTITES, ENTITE, DECL, FONCTION, BLOC, SIX, INSTS, INST,  
+         E, AFFX, A, AX, R, RX, T, TX, F, FX, ES, ESX,
+         DEFS, DEF, BASE,
+				 IDC
+         ;
 
 syn klassS : Klass for 
          IDC, HERITAGE
@@ -193,6 +198,10 @@ syn klassS : Klass for
 syn ci : ConstructorInfo for
          BASE
 				 ;
+
+inh estKlass : Boolean for
+         FX
+         ;
 
 -- Ces attributs permettent de recuperer les instructions du code ASM inline       
 syn code_asm : STRING for AASM;
@@ -325,6 +334,7 @@ do
 	ENTITE^ni := ENTITES^ni;
 	ENTITE^indentation := ENTITES^indentation + 1;
   ENTITE^listeNi := ENTITES^listeNi;
+  ENTITE^klass := ENTITES^klass;
 end
 }
 
@@ -339,6 +349,7 @@ do
 	ENTITES1^machine := ENTITES^machine;
 	ENTITES1^ni := ENTITES^ni;
 	ENTITES1^listeNi := ENTITES^listeNi;
+  ENTITES1^klass := ENTITES^klass;
 	ENTITES1^indentation := ENTITES^indentation + 1 ;
 end
 }
@@ -440,6 +451,7 @@ do
 	DECL^ni := ENTITE^ni;
   DECL^listeNi := ENTITE^listeNi;
   DECL^indentation := ENTITE^indentation + 1;
+  DECL^klass := ENTITE^klass;
 end
 }
 
@@ -543,6 +555,7 @@ do
 	FONCTION^ni := DECL^ni;
 	FONCTION^listeNi := DECL^listeNi;
   FONCTION^indentation := DECL^indentation + 1;
+  FONCTION^klass := DECL^klass;
 end
 }
 
@@ -610,6 +623,7 @@ do
 	BLOC^machine := FONCTION^machine;
 	BLOC^ni := FONCTION^ni;
   BLOC^listeNi := FONCTION^listeNi;
+  BLOC^klass := FONCTION^klass;
 --write("Regle (8) : milieu\n");
 end
 }
@@ -920,7 +934,7 @@ local
 do
   typeRech := STYPE^talias.lookup(identc^txt);
   -- Si identc n'est pas une clef dans la TDSvar, erreur.
-  if typeRech = null then
+  if (typeRech = null) then
      error(IDENT_UNDEFINED, identc^txt);
   end
   STYPE^type := typeRech;
@@ -1032,7 +1046,7 @@ end
 ----------------------------------------------------------------
 
 -- (25)
-BLOC ->  aco #attINSTS INSTS acf #attBLOC ;
+BLOC -> aco #attINSTS INSTS acf #attBLOC ;
 
 -- Probablement inutile, mais passage des TDS de BLOC à INSTS.
 -- Ainsi que la FunctionInfo de la fonction.
@@ -1048,6 +1062,7 @@ do
 	INSTS^ni := BLOC^ni;
   INSTS^listeNi := BLOC^listeNi;
   INSTS^indentation := BLOC^indentation + 1 ;
+  INSTS^klass := BLOC^klass;
 end
 }
 
@@ -1100,6 +1115,7 @@ do
 	INST^ni := INSTS^ni;
   INST^listeNi := INSTS^listeNi;
   INST^indentation := INSTS^indentation + 1 ;
+  INST^klass := INSTS^klass;
 end
 }
 
@@ -1116,6 +1132,7 @@ do
 	INSTS1^ni := INSTS^ni;
   INSTS1^listeNi := INSTS^listeNi;
   INSTS1^indentation := INSTS^indentation + 1 ;
+  INSTS1^klass := INSTS^klass;
 end
 }
 
@@ -1164,6 +1181,7 @@ do
 	AFFX^ni := INST^ni;
   AFFX^listeNi := INST^listeNi;
   AFFX^indentation := INST^indentation + 1 ;
+  AFFX^klass := INST^klass;
 end
 }
 
@@ -1249,6 +1267,7 @@ do
 	E^ni := INST^ni;
   E^listeNi := INST^listeNi;
   E^indentation := INST^indentation + 1 ;
+  E^klass := INST^klass;
 end
 }
 
@@ -1277,6 +1296,7 @@ do
   BLOC^ni := INST^ni;
   BLOC^listeNi := INST^listeNi;
   BLOC^indentation := INST^indentation + 1 ;
+  BLOC^klass := INST^klass;
 end
 }
 
@@ -1304,6 +1324,7 @@ do
 	E^ni := INST^ni;
 	E^listeNi := INST^listeNi;
 	E^indentation := INST^indentation + 1 ;
+  E^klass := INST^klass;
 end
 }
 
@@ -1321,6 +1342,7 @@ do
 	BLOC^ni := INST^ni;
   BLOC^listeNi := INST^listeNi;
   BLOC^indentation := INST^indentation + 1 ;
+  BLOC^klass := INST^klass;
 end
 }
 
@@ -1336,6 +1358,7 @@ do
 	SIX^ni := INST^ni;
   SIX^listeNi := INST^listeNi;
   SIX^indentation := INST^indentation + 1 ;
+  SIX^klass := INST^klass;
 end
 }
 
@@ -1397,6 +1420,7 @@ do
 	BLOC^ni := SIX^ni;
   BLOC^listeNi := SIX^listeNi;
   BLOC^indentation := SIX^indentation + 1 ; 
+  BLOC^klass := SIX^klass;
 end
 }
 
@@ -1488,6 +1512,7 @@ do
 	E^ni := INST^ni;
   E^listeNi := INST^listeNi;
   E^indentation := INST^indentation + 1 ; 
+  E^klass := INST^klass;
 end
 }
 
@@ -1550,6 +1575,7 @@ do
 	A^ni := E^ni;
   A^listeNi := E^listeNi;
   A^indentation := E^indentation + 1 ;
+  A^klass := E^klass;
 end
 }
 
@@ -1571,6 +1597,7 @@ do
 	-- Le type de cette afectation doit être le même que A.
 	AFFX^typeH := A^type;
   AFFX^indentation := E^indentation + 1 ;
+  AFFX^klass := E^klass;
 --write("(35) Code de A :\n" + A^code + "\n");
 end
 }
@@ -1655,6 +1682,7 @@ do
 	A^ni := AFFX^ni;
   A^listeNi := AFFX^listeNi;
   A^indentation := AFFX^indentation + 1 ;
+  A^klass := AFFX^klass;
 end
 }
 
@@ -1721,6 +1749,7 @@ do
 	R^ni := A^ni;
   R^listeNi := A^listeNi;
 	R^indentation := A^indentation + 1 ;
+  R^klass := A^klass;
 end
 }
 
@@ -1734,7 +1763,8 @@ do
 	AX^talias := A^talias;
 	AX^ni := A^ni;
   AX^listeNi := A^listeNi;
-	AX^indentation := A^indentation + 1 ;
+	AX^indentation := A^indentation + 1;
+  AX^klass := A^klass;
 end
 }
 
@@ -1830,7 +1860,8 @@ do
 	R^talias := AX^talias;
 	R^ni := AX^ni;
   R^listeNi := AX^listeNi;
-	R^indentation := AX^indentation + 1 ; 
+	R^indentation := AX^indentation + 1; 
+  R^klass := AX^klass;
 end
 }
 
@@ -1952,6 +1983,7 @@ do
 	T^ni := R^ni;
   T^listeNi := R^listeNi;
 	T^indentation := R^indentation + 1 ; 
+  T^klass := R^klass;
 end
 }
 
@@ -1968,6 +2000,7 @@ do
 	RX^ni := R^ni;
   RX^listeNi := R^listeNi;
 	RX^indentation := R^indentation + 1 ; 
+  RX^klass := R^klass;
 end
 }
 
@@ -2057,6 +2090,7 @@ do
 	T^ni := RX^ni;
   T^listeNi := RX^listeNi;
 	T^indentation := RX^indentation + 1 ; 
+  T^klass := RX^klass;
 end
 }
 
@@ -2071,6 +2105,7 @@ do
 	RX1^ni := RX^ni;
   RX1^listeNi := RX^listeNi;
 	RX1^indentation := RX^indentation + 1 ; 
+  RX1^klass := RX^klass;
 end
 }
 
@@ -2188,6 +2223,7 @@ do
 	F^ni := T^ni;
   F^listeNi := T^listeNi;
 	F^indentation := T^indentation + 1 ; 
+  F^klass := T^klass;
 end
 }
 
@@ -2203,6 +2239,7 @@ do
 	TX^ni := T^ni;
   TX^listeNi := T^listeNi;
 	TX^indentation := T^indentation + 1 ; 
+  TX^klass := T^klass;
 --write("(53) Code de F :\n" + F^code + "\n");
 end
 }
@@ -2290,6 +2327,7 @@ do
 	F^ni := TX^ni;
   F^listeNi := TX^listeNi;
 	F^indentation := TX^indentation + 1 ; 
+  F^klass := TX^klass;
 end
 }
 
@@ -2304,6 +2342,7 @@ do
 	TX1^ni := TX^ni;
   TX1^listeNi := TX^listeNi;
 	TX1^indentation := TX^indentation + 1 ; 
+  TX1^klass := TX^klass;
 end
 }
 
@@ -2559,6 +2598,7 @@ do
 	F1^ni := F^ni;
   F1^listeNi := F^listeNi;
 	F1^indentation := F^indentation + 1; 
+  F1^klass := F^klass;
 end
 }
 
@@ -2662,6 +2702,7 @@ do
 	E^ni := F^ni;
   E^listeNi := F^listeNi;
 	E^indentation := F^indentation + 1 ; 
+  E^klass := F^klass;
 end
 }
 
@@ -2687,6 +2728,9 @@ do
 	FX^ni := F^ni;
   FX^listeNi := F^listeNi;
 	FX^indentation := F^indentation + 1 ; 
+  FX^klass := F^klass;
+  -- On décide qu'il n'y a pas de sens à mettre this entre parenthèses.
+  FX^estKlass := false;
 end
 }
 
@@ -2767,6 +2811,7 @@ do
 	F1^ni := F^ni;
   F1^listeNi := F^listeNi;
 	F1^indentation := F^indentation + 1 ; 
+  F1^klass := F^klass;
 end
 }
 
@@ -2812,6 +2857,7 @@ do
 	F1^ni := F^ni;
   F1^listeNi := F^listeNi;
 	F1^indentation := F^indentation + 1 ; 
+  F1^klass := F^klass;
 end
 }
 
@@ -2931,6 +2977,9 @@ do
 	FX^ni := F^ni;
   FX^listeNi := F^listeNi;
 	FX^indentation := F^indentation + 1 ; 
+  FX^klass := F^klass;
+  -- TODO : L'ident peut représenter une poignée.
+  FX^estKlass := false; --TODO
 --write("Regle 71 : au milieu à peu près\n");
 end
 }
@@ -3071,6 +3120,7 @@ do
 	FX1^machine := FX^machine;
 	FX1^ni := FX^ni;
   FX1^indentation := FX^indentation + 1 ; 
+  FX1^klass := FX^klass;
 end
 }
 
@@ -3148,6 +3198,7 @@ do
 	FX1^ni := FX^ni;
   FX1^listeNi := FX^listeNi;
 	FX1^indentation := FX^indentation + 1 ; 
+  FX1^klass := FX^klass;
 end
 }
 
@@ -3193,6 +3244,7 @@ do
 	ES^ni := FX^ni;
   ES^listeNi := FX^listeNi;
 	ES^indentation := FX^indentation + 1 ; 
+  ES^klass := FX^klass;
 end
 }
 
@@ -3254,6 +3306,7 @@ do
 	--write("(75) Reg: " + reg + "\n");
 --	end
   FX1^indentation := FX^indentation + 1 ; 
+  FX1^klass := FX^klass;
 end
 }
 
@@ -3303,6 +3356,7 @@ do
 	E^ni := ES^ni;
   E^listeNi := ES^listeNi;
 	E^indentation := ES^indentation + 1 ; 
+  E^klass := ES^klass;
 end
 }
 
@@ -3330,6 +3384,7 @@ do
 	ESX^ni := ES^ni;
   ESX^listeNi := ES^listeNi;
 	ESX^indentation := ES^indentation + 1 ; 
+  ESX^klass := ES^klass;
 end
 }
 
@@ -3372,6 +3427,7 @@ do
 	E^ni := ESX^ni;
   E^listeNi := ESX^listeNi;
 	E^indentation := ESX^indentation + 1 ; 
+  E^klass := ESX^klass;
 end
 }
 
@@ -3398,6 +3454,7 @@ do
 	ESX1^ni := ESX^ni;
   ESX1^listeNi := ESX^listeNi;
 	ESX1^indentation := ESX^indentation + 1 ; 
+  ESX1^klass := ESX^klass;
 end
 }
 
@@ -3507,6 +3564,7 @@ do
   ENTITES^tns := ENTITE^tns;
 	ENTITES^tklass := ENTITE^tklass;
   ENTITES^indentation := ENTITE^indentation + 1;
+  ENTITES^klass := ENTITE^klass;
 end
 }
 
@@ -3541,9 +3599,9 @@ do
 	-- Passage des attributs à IDC pour continuer la recherche à partir du ni.
   IDC^tns := ENTITE^tns;
   IDC^tklass := ENTITE^tklass;
-	IDC^klass := ENTITE^klass;
 	-- Le ni qui sera utilisé comme parent de la prochaine recherche.
 	IDC^ni := ni;
+  IDC^listeNi := ENTITE^listeNi;
 	IDC^indentation := ENTITE^indentation + 1;
 end
 }
@@ -3597,10 +3655,10 @@ do
 	else
 	  -- On recherche l'existence d'identc, d'abord dans les ns, 
 		-- en précisant le ns précédent en parent.
-		ni := IDC^tns.lookup(identc^txt, IDC^ni);
+		ni := IDC^tns.lookup(identc^txt, IDC^ni, IDC^listeNi);
   	if (ni = null) then
 			-- On cherche si ce n'est pas une classe, avec le même ns en parent.
-			k := IDC^tklass.lookup(identc^txt, IDC^ni);
+			k := IDC^tklass.lookup(identc^txt, IDC^ni, IDC^listeNi);
 			if (k = null) then
 			  error(INVALID_PATH);
 			end
@@ -3608,8 +3666,9 @@ do
 	end
   IDC1^tns := IDC^tns;
   IDC1^tklass := IDC^tklass;
-	IDC1^ni := ni;
 	IDC1^klass := k;
+  IDC1^ni := ni;
+  IDC1^listeNi := IDC^listeNi;
   IDC1^indentation := IDC^indentation + 1;
 end
 }
@@ -3692,9 +3751,9 @@ end
 
 
 -- (88) : Acces 
-ACCES -> #acc public;
+ACCES -> public #attACCES;
 
-#acc {
+#attACCES {
 local
 do
   ACCES^acc := 1;
@@ -3702,9 +3761,9 @@ end
 }
 
 -- (89)
-ACCES -> #acc private;
+ACCES -> private #attACCES;
 
-#acc {
+#attACCES {
 local
 do
   ACCES^acc := 2;
@@ -3712,9 +3771,9 @@ end
 }
 
 -- (90)
-ACCES -> #acc;
+ACCES -> #attACCES;
 
-#acc {
+#attACCES {
 local
 do
   ACCES^acc := 3;
@@ -3723,9 +3782,9 @@ end
 
 
 -- (91) : Heritage.
-HERITAGE -> #heritNull;
+HERITAGE -> #attHERITAGE;
 
-#heritNull{
+#attHERITAGE {
 local 
 do
   -- Aucun héritage
@@ -3755,6 +3814,7 @@ do
   IDC^tns := HERITAGE^tns;
   IDC^tklass := HERITAGE^tklass;
 	IDC^ni := ni;
+  IDC^listeNi := HERITAGE^listeNi;
 	IDC^klass := k;
   IDC^indentation := HERITAGE^indentation + 1;
 end
@@ -3763,7 +3823,10 @@ end
 #attHERITAGE {
 local 
 do
-	-- On renvoie la classe dont on hérite
+	-- On renvoie la classe dont on hérite.
+  if (IDC^klassS = null) then
+    error(INVALID_PATH);
+  end
 	HERITAGE^klassS := IDC^klassS;
 end
 }
@@ -3799,8 +3862,9 @@ do
 	DEF^tvar := DEFS^tvar;
 	DEF^tfun := DEFS^tfun;
 	DEF^talias := DEFS^talias;
-	DEF^klass :=DEFS^klass;
-	DEF^ni := DEFS^ni;
+	DEF^klass := DEFS^klass;
+	DEF^tklass := DEFS^tklass; 
+  DEF^ni := DEFS^ni;
 	DEF^listeNi := DEFS^listeNi;
 	DEF^accH := ACCES^acc;
   DEF^indentation := DEFS^indentation + 1;
@@ -3856,7 +3920,7 @@ do
 	DECL^tfun := DEF^tfun;
 	DECL^talias := DEF^talias;
   DECL^tklass := DEF^tklass;
-	DECL^tns := DEF^tns;
+  DECL^klass := DEF^klass;
 	DECL^typeH := TYPE^type;
 	DECL^nom := ident^txt;
 	DECL^machine := DEF^machine;
@@ -3957,6 +4021,7 @@ do
 	BLOC^machine := DEF^machine;
 	BLOC^ni := DEF^ni;
 	BLOC^listeNi := DEF^listeNi;
+  BLOC^klass := DEF^klass;
 end
 }
 
@@ -4009,6 +4074,7 @@ do
 	ES^machine := BASE^machine;
 	ES^ni := BASE^ni;
   ES^indentation := BASE^indentation + 1 ; 
+  ES^klass := BASE^klass;
 end
 }
 
@@ -4098,8 +4164,6 @@ end
 -- (104)
 F -> this #attFX FX #attF ;
 
---TODO: faire descendre l'attribut kl jusqu'à F
-
 -- Attributs inh de FX.
 #attFX {
 local
@@ -4128,6 +4192,7 @@ do
 	FX^machine := F^machine;
 	FX^ni := F^ni;
   FX^indentation := F^indentation + 1 ; 
+  FX^klass := F^klass;
 end
 }
 
@@ -4142,7 +4207,6 @@ do
   reg := new Register();
 	code := FX^code; 
 	if ((listeDepl.size() != 0 )&&(listeDepl.size() != 1)) then --> 1) then
-    -- TODO avec Julien.
     -- Des déplacements ont été ajoutés à la liste en plus de celui de base : on a accédé à des champs!
 	  -- Le registre contient l'adresse de la variable accédée par FX.
     code := code
@@ -4199,6 +4263,7 @@ do
 	FX^ni := F^ni;
   FX^listeNi := F^listeNi;
 	FX^indentation := F^indentation + 1 ; 
+  FX^klass := F^klass;
 end
 }
 
@@ -4265,11 +4330,11 @@ do
 		  error(INVALID_PATH);
 		end
 	end
-	IDC^machine := F^machine;
   IDC^tns := F^tns;
   IDC^tklass := F^tklass;
-	IDC^ni := ni;
 	IDC^klass := k;
+	IDC^ni := ni;
+  IDC^listeNi := F^listeNi;
   IDC^indentation := F^indentation + 1;
 end
 }
@@ -4287,6 +4352,7 @@ do
 	ES^ni := F^ni;
 	ES^tableNi := F^tableNi;
   ES^indentation := FX^indentation + 1 ; 
+  ES^klass := FX^klass;
 end
 }
 
@@ -4295,9 +4361,9 @@ end
 local
 	ci : ConstructorInfo;
 do
-  ci := IDC^klass.lookupConstructor(ES^typesParamsS);
+  ci := IDC^klassS.lookupConstructor(ES^typesParamsS);
 	if (ci = null) then
-	  error(NO_CONSTR_WITH_SUCH_PARS, BASE^kl.name());
+	  error(NO_CONSTR_WITH_SUCH_PARS, identc^txt);
 	end
 	F^code := ES^code + F^machine.generateConstructorCall(ci, true);
 end
