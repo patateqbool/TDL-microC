@@ -1050,11 +1050,12 @@ public class ARMEngine extends AbstractMachine {
      * if should dereference the field (arrow) or not (point).
      * Then, we can create the addres by a succession of LDR
      * @param dlist displacement list
+     * @param rvalue (out) register containing the value of the field
      * @param raddr (out) register that will contain the address
      * @return the generated code
      */
-    public String generateMakeAddress(DisplacementList dlist, RegisterWrapper raddr) throws MCSException {
-        return generateMakeAddress(dlist, sb, raddr);
+    public String generateMakeAddress(DisplacementList dlist, RegisterWrapper rvalue, RegisterWrapper raddr) throws MCSException {
+        return generateMakeAddress(dlist, sb, rvalue, raddr);
     }
 
     /**
@@ -1062,13 +1063,15 @@ public class ARMEngine extends AbstractMachine {
      * using the specified register as base register.
      * @param dlist displacement list
      * @param rbaseaddr base address register
+     * @param rvalue (out) register containing the value of the field
      * @param raddr (out) register that will contain the address
      * @return the generated code
      */
-    public String generateMakeAddress(DisplacementList dlist, Register rbaseaddr, RegisterWrapper raddr) throws MCSException {
-        String code = "";
-        Register r = getNextUnusedRegister();
-        raddr.set(r);
+    public String generateMakeAddress(DisplacementList dlist, Register rbaseaddr, RegisterWrapper rvalue, RegisterWrapper raddr) throws MCSException {
+        String code = "", codeaddr = "";
+        Register ra = getNextUnusedRegister(), rv = getNextUnusedRegister();
+        raddr.set(ra);
+        rvalue.set(rv);
         DisplacementPair dp;
 
         // First displacement is the one of the struct itself
@@ -1076,20 +1079,28 @@ public class ARMEngine extends AbstractMachine {
         ListIterator<DisplacementPair> iter = dlist.listIterator();
         dp = iter.next();
         code +=
-            generateInstruction("LDR", true, r, rbaseaddr, -dp.disp);
+            generateInstruction("LDR", true, rv, rbaseaddr, -dp.disp);
+
+        if (!iter.hasNext())
+            code += generateInstruction("ADD", ra, rbaseaddr, -dp.disp);
 
         while (iter.hasNext()) {
             dp = iter.next();
             if (dp.deref) {
                 code +=
-                    generateInstruction("LDR", true, r, r);
+                    generateInstruction("LDR", true, rv, rv);
             }
+
+            if (!iter.hasNext())
+                code += generateInstruction("ADD", ra, rv, dp.disp);
+            
             code +=
-                generateInstruction("LDR", true, r, r, dp.disp);
+                generateInstruction("LDR", true, rv, rv, dp.disp);
         }
 
         rbaseaddr.setStatus(Register.Status.Used);
-        r.setStatus(Register.Status.Loaded);
+        rv.setStatus(Register.Status.Loaded);
+        ra.setStatus(Register.Status.Loaded);
 
         return code;
     }

@@ -351,20 +351,22 @@ public interface IMachine {
      * if should dereference the field (arrow) or not (point).
      * Then, we can create the addres by a succession of LDR
      * @param dlist displacement list
+     * @param rvalue (out) register containing the value
      * @param raddr (out) register that will contain the address
      * @return the generated code
      */
-    String generateMakeAddress(DisplacementList dlist, RegisterWrapper raddr) throws MCSException;
+    String generateMakeAddress(DisplacementList dlist, RegisterWrapper rvalue, RegisterWrapper raddr) throws MCSException;
 
     /**
      * Generate the code for making an address from a list of displacement pair,
      * using the specified register as base register.
      * @param dlist displacement list
      * @param rbaseaddr base address register
+     * @param rvalue (out) register containing the value
      * @param raddr (out) register that will contain the address
      * @return the generated code
      */
-    String generateMakeAddress(DisplacementList dlist, Register rbaseaddr, RegisterWrapper raddr) throws MCSException;
+    String generateMakeAddress(DisplacementList dlist, Register rbaseaddr, RegisterWrapper rvalue, RegisterWrapper raddr) throws MCSException;
 
     /**
      * Generate the code for an if-then-else structure
