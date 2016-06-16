@@ -1158,6 +1158,8 @@ public class ARMEngine extends AbstractMachine {
             "\n" +
             bcode +
             "\n" +
+            generateInstruction("B", "loop_" + loop_nb) +
+            "\n" +
             generateLabel("end_loop_" + loop_nb) +
             "\n";
         loop_nb++;
