@@ -17,17 +17,17 @@ public class NamespaceTable {
         this.content.add(ni);
     }
 
-    public boolean exists(String name, NamespaceInfo base) {
+    public boolean exists(String name, NamespaceInfo base, List<NamespaceInfo> usedns) {
         for (NamespaceInfo ni : this.content) {
-            if (ni.name().equals(name) && ni.parent().equals(base))
+            if (ni.name().equals(name) && (ni.parent().equals(base) || usedns.contains(ni)))
                 return true;
         }
         return false;
     }
 
-    public NamespaceInfo lookup(String name, NamespaceInfo base) {
+    public NamespaceInfo lookup(String name, NamespaceInfo base, List<NamespaceInfo> usedns) {
         for (NamespaceInfo ni : this.content) {
-            if (ni.name().equals(name) && ni.parent().equals(base))
+            if (ni.name().equals(name) && (ni.parent().equals(base) || usedns.contains(ni)))
                 return ni;
         }
         return null;

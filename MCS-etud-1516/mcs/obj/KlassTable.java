@@ -17,9 +17,9 @@ public class KlassTable {
         this.content = new ArrayList<Klass>();
     }
 
-    public boolean exists(String name, NamespaceInfo ns) {
+    public boolean exists(String name, NamespaceInfo ns, List<NamespaceInfo> usedns) {
         for (Klass k : this.content) {
-            if (k.name().equals(name) && k.namespace().equals(ns))
+            if (k.name().equals(name) && (k.namespace().equals(ns) || usedns.contains(k.namespace())))
                 return true;
         }
 
@@ -27,18 +27,15 @@ public class KlassTable {
     }
 
     // hahaha je suis caché
-    public Klass lookup(String name, NamespaceInfo ns) {
+    public Klass lookup(String name, NamespaceInfo ns, List<NamespaceInfo> usedns) {
         for (Klass k : this.content) {
-            if (k.name().equals(name) && k.namespace().equals(ns))
+            if (k.name().equals(name) && (k.namespace().equals(ns) || usedns.contains(k.namespace())))
                 return k;
         }
         return null;
     }
 
     public boolean insert(Klass k) {
-        if (exists(k.name(), k.namespace()))
-            return false;
-
         this.content.add(k);
         return true;
     }
