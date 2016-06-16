@@ -281,7 +281,7 @@ end
 local
 do
    machine.writeCode(PROGRAMME^source.getFileName(), ENTITES^code); 
-   write(machine.logRegisters());
+   write("\nEtat final des registres (L est une anomalie) :\n" + machine.logRegisters());
 end
 }
 
@@ -1106,14 +1106,14 @@ end
 }
 
 
--- (28) : Declaration de variable locale avec ou sans init 
+-- (28) : Declaration de variable locale avec ou sans init. 
 INST -> #attTYPE TYPE ident #attAFFX AFFX pv #attINST;
 
 -- Passage de la table des alias.
 #attTYPE {
 local
 do
-  write("(28) Has you something to declare?\n");
+--write("(28) Has you something to declare?\n");
 --write("Regle (28)\n");
   TYPE^talias := INST^talias;
 	TYPE^indentation := INST^indentation + 1 ;
@@ -1124,7 +1124,7 @@ end
 #attAFFX {
 local
 do
-  write("(28) So you declarin' some " + TYPE^type + ", named : " + ident^txt + "...\n"); 
+--write("(28) So you declarin' some " + TYPE^type + ", named : " + ident^txt + "...\n"); 
   AFFX^machine := INST^machine;
 	AFFX^tvar := INST^tvar;
 	AFFX^tfun := INST^tfun;
@@ -1175,7 +1175,8 @@ do
 				code := INST^machine.generateComment("(28) Allocate in stack:", "\t\t")
 				      + INST^machine.generateAllocateInStack(TYPE^type)
 							+ INST^machine.generateComment("(28) End of allocation.", "\t\t");
-			--write("(28) Code (allocation) : " + code + "\n");
+			--write("(28) Code (allocation) : \n" + code + "\n");
+			--write("(28) Après allocation : \n" + INST^machine.logRegisters() + "\n");
 			end
     end
   end 
@@ -1530,7 +1531,7 @@ do
 	-- Le type de cette afectation doit être le même que A.
 	AFFX^typeH := A^type;
   AFFX^indentation := E^indentation + 1 ;
-  write("(35) Code de A :\n" + A^code + "\n");
+--write("(35) Code de A :\n" + A^code + "\n");
 end
 }
 
@@ -1544,7 +1545,7 @@ local
 	vi : VariableInfo;
 do
 --write("(35) Debut de la fin\n");
-  write("(35) Code de AFFX :\n" + AFFX^code + "\n");
+--write("(35) Code de AFFX :\n" + AFFX^code + "\n");
   reg := null;
 	code := A^code;
 	estVar := false;
@@ -1557,6 +1558,8 @@ do
 		reg := A^reg ;
 		code := E^machine.generateComment("(35) Not an affectation.", "\t\t")
 		      + code;
+		-- regAdr ne sera pas use, on peut changer le statut.
+		A^regAdr.setStatus(2);
 	else
 		if (A^estVar) then
 			-- E ne représente pas de variable.
@@ -1604,7 +1607,7 @@ AFFX -> affect #attA A #attAFFX ;
 #attA {
 local
 do
-  write("(36) Affectation.");
+--write("(36) Affectation.");
 	A^machine := AFFX^machine;
 	A^tvar := AFFX^tvar;
 	A^tfun := AFFX^tfun;
@@ -1633,7 +1636,8 @@ do
 	-- appelante ne pourra pas être une variable suite à cette RP.
 	-- Le registre et le type de AFFX sont ceux de A.
 	if (A^regAdr != null) then
-	  A^regAdr.unlock();
+	  write("(35) Unlocking " + A^regAdr.debug() + "\n");
+		A^regAdr.unlock();
 	  A^regAdr.setStatus(2);
 	end
 	AFFX^estVar := false;
@@ -1756,7 +1760,7 @@ do
 	A^type := type;
 	A^code := code;
 --write("(38) Reg : " + reg.debug() + "\n");
--- write("(38) Code : " + code + "\n");
+--write("(38) Code : " + code + "\n");
 	A^vi := vi;
 	A^estVar := estVar;
   A^regAdr := R^regAdr;
@@ -2149,7 +2153,7 @@ do
 	TX^tvar := T^tvar;
 	TX^ni := T^ni;
   TX^indentation := T^indentation + 1 ; 
-  write("(53) Code de F :\n" + F^code + "\n");
+--write("(53) Code de F :\n" + F^code + "\n");
 end
 }
 
