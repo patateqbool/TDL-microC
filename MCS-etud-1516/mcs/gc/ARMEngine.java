@@ -27,7 +27,8 @@ public class ARMEngine extends AbstractMachine {
     private List<Register> registers;							// List of registers on the machine
     private Register sp, lr, pc, ht, sb, oi, fr;	// Special registers
     private int heapbase = 0;											// Manual heap base calculus
-    private int condition_nb = 0;									// Number of if-then-else (/other conditionnal) structures
+    private int condition_nb = 0;									// Number of if-then-else (/other conditionnal) structuresi
+    private int loop_nb = 0;
 
     /**
      * Constructor
@@ -1121,7 +1122,6 @@ public class ARMEngine extends AbstractMachine {
      * @return the generated code
      */
     public String generateIfThenElse(Register rcond, String cif, String celse) throws MCSException {
-        
         boolean else_present = !(celse.isEmpty());
         String code = 
             generateInstruction("CBZ", rcond, (else_present ? "else" : "end" + "_" + condition_nb)) +
@@ -1141,7 +1141,27 @@ public class ARMEngine extends AbstractMachine {
         condition_nb++;
 
         return code;
-        
+    }
+
+    /**
+     * Generate the code for a while structure
+     * @param cond code for the  condition
+     * @param rcond register containing the result of the condition calculus
+     * @param bcode code of the bloc
+     * @return the generated code
+     */
+    public String generateWhile(String cond, Register rcond, String bcode) throws MCSException {
+        String code =
+            generateLabel("loop_" + loop_nb) +
+            cond +
+            generateInstruction("CBZ", rcond, "end_loop_" + loop_nb) +
+            "\n" +
+            bcode +
+            "\n" +
+            generateLabel("end_loop_" + loop_nb) +
+            "\n";
+        loop_nb++;
+        return code;
     }
 
     /**
