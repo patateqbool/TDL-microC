@@ -55,7 +55,7 @@ public class VariableTable implements SymbolTable {
   }
 
   public boolean exists(String name, NamespaceInfo namespace, SymbolInfo si) {
-		System.out.println("Looking for " + name + " in\n" + this.toString());
+		//trace System.out.println("Looking for " + name + " in\n" + this.toString());
     if (this.content.get(name) != null) {
       if (this.content.get(name).namespace().equals(namespace))
         return true;
@@ -64,7 +64,7 @@ public class VariableTable implements SymbolTable {
   }
 
 	public boolean exists(String name, NamespaceInfo namespace, boolean local) {
-		System.out.println("Looking for " + name + " in\n" + this.toString());
+		//trace System.out.println("Looking for " + name + " in\n" + this.toString());
     SymbolInfo si = this.content.get(name);
 
     if (si != null) {
