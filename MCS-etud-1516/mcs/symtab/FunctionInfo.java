@@ -28,7 +28,7 @@ public class FunctionInfo extends SymbolInfo {
     this.retType = ret;
     this.parameters = new ArrayList<Type>();
 		this.reg = fr;
-		System.out.println("(FunInf)[n,t,ns] I has been created !!!");
+		//trace System.out.println("(FunInf)[n,t,ns] I has been created !!!");
   }
 
   public FunctionInfo(String name, Type ret, List<Type> params, NamespaceInfo ns, Register fr) {
@@ -37,7 +37,7 @@ public class FunctionInfo extends SymbolInfo {
     this.parameters = params;
     this.retType = ret;
 		this.reg = fr;
-		System.out.println("(FunInf)[n,t,p,ns] I has been created !!!");
+		//trace System.out.println("(FunInf)[n,t,p,ns] I has been created !!!");
   }
 
   /**

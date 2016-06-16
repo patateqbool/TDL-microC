@@ -10,6 +10,12 @@ typedef struct {
 
 int main () {
   T* a;
+	T** b;
+	T*** c;
+	struct{
+	  T* a;
+		T** b;
+		} st;
 	a->b = 2;
 	return a->b;
 }

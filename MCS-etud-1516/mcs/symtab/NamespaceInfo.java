@@ -11,13 +11,13 @@ public class NamespaceInfo {
     // Attributes
     public String name; // Name of the namespace
     public NamespaceInfo parent; // The parent of the namespace
-    
+
     /**
      * @param n name of the namespace
      */
     public NamespaceInfo(String n) {
         this.name = n;
-        this.parent = null;
+        this.parent = new DefaultNamespaceInfo();
     }
 
     /**
@@ -28,7 +28,7 @@ public class NamespaceInfo {
         this.name = n;
         this.parent = ns;
     }
-    
+
     /**
      * Get the name of the namespace
      * @return the name
@@ -52,7 +52,8 @@ public class NamespaceInfo {
         return "Namespace : " + this.name;
     }
 
-		public boolean equals(NamespaceInfo ni) {
-			return ni.name.equals(this.name);
-		}
+    public boolean equals(NamespaceInfo ni) {
+        return (ni.parent.equals(this.parent) && ni.name.equals(this.name));
+    }
 }
+

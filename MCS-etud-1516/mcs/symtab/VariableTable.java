@@ -54,25 +54,28 @@ public class VariableTable implements SymbolTable {
     return res;
   }
 
-  public boolean exists(String name, NamespaceInfo namespace, SymbolInfo si) {
-		//trace System.out.println("Looking for " + name + " in\n" + this.toString());
+  public boolean exists(String name, NamespaceInfo namespace, List<NamespaceInfo> usedns, SymbolInfo si) {
+		System.out.println("Looking for " + name + " in\n" + this.toString());
+    
     if (this.content.get(name) != null) {
-      if (this.content.get(name).namespace().equals(namespace))
+      if (this.content.get(name).namespace().equals(namespace) ||
+          usedns.contains(this.content.get(name).namespace()))
         return true;
     }
+
     return false;
   }
 
-	public boolean exists(String name, NamespaceInfo namespace, boolean local) {
-		//trace System.out.println("Looking for " + name + " in\n" + this.toString());
+	public boolean exists(String name, NamespaceInfo namespace, List<NamespaceInfo> usedns, boolean local) {
+		System.out.println("Looking for " + name + " in\n" + this.toString());
     SymbolInfo si = this.content.get(name);
 
     if (si != null) {
-      return (si.namespace().equals(namespace));
+      return (si.namespace().equals(namespace) || usedns.contains(si.namespace()));
     }
 
     if (!local && this.parent != null)
-      return ((VariableTable)this.parent).exists(name, namespace, false);
+      return ((VariableTable)this.parent).exists(name, namespace, usedns, false);
 
     return false;
 	}
@@ -80,16 +83,16 @@ public class VariableTable implements SymbolTable {
   /**
    * Look up into the table
    */
-  public SymbolInfo lookup(String name, NamespaceInfo ns, boolean local) {
+  public SymbolInfo lookup(String name, NamespaceInfo ns, List<NamespaceInfo> usedns, boolean local) {
     SymbolInfo si = this.content.get(name);
 
     if (si != null) {
-      if (si.namespace().equals(ns))
+      if (si.namespace().equals(ns) || usedns.contains(si.namespace()))
         return si;
     }
 
     if (!local && this.parent != null)
-      return this.parent.lookup(name, ns, false);
+      return this.parent.lookup(name, ns, usedns, false);
 
     return null;
   }
@@ -99,8 +102,6 @@ public class VariableTable implements SymbolTable {
    */
   public boolean insert(String name, SymbolInfo info) {
     VariableInfo vi = (VariableInfo)info;
-    if (this.content.containsKey(name))
-      return false;
     this.content.put(name, vi);
 
     int ts = vi.type().size();

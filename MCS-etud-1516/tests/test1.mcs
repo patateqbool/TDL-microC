@@ -7,8 +7,8 @@ int d;
 //}
 
 void main() {
-	//d = (c = 18);
-	//d = c;
+	d = (c = 18);
+	d = (int) c;
 	struct {
 		int a;
 		int b;
