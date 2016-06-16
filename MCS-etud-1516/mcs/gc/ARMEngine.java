@@ -1069,11 +1069,15 @@ public class ARMEngine extends AbstractMachine {
      */
     public String generateMakeAddress(DisplacementList dlist, Register rbaseaddr, RegisterWrapper rvalue, RegisterWrapper raddr) throws MCSException {
         String code = "", codeaddr = "";
-        Register ra = getNextUnusedRegister(), rv = getNextUnusedRegister();
+
+        Register ra = getNextUnusedRegister();
         raddr.set(ra);
         ra.setStatus(Register.Status.Loaded);
+        
+        Register rv = getNextUnusedRegister();
         rvalue.set(rv);
         rv.setStatus(Register.Status.Loaded);
+        
         DisplacementPair dp;
 
         // First displacement is the one of the struct itself
