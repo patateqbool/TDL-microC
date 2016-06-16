@@ -360,12 +360,12 @@ local
 	ta : AliasTable;
 do
   ta := ENTITE^talias;
-  info := ENTITE^tvar.lookup(identc^txt, ENTITE^ni, true);
+  info := ENTITE^tvar.lookup(identc^txt, ENTITE^ni, ENTITE^listeNi, true);
   -- Si identc est une clef dans la TDSvar, erreur.
   if info != null then
      error(IDENT_TAKEN, identc^txt);
   else
-     info := ENTITE^tfun.lookup(identc^txt, ENTITE^ni, true);
+     info := ENTITE^tfun.lookup(identc^txt, ENTITE^ni, ENTITE^listeNI, true);
      -- De même si identc est déjà utilisé dans la TDSfun.
     if info != null then
         error(IDENT_TAKEN, identc^txt);
@@ -443,7 +443,7 @@ do
   tv := ENTITE^tvar;
 	tf := ENTITE^tfun;
   -- Si l'ident apprait dans tvar ou talias, on a une erreur.
-	info := ENTITE^tvar.lookup(ident^txt, ENTITE^ni, true);
+	info := ENTITE^tvar.lookup(ident^txt, ENTITE^ni, ENTITE^listeNi, true);
   code := DECL^code;
 	if (info != null) then
     error(IDENT_TAKEN, ident^txt);
@@ -458,7 +458,7 @@ do
       if (fi = null) then
 			--write("(5) It's a variable declaration\n");
 	      -- On a une variable.
-        if (tf.exists(ident^txt, ENTITE^ni, fi)) then
+        if (tf.exists(ident^txt, ENTITE^ni, ENTITE^listeNi, fi)) then
 				  -- Dans ce cas, il ne faut pas que l'ident soit pris par une fonction.
           error(IDENT_TAKEN, ident^txt);
         else
@@ -760,12 +760,12 @@ do
   -- Vérifications concernant ident.
   --info := tv.lookup(ident^txt, PARF^ni, false);
   -- Si identc est une clef dans la TDSvar, erreur.
-  if (tv.exists(ident^txt, PARF^ni, false)) then
+  if (tv.exists(ident^txt, PARF^ni, PARF^listeNi, false)) then
     error(IDENT_TAKEN, ident^txt);
   else
     --info := PARF^tfun.lookup(ident^txt, PARF^ni, false);
     -- De même si identc est déjà utilisé dans la TDSfun.
-    if (PARF^tfun.exists(ident^txt, PARF^ni)) then
+    if (PARF^tfun.exists(ident^txt, PARF^ni, PARF^listeNi)) then
       error(IDENT_TAKEN, ident^txt);
     else
 		  t := PARF^talias.lookup(ident^txt);
@@ -1156,12 +1156,12 @@ do
   --info := INST^tvar.lookup(nom, INST^ni, true);
 	code := "";
   -- Si ident est une clef dans la TDSvar, erreur.
-  if (INST^tvar.exists(nom, INST^ni, true)) then
+  if (INST^tvar.exists(nom, INST^ni, INST^listeNi, true)) then
      error(IDENT_TAKEN, nom);
   else
     --info := INST^tfun.lookup(nom, INST^ni, false);
     -- De même si identc est déjà utilisé dans la TDSfun.
-    if (INST^tfun.exists(nom, INST^ni)) then
+    if (INST^tfun.exists(nom, INST^ni, INST^listeNi)) then
       error(ALREADY_A_FUNCTION_IDENT, nom);
 		else
 		  t := INST^talias.lookup(nom);
@@ -1186,7 +1186,7 @@ do
 		-- Verification de types inutile, elle est faite dans AFFX.
 		-- On génère le code pour stocker la valeur du registre 
 		-- de AFFX dans la variable qu'on vient de déclarer.
-		si := tv.lookup(ident^txt, INST^ni, true);
+		si := tv.lookup(ident^txt, INST^ni, INST^listeNi, true);
 		match si
 		with VariableInfo then
 		  code := code
@@ -2831,11 +2831,11 @@ do
 --write("(71) VARTABLE :\n" + F^tvar);
 
 	-- Recherche dans la TVar (globalement).
-  if (!(F^tvar.exists(ident^txt, F^ni, false))) then
+  if (!(F^tvar.exists(ident^txt, F^ni, F^listeNi, false))) then
 	--write("(71) " + ident^txt + " not in tvar\n");
 	  -- ident n'est pas dans la TVar, F n'est pas une variable.
 		-- On regarde dans la TFun s'il s'agit de l'identifiant d'une fonction.
-    if (!(F^tfun.exists(ident^txt, F^ni))) then
+    if (!(F^tfun.exists(ident^txt, F^ni, F^listeNi))) then
 		  -- On n'a pas trouvé le symbole dans les TDS : erreur.
 			error(IDENT_UNDEFINED, ident^txt);
     else
@@ -2849,7 +2849,7 @@ do
   else
 		-- On peut passer le type.
 	--write("(71) " + ident^txt + " is a var\n");
-		info := F^tvar.lookup(ident^txt, F^ni, false);
+		info := F^tvar.lookup(ident^txt, F^ni, F^listeNi, false);
 		match info
 		with VariableInfo then
 		  varInfo := info;
@@ -3151,7 +3151,7 @@ do
 	  error(NO_PAR_CALL);
 	else
 	  -- On cherche avec la fonction qui ne prend pas de booléen, mais une liste de types pour les params.
-    si := FX^tfun.lookup(FX^nom, FX^ni, ES^typesParamsS);
+    si := FX^tfun.lookup(FX^nom, FX^ni, FX^listeNi, ES^typesParamsS);
 	--write("(75) " + si + "\n");
 	  if (si = null) then
 	    error(NO_FUN_WITH_SUCH_PARS, FX^nom);
@@ -3394,8 +3394,10 @@ do
 end
 }
 
+
+
+-----------------------------------------------------
 ------------------- CS extension --------------------
------- Decommenter les regles suivantes pour l'extension CS
 -----------------------------------------------------
 
 -- (82)
@@ -3425,7 +3427,7 @@ do
      error(IDENT_TAKEN, identc^txt);
   else
   -- Si identc est une clef dans la TDSNamespace, erreur.	
-    if tns.lookup(identc^txt, ENTITE^ni) != null then
+    if (tns.lookup(identc^txt, ENTITE^ni) != null) then
       error(IDENT_TAKEN, identc^txt);
     else
      -- Sinon, on peut ajouter le nouveau namespace à la TDS.
@@ -3505,10 +3507,10 @@ IDC -> #attIDC ;
 -- On vérifie qu'on a obtenu ce qu'on cherchait.
 #attIDC {
 local
-  niS : NamespaceInfo;
-	klassHerit : Klass;
+-*  niS : NamespaceInfo;
+	klassHerit : Klass;*- 
 do
-	klassHerit := null;
+-*	klassHerit := null;
   -- On verifie si on cherche à obtenir une classe ou un namespace
 	if (IDC^rechKlass) then
 	  -- TODO
@@ -3531,7 +3533,8 @@ do
 --	  end
 	end
 	IDC^klassHerit := klassHerit;
-	-- On fait directement remonter le ni de IDC.
+	-- On fait directement remonter le ni de IDC.*-
+	IDC^klassS := IDC^klass;
 	IDC^niS := IDC^ni;
 end
 }
