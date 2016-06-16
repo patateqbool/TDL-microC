@@ -1,7 +1,7 @@
 #--------------------------------------------------------
 # la grammaire (voir src)
 XLANG=MCS
-ALANG=ARMASM
+ALANG=AASM
 #--------------------------------------------------------
 # repertoires contenant egg
 EDIR=.

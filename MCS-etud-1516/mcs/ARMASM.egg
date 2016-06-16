@@ -11,7 +11,8 @@ inh mach_asm	:	AbstractMachine for ARMASM, INSTS, INST, PAR, PARS, PARSX, ADDR, 
 inh parlist		: List<Object> for PAR, PARS, PARSX;
 
 -- Separators
-sugar	spce		is	"[\t ]+";
+sugar	spce		is	"[\t ]*";
+sugar sspce   is  "[\t ]+";
 sugar nl			is	"(\n|\r)";
 sugar	column	is	"\:";
 sugar semicol	is	";";
@@ -345,7 +346,7 @@ term	genreg	is	"r[0-9]";
 term 	comm 		is	"[^\n]*\n";
 
 -- Rules
-ARMASM -> ocbrack spce #init INSTS ccbrack spce #gen ;
+ARMASM -> spce ocbrack spce #init INSTS spce ccbrack #gen ;
 #init {
     do
         INSTS^mach_asm := ARMASM^mach_asm;
@@ -377,14 +378,14 @@ INSTS -> #init INST INSTS #gen ;
     end
 }
 
-INST -> spce nl #gen ;
+INSTS -> spce nl #gen ;
 #gen {
     do
-        INST^code_asm := "\n";
+        INSTS^code_asm := "\n";
     end
 }
 
-INST -> OPCODE S CC spce #init PARS #gen ;
+INST -> OPCODE S CC sspce #init PARS #gen ;
 global
     pl : ArrayList<Object>;
 
@@ -517,7 +518,7 @@ SHIFTOP -> #gen ;
     end
 }
 
-SHIFTOP -> SHIFTTYPE spce #gen ;
+SHIFTOP -> SHIFTTYPE sspce #gen ;
 #gen {
     do
         SHIFTOP^code_asm := SHIFTTYPE^code_asm + " ";
