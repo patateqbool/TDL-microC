@@ -153,6 +153,8 @@ inh ni : NamespaceInfo for
 				 TX, ES, ESX
 				 ;
 
+inh listeNi : ArrayList<NamespaceInfo>;
+
 inh rechKlass : boolean for
          IDC
 				 ;
@@ -273,6 +275,7 @@ do
   ENTITES^talias := new AliasTable();
 	ENTITES^machine := machine;
 	ENTITES^ni := new DefaultNamespaceInfo();
+  ENTITES^listeNi := new ArrayList<NamespaceInfo>();	
 	ENTITES^indentation := 0;
 end
 }
@@ -309,6 +312,7 @@ do
 	ENTITE^talias := ENTITES^talias;
 	ENTITE^ni := ENTITES^ni;
 	ENTITE^indentation := ENTITES^indentation + 1;
+  ENTITE^listeNi := ENTITES^listeNi;
 end
 }
 
@@ -322,6 +326,7 @@ do
 	ENTITES1^talias := ENTITE^taliasS;
 	ENTITES1^machine := ENTITES^machine;
 	ENTITES1^ni := ENTITES^ni;
+	ENTITES1^listeNi := ENTITES^listeNi;
 	ENTITES1^indentation := ENTITES^indentation + 1 ;
 end
 }
@@ -421,6 +426,7 @@ do
 	DECL^talias := ENTITE^talias;
 	DECL^machine := ENTITE^machine;
 	DECL^ni := ENTITE^ni;
+  DECL^listeNi := ENTITE^listeNi;
   DECL^indentation := ENTITE^indentation + 1;
 end
 }
@@ -523,6 +529,7 @@ do
 	FONCTION^tfun := DECL^tfun;
 	FONCTION^machine := DECL^machine;
 	FONCTION^ni := DECL^ni;
+	FONCTION^listeNi := DECL^listeNi;
   FONCTION^indentation := DECL^indentation + 1;
 end
 }
@@ -563,6 +570,7 @@ do
   PARFS^cParam := 0;
   PARFS^machine := FONCTION^machine;
 	PARFS^ni := FONCTION^ni;
+	PARFS^listeNi := FONCTION^listeNi;
   PARFS^indentation := FONCTION^indentation + 1;
 --write("Regle (8)\n");
 end
@@ -589,6 +597,7 @@ do
 	BLOC^talias := FONCTION^talias;
 	BLOC^machine := FONCTION^machine;
 	BLOC^ni := FONCTION^ni;
+  BLOC^listeNi := FONCTION^listeNi;
 --write("Regle (8) : milieu\n");
 end
 }
@@ -640,7 +649,8 @@ do
   PARF^talias := PARFS^talias;
 	PARF^machine := PARFS^machine;
 	PARF^ni := PARFS^ni;
-  -- Passage de c à PARFSX aussi.
+  PARF^listeNi := PARFS^listeNi;
+-- Passage de c à PARFSX aussi.
 	PARFSX^cParam := c;
   PARF^indentation := PARFS^indentation + 1;
 end
@@ -658,7 +668,8 @@ do
 	PARFSX^talias := PARFS^talias;
 	PARFSX^machine := PARFS^machine;
 	PARFSX^ni := PARFS^ni;
-	PARFSX^indentation := PARFS^indentation + 1; 
+  PARFSX^listeNi := PARFS^listeNi;
+  PARFSX^indentation := PARFS^indentation + 1; 
 end
 }
 
@@ -700,7 +711,8 @@ do
   PARF^talias := PARFSX^talias;
 	PARF^machine := PARFSX^machine;
 	PARF^ni := PARFSX^ni;
-	PARF^indentation := PARFSX^indentation + 1; 
+  PARF^listeNi := PARFSX^listeNi;
+  PARF^indentation := PARFSX^indentation + 1; 
   -- On passe aussi c à PARFSX1.
   PARFSX1^cParam := c;
 end
@@ -717,7 +729,8 @@ do
 	PARFSX1^talias := PARFSX^talias;
 	PARFSX1^machine := PARFSX^machine;
 	PARFSX1^ni := PARFSX^ni;
-	PARFSX1^indentation := PARFSX^indentation + 1; 
+  PARFSX1^listeNi := PARFSX^listeNi;
+  PARFSX1^indentation := PARFSX^indentation + 1; 
 end
 }
 
@@ -1021,7 +1034,8 @@ do
 	INSTS^machine := BLOC^machine;
   INSTS^funInfoH := BLOC^funInfoH;
 	INSTS^ni := BLOC^ni;
-	INSTS^indentation := BLOC^indentation + 1 ;
+  INSTS^listeNi := BLOC^listeNi;
+  INSTS^indentation := BLOC^indentation + 1 ;
 end
 }
 
@@ -1072,7 +1086,8 @@ do
 	INST^talias := INSTS^talias;
 	INST^machine := INSTS^machine;
 	INST^ni := INSTS^ni;
-	INST^indentation := INSTS^indentation + 1 ;
+  INST^listeNi := INSTS^listeNi;
+  INST^indentation := INSTS^indentation + 1 ;
 end
 }
 
@@ -1087,7 +1102,8 @@ do
 	INSTS1^talias := INSTS^talias;
 	INSTS1^machine := INSTS^machine;
 	INSTS1^ni := INSTS^ni;
-	INSTS1^indentation := INSTS^indentation + 1 ;
+  INSTS1^listeNi := INSTS^listeNi;
+  INSTS1^indentation := INSTS^indentation + 1 ;
 end
 }
 
@@ -1134,7 +1150,8 @@ do
 		-- Le type de cette affectationn doit être celui de TYPE.
 	AFFX^typeH := TYPE^type;
 	AFFX^ni := INST^ni;
-	AFFX^indentation := INST^indentation + 1 ;
+  AFFX^listeNi := INST^listeNi;
+  AFFX^indentation := INST^indentation + 1 ;
 end
 }
 
@@ -1218,7 +1235,8 @@ do
 	E^tfun := INST^tfun;
 	E^talias := INST^talias;
 	E^ni := INST^ni;
-	E^indentation := INST^indentation + 1 ;
+  E^listeNi := INST^listeNi;
+  E^indentation := INST^indentation + 1 ;
 end
 }
 
@@ -1245,7 +1263,8 @@ do
 	BLOC^tvar := tfille;
 	BLOC^funInfoH := INST^funInfoH;
   BLOC^ni := INST^ni;
-	BLOC^indentation := INST^indentation + 1 ;
+  BLOC^listeNi := INST^listeNi;
+  BLOC^indentation := INST^indentation + 1 ;
 end
 }
 
@@ -1271,6 +1290,7 @@ do
 	E^tfun := INST^tfun;
 	E^talias := INST^talias;
 	E^ni := INST^ni;
+	E^listeNi := INST^listeNi;
 	E^indentation := INST^indentation + 1 ;
 end
 }
@@ -1287,7 +1307,8 @@ do
 	BLOC^talias := INST^talias;
 	BLOC^machine := INST^machine;
 	BLOC^ni := INST^ni;
-	BLOC^indentation := INST^indentation + 1 ;
+  BLOC^listeNi := INST^listeNi;
+  BLOC^indentation := INST^indentation + 1 ;
 end
 }
 
@@ -1301,7 +1322,8 @@ do
 	SIX^talias := INST^talias;
 	SIX^machine := INST^machine;
 	SIX^ni := INST^ni;
-	SIX^indentation := INST^indentation + 1 ;
+  SIX^listeNi := INST^listeNi;
+  SIX^indentation := INST^indentation + 1 ;
 end
 }
 
@@ -1361,7 +1383,8 @@ do
 	BLOC^talias := SIX^talias;
 	BLOC^machine := SIX^machine;
 	BLOC^ni := SIX^ni;
-	BLOC^indentation := SIX^indentation + 1 ; 
+  BLOC^listeNi := SIX^listeNi;
+  BLOC^indentation := SIX^indentation + 1 ; 
 end
 }
 
@@ -1397,6 +1420,7 @@ do
 	E^tfun := INST^tfun;
 	E^talias := INST^talias;
 	E^ni := INST^ni;
+	E^listeNi := INST^listeNi;
 	E^indentation := INST^indentation + 1 ;
 end
 }
@@ -1413,7 +1437,8 @@ do
 	BLOC^talias := INST^talias;
 	BLOC^machine := INST^machine;
 	BLOC^ni := INST^ni;
-	BLOC^indentation := INST^indentation + 1 ;
+	BLOC^listeNi := INST^listeNi;
+  BLOC^indentation := INST^indentation + 1 ;
 end
 }
 
@@ -1449,7 +1474,8 @@ do
 	E^tfun := INST^tfun;
 	E^talias := INST^talias;
 	E^ni := INST^ni;
-	E^indentation := INST^indentation + 1 ; 
+  E^listeNi := INST^listeNi;
+  E^indentation := INST^indentation + 1 ; 
 end
 }
 
@@ -1510,6 +1536,7 @@ do
 	A^tfun := E^tfun;
 	A^talias := E^talias;
 	A^ni := E^ni;
+  A^listeNi := E^listeNi;
   A^indentation := E^indentation + 1 ;
 end
 }
@@ -1526,7 +1553,8 @@ do
 	AFFX^tfun := E^tfun;
 	AFFX^talias := E^talias;
 	AFFX^ni := E^ni;
-	-- L'affectation est possible si A est une variable.
+  AFFX^listeNi := E^listeNi;
+  -- L'affectation est possible si A est une variable.
 	AFFX^affPossible := A^estVar;
 	-- Le type de cette afectation doit être le même que A.
 	AFFX^typeH := A^type;
@@ -1613,6 +1641,7 @@ do
 	A^tfun := AFFX^tfun;
 	A^talias := AFFX^talias;
 	A^ni := AFFX^ni;
+  A^listeNi := AFFX^listeNi;
   A^indentation := AFFX^indentation + 1 ;
 end
 }
@@ -1678,7 +1707,8 @@ do
 	R^tfun := A^tfun;
 	R^talias := A^talias;
 	R^ni := A^ni;
-  R^indentation := A^indentation + 1 ;
+  R^listeNi := A^listeNi;
+	R^indentation := A^indentation + 1 ;
 end
 }
 
@@ -1691,7 +1721,8 @@ do
 	AX^tfun := A^tfun;
 	AX^talias := A^talias;
 	AX^ni := A^ni;
-  AX^indentation := A^indentation + 1 ;
+  AX^listeNi := A^listeNi;
+	AX^indentation := A^indentation + 1 ;
 end
 }
 
@@ -1786,7 +1817,8 @@ do
 	R^tfun := AX^tfun;
 	R^talias := AX^talias;
 	R^ni := AX^ni;
-  R^indentation := AX^indentation + 1 ; 
+  R^listeNi := AX^listeNi;
+	R^indentation := AX^indentation + 1 ; 
 end
 }
 
@@ -1906,7 +1938,8 @@ do
 	T^tfun := R^tfun;
 	T^tvar := R^tvar;
 	T^ni := R^ni;
-  T^indentation := R^indentation + 1 ; 
+  T^listeNi := R^listeNi;
+	T^indentation := R^indentation + 1 ; 
 end
 }
 
@@ -1921,7 +1954,8 @@ do
 	RX^tfun := R^tfun;
 	RX^tvar := R^tvar;
 	RX^ni := R^ni;
-  RX^indentation := R^indentation + 1 ; 
+  RX^listeNi := R^listeNi;
+	RX^indentation := R^indentation + 1 ; 
 end
 }
 
@@ -2009,7 +2043,8 @@ do
 	T^tfun := RX^tfun;
 	T^tvar := RX^tvar;
 	T^ni := RX^ni;
-  T^indentation := RX^indentation + 1 ; 
+  T^listeNi := RX^listeNi;
+	T^indentation := RX^indentation + 1 ; 
 end
 }
 
@@ -2022,7 +2057,8 @@ do
 	RX1^tfun := RX^tfun;
 	RX1^tvar := RX^tvar;
 	RX1^ni := RX^ni;
-  RX1^indentation := RX^indentation + 1 ; 
+  RX1^listeNi := RX^listeNi;
+	RX1^indentation := RX^indentation + 1 ; 
 end
 }
 
@@ -2138,7 +2174,8 @@ do
 	F^tfun := T^tfun;
 	F^tvar := T^tvar;
 	F^ni := T^ni;
-  F^indentation := T^indentation + 1 ; 
+  F^listeNi := T^listeNi;
+	F^indentation := T^indentation + 1 ; 
 end
 }
 
@@ -2152,7 +2189,8 @@ do
 	TX^tfun := T^tfun;
 	TX^tvar := T^tvar;
 	TX^ni := T^ni;
-  TX^indentation := T^indentation + 1 ; 
+  TX^listeNi := T^listeNi;
+	TX^indentation := T^indentation + 1 ; 
 --write("(53) Code de F :\n" + F^code + "\n");
 end
 }
@@ -2238,7 +2276,8 @@ do
 	F^tfun := TX^tfun;
 	F^tvar := TX^tvar;
 	F^ni := TX^ni;
-  F^indentation := TX^indentation + 1 ; 
+  F^listeNi := TX^listeNi;
+	F^indentation := TX^indentation + 1 ; 
 end
 }
 
@@ -2251,7 +2290,8 @@ do
 	TX1^tfun := TX^tfun;
 	TX1^tvar := TX^tvar;
 	TX1^ni := TX^ni;
-  TX1^indentation := TX^indentation + 1 ; 
+  TX1^listeNi := TX^listeNi;
+	TX1^indentation := TX^indentation + 1 ; 
 end
 }
 
@@ -2505,7 +2545,8 @@ do
 	F1^tfun := F^tfun;
 	F1^tvar := F^tvar;
 	F1^ni := F^ni;
-  F1^indentation := F^indentation + 1; 
+  F1^listeNi := F^listeNi;
+	F1^indentation := F^indentation + 1; 
 end
 }
 
@@ -2607,7 +2648,8 @@ do
 	E^tfun := F^tfun;
 	E^talias := F^talias;
 	E^ni := F^ni;
-  E^indentation := F^indentation + 1 ; 
+  E^listeNi := F^listeNi;
+	E^indentation := F^indentation + 1 ; 
 end
 }
 
@@ -2631,7 +2673,8 @@ do
 	-- On fait passer le type de E à FX pour d'éventuelles verifs.
 	FX^typeH := E^type;
 	FX^ni := F^ni;
-  FX^indentation := F^indentation + 1 ; 
+  FX^listeNi := F^listeNi;
+	FX^indentation := F^indentation + 1 ; 
 end
 }
 
@@ -2710,7 +2753,8 @@ do
 	F1^tfun := F^tfun;
 	F1^tvar := F^tvar;
 	F1^ni := F^ni;
-  F1^indentation := F^indentation + 1 ; 
+  F1^listeNi := F^listeNi;
+	F1^indentation := F^indentation + 1 ; 
 end
 }
 
@@ -2754,7 +2798,8 @@ do
 	F1^tfun := F^tfun;
 	F1^tvar := F^tvar;
 	F1^ni := F^ni;
-  F1^indentation := F^indentation + 1 ; 
+  F1^listeNi := F^listeNi;
+	F1^indentation := F^indentation + 1 ; 
 end
 }
 
@@ -2872,7 +2917,8 @@ do
 	FX^talias := F^talias;
 	FX^machine := F^machine;
 	FX^ni := F^ni;
-  FX^indentation := F^indentation + 1 ; 
+  FX^listeNi := F^listeNi;
+	FX^indentation := F^indentation + 1 ; 
 --write("Regle 71 : au milieu à peu près\n");
 end
 }
@@ -3088,7 +3134,8 @@ do
 	FX1^talias := FX^talias;
 	FX1^machine := FX^machine;
 	FX1^ni := FX^ni;
-  FX1^indentation := FX^indentation + 1 ; 
+  FX1^listeNi := FX^listeNi;
+	FX1^indentation := FX^indentation + 1 ; 
 end
 }
 
@@ -3132,7 +3179,8 @@ do
 	ES^talias := FX^talias;
 	ES^machine := FX^machine;
 	ES^ni := FX^ni;
-  ES^indentation := FX^indentation + 1 ; 
+  ES^listeNi := FX^listeNi;
+	ES^indentation := FX^indentation + 1 ; 
 end
 }
 
@@ -3185,12 +3233,14 @@ do
 	FX1^talias := FX^talias;
 	FX1^machine := FX^machine;
 	FX^reg := reg;
+	FX1^ni := FX^ni;
+	FX1^listeNi := FX^listeNi;
 --write("(75) Code: " + code + "\n");
-	if reg = null then
+--	if reg = null then
 	--write("(75) Reg: NULL\n");
-	else
+--	else
 	--write("(75) Reg: " + reg + "\n");
-	end
+--	end
   FX1^indentation := FX^indentation + 1 ; 
 end
 }
@@ -3239,7 +3289,8 @@ do
 	E^tfun := ES^tfun;
 	E^talias := ES^talias;
 	E^ni := ES^ni;
-  E^indentation := ES^indentation + 1 ; 
+  E^listeNi := ES^listeNi;
+	E^indentation := ES^indentation + 1 ; 
 end
 }
 
@@ -3265,7 +3316,8 @@ do
 	ESX^tfun := ES^tfun;
 	ESX^talias := ES^talias;
 	ESX^ni := ES^ni;
-  ESX^indentation := ES^indentation + 1 ; 
+  ESX^listeNi := ES^listeNi;
+	ESX^indentation := ES^indentation + 1 ; 
 end
 }
 
@@ -3306,7 +3358,8 @@ do
 	E^tfun := ESX^tfun;
 	E^talias := ESX^talias;
 	E^ni := ESX^ni;
-  E^indentation := ESX^indentation + 1 ; 
+  E^listeNi := ESX^listeNi;
+	E^indentation := ESX^indentation + 1 ; 
 end
 }
 
@@ -3331,7 +3384,8 @@ do
 	ESX1^tfun := ESX^tfun;
 	ESX1^talias := ESX^talias;
 	ESX1^ni := ESX^ni;
-  ESX1^indentation := ESX^indentation + 1 ; 
+  ESX1^listeNi := ESX^listeNi;
+	ESX1^indentation := ESX^indentation + 1 ; 
 end
 }
 
@@ -3395,7 +3449,7 @@ end
 }
 
 
-
+-*
 -----------------------------------------------------
 ------------------- CS extension --------------------
 -----------------------------------------------------
@@ -3508,7 +3562,7 @@ IDC -> #attIDC ;
 #attIDC {
 local
 -*  niS : NamespaceInfo;
-	klassHerit : Klass;*- 
+	klassHerit : Klass; -*
 do
 -*	klassHerit := null;
   -- On verifie si on cherche à obtenir une classe ou un namespace
@@ -3533,7 +3587,7 @@ do
 --	  end
 	end
 	IDC^klassHerit := klassHerit;
-	-- On fait directement remonter le ni de IDC.*-
+	-- On fait directement remonter le ni de IDC.-*
 	IDC^klassS := IDC^klass;
 	IDC^niS := IDC^ni;
 end
@@ -4176,6 +4230,6 @@ do
 	F^code := ES^code + F^machine.generateConstructorCall(ci,true);
 end
 }
-
+*-
 
 end
