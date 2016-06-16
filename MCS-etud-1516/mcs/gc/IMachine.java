@@ -378,6 +378,15 @@ public interface IMachine {
     String generateIfThenElse(Register rcond, String cif, String celse) throws MCSException;
 
     /**
+     * Generate the code for a while structure
+     * @param cond code for the  condition
+     * @param rcond register containing the result of the condition calculus
+     * @param bcode code of the bloc
+     * @return the generated code
+     */
+    String generateWhile(String cond, Register rcond, String bcode) throws MCSException;
+
+    /**
      * Generate a comment
      * @param com comment to print
      * @param ident indenting to apply

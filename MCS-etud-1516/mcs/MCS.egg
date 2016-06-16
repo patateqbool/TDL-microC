@@ -1452,7 +1452,7 @@ do
 	match E^type
 	with IntegerType then
 		-- Si c'est le cas, on génère le code
-		code := code ; -- A implémenter coté machine + INST^machine.generateWhile(E^code, BLOC^code);
+    code := INST^machine.generateWhile(E^cond, E^reg, BLOC^code);
 	else
 		-- Sinon, on renvoie une erreur
 		error(TYPE_NOT_EQUAL);
