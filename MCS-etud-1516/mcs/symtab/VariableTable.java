@@ -54,7 +54,7 @@ public class VariableTable implements SymbolTable {
     return res;
   }
 
-  public boolean exists(String name, NamespaceInfo namespace, List<NamespaceInfo> usedns, SymbolInfo si) {
+  public boolean exists(String name, NamespaceInfo namespace, NamespaceInfoList usedns, SymbolInfo si) {
 		System.out.println("Looking for " + name + " in\n" + this.toString());
     
     if (this.content.get(name) != null) {
@@ -66,7 +66,7 @@ public class VariableTable implements SymbolTable {
     return false;
   }
 
-	public boolean exists(String name, NamespaceInfo namespace, List<NamespaceInfo> usedns, boolean local) {
+	public boolean exists(String name, NamespaceInfo namespace, NamespaceInfoList usedns, boolean local) {
 		System.out.println("Looking for " + name + " in\n" + this.toString());
     SymbolInfo si = this.content.get(name);
 
@@ -83,7 +83,7 @@ public class VariableTable implements SymbolTable {
   /**
    * Look up into the table
    */
-  public SymbolInfo lookup(String name, NamespaceInfo ns, List<NamespaceInfo> usedns, boolean local) {
+  public SymbolInfo lookup(String name, NamespaceInfo ns, NamespaceInfoList usedns, boolean local) {
     SymbolInfo si = this.content.get(name);
 
     if (si != null) {
