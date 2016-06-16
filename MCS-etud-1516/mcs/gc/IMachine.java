@@ -277,10 +277,12 @@ public interface IMachine {
     /**
      * Generate the code for declaring a constructor
      * @param info info of the constructor (the register attribute will be set) 
+     * @param base info of the constructor of the parent
+     * @param pcode code for pushing the arguments for calling the base constructor
      * @param code code of the block
      * @return the generated code
      */
-    String generateConstructorDeclaration(ConstructorInfo info, String code) throws MCSException;
+    String generateConstructorDeclaration(ConstructorInfo info, ConstructorInfo base, String pcode, String code) throws MCSException;
 
     /**
      * Generate the code for calling a constructor

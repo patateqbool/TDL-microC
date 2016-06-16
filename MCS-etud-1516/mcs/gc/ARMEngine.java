@@ -843,17 +843,23 @@ public class ARMEngine extends AbstractMachine {
     /**
      * Generate the code for declaring a constructor
      * @param info info of the constructor (the register attribute) 
+     * @param base info of the constructor of the parent
+     * @param pcode code for pushing the arguments for calling the base constructor
      * @param bcode code of the block
      * @return the generated code
      */
-    public String generateConstructorDeclaration(ConstructorInfo info, String bcode) throws MCSException {
+    public String generateConstructorDeclaration(ConstructorInfo info, ConstructorInfo base, String pcode, String bcode) throws MCSException {
         
-        //Register r = getNextUnusedRegister();
+        Register r = getNextUnusedRegister();
 
         String codeinst =
             generateLabel(info.parent().name() + info.label() + "_inst") +
             generateComment("Instanciate the class", ARMEngine.Prefix) +
-            generateInstruction("MOV", info.register(), ht);
+            generateInstruction("MOV", info.register(), ht) +
+            generateComment("Real ID of the object", ARMEngine.Prefix) +
+            generateInstruction("MOV", r, info.parent().classId()) +
+            generateInstruction("STR", true, r, info.register()) +
+            generateComment("Instanciate attributes", ARMEngine.Prefix);
 
         Klass k = info.parent();
         int rs = k.realSize();
@@ -871,10 +877,17 @@ public class ARMEngine extends AbstractMachine {
         codeinst +=
             generateInstruction("PUSH", info.register());
 
-        //info.assignRegister(r);
         info.register().setStatus(Register.Status.Loaded);
 
-        return codeinst + generateFunctionDeclaration(info, bcode);
+        String ecode = bcode;
+
+        if (base != null)
+            ecode =
+                pcode +
+                generateInstruction("BL", base.parent().name() + info.label() + "_inst") +
+                bcode;
+
+        return codeinst + generateFunctionDeclaration(info, ecode);
         
     }
 
