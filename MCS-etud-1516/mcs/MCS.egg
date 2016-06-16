@@ -16,7 +16,7 @@ inh machine : AbstractMachine for
          ENTITES, ENTITE, DECL, FONCTION, INST, BLOC, INSTS, SIX,
          PARFS, PARF, PARFSX, ES, ESX, 
          E, AFFX, A, AX, R, RX, T, TX, F,FX
-       , BASE, DEFS, DEF
+    --   , BASE, DEFS, DEF
          ;
 
 inh indentation : Integer for 
@@ -153,6 +153,13 @@ inh ni : NamespaceInfo for
 				 TX, ES, ESX
 				 ;
 
+inh listeNi : ArrayList<NamespaceInfo> for
+         ENTITE, PARF, INST, F, FX, ENTITES, FONCTION, DECL,
+				 PARFS, PARFSX, INSTS, BLOC, AFFX, E, SIX, A, R, AX, T, RX,
+				 TX, ES, ESX
+				 ;
+
+-*
 inh rechKlass : boolean for
          IDC
 				 ;
@@ -183,7 +190,7 @@ inh acch : Integer for
 inh nomIDC: String for
 				 IDC
 				 ;
-
+*-
 -- ces attributs permettent de recuperer les instructions du code ASM inline       
 syn code_asm : STRING for AASM;
 inh tds_asm : VariableTable for AASM;
@@ -211,7 +218,7 @@ sugar int is  "int";
 sugar char is  "char";
 sugar struct is "struct";
 sugar typedef is "typedef";
-
+-*
 sugar ref is "ref" ;
 sugar out is "out";
 sugar namespace is "namespace";
@@ -227,7 +234,7 @@ sugar this is "this";
 sugar new is "new" ;
 sugar null2 is "null";
 sugar base is "base" ;
- 
+*-
 sugar retour is  "return";
 sugar arrow is "\-\>";
 sugar null is  "NULL";
@@ -274,6 +281,7 @@ do
   ENTITES^talias := new AliasTable();
 	ENTITES^machine := machine;
 	ENTITES^ni := new DefaultNamespaceInfo();
+  ENTITES^listeNi := new ArrayList<NamespaceInfo>();	
 	ENTITES^indentation := 0;
 end
 }
@@ -310,6 +318,7 @@ do
 	ENTITE^talias := ENTITES^talias;
 	ENTITE^ni := ENTITES^ni;
 	ENTITE^indentation := ENTITES^indentation + 1;
+  ENTITE^listeNi := ENTITES^listeNi;
 end
 }
 
@@ -323,6 +332,7 @@ do
 	ENTITES1^talias := ENTITE^taliasS;
 	ENTITES1^machine := ENTITES^machine;
 	ENTITES1^ni := ENTITES^ni;
+	ENTITES1^listeNi := ENTITES^listeNi;
 	ENTITES1^indentation := ENTITES^indentation + 1 ;
 end
 }
@@ -366,7 +376,7 @@ do
   if info != null then
      error(IDENT_TAKEN, identc^txt);
   else
-     info := ENTITE^tfun.lookup(identc^txt, ENTITE^ni, ENTITE^listeNI, true);
+     info := ENTITE^tfun.lookup(identc^txt, ENTITE^ni, ENTITE^listeNi, true);
      -- De même si identc est déjà utilisé dans la TDSfun.
     if info != null then
         error(IDENT_TAKEN, identc^txt);
@@ -422,6 +432,7 @@ do
 	DECL^talias := ENTITE^talias;
 	DECL^machine := ENTITE^machine;
 	DECL^ni := ENTITE^ni;
+  DECL^listeNi := ENTITE^listeNi;
   DECL^indentation := ENTITE^indentation + 1;
 end
 }
@@ -524,6 +535,7 @@ do
 	FONCTION^tfun := DECL^tfun;
 	FONCTION^machine := DECL^machine;
 	FONCTION^ni := DECL^ni;
+	FONCTION^listeNi := DECL^listeNi;
   FONCTION^indentation := DECL^indentation + 1;
 end
 }
@@ -564,6 +576,7 @@ do
   PARFS^cParam := 0;
   PARFS^machine := FONCTION^machine;
 	PARFS^ni := FONCTION^ni;
+	PARFS^listeNi := FONCTION^listeNi;
   PARFS^indentation := FONCTION^indentation + 1;
 --write("Regle (8)\n");
 end
@@ -590,6 +603,7 @@ do
 	BLOC^talias := FONCTION^talias;
 	BLOC^machine := FONCTION^machine;
 	BLOC^ni := FONCTION^ni;
+  BLOC^listeNi := FONCTION^listeNi;
 --write("Regle (8) : milieu\n");
 end
 }
@@ -641,7 +655,8 @@ do
   PARF^talias := PARFS^talias;
 	PARF^machine := PARFS^machine;
 	PARF^ni := PARFS^ni;
-  -- Passage de c à PARFSX aussi.
+  PARF^listeNi := PARFS^listeNi;
+-- Passage de c à PARFSX aussi.
 	PARFSX^cParam := c;
   PARF^indentation := PARFS^indentation + 1;
 end
@@ -659,7 +674,8 @@ do
 	PARFSX^talias := PARFS^talias;
 	PARFSX^machine := PARFS^machine;
 	PARFSX^ni := PARFS^ni;
-	PARFSX^indentation := PARFS^indentation + 1; 
+  PARFSX^listeNi := PARFS^listeNi;
+  PARFSX^indentation := PARFS^indentation + 1; 
 end
 }
 
@@ -701,7 +717,8 @@ do
   PARF^talias := PARFSX^talias;
 	PARF^machine := PARFSX^machine;
 	PARF^ni := PARFSX^ni;
-	PARF^indentation := PARFSX^indentation + 1; 
+  PARF^listeNi := PARFSX^listeNi;
+  PARF^indentation := PARFSX^indentation + 1; 
   -- On passe aussi c à PARFSX1.
   PARFSX1^cParam := c;
 end
@@ -718,7 +735,8 @@ do
 	PARFSX1^talias := PARFSX^talias;
 	PARFSX1^machine := PARFSX^machine;
 	PARFSX1^ni := PARFSX^ni;
-	PARFSX1^indentation := PARFSX^indentation + 1; 
+  PARFSX1^listeNi := PARFSX^listeNi;
+  PARFSX1^indentation := PARFSX^indentation + 1; 
 end
 }
 
@@ -1022,7 +1040,8 @@ do
 	INSTS^machine := BLOC^machine;
   INSTS^funInfoH := BLOC^funInfoH;
 	INSTS^ni := BLOC^ni;
-	INSTS^indentation := BLOC^indentation + 1 ;
+  INSTS^listeNi := BLOC^listeNi;
+  INSTS^indentation := BLOC^indentation + 1 ;
 end
 }
 
@@ -1073,7 +1092,8 @@ do
 	INST^talias := INSTS^talias;
 	INST^machine := INSTS^machine;
 	INST^ni := INSTS^ni;
-	INST^indentation := INSTS^indentation + 1 ;
+  INST^listeNi := INSTS^listeNi;
+  INST^indentation := INSTS^indentation + 1 ;
 end
 }
 
@@ -1088,7 +1108,8 @@ do
 	INSTS1^talias := INSTS^talias;
 	INSTS1^machine := INSTS^machine;
 	INSTS1^ni := INSTS^ni;
-	INSTS1^indentation := INSTS^indentation + 1 ;
+  INSTS1^listeNi := INSTS^listeNi;
+  INSTS1^indentation := INSTS^indentation + 1 ;
 end
 }
 
@@ -1135,7 +1156,8 @@ do
 		-- Le type de cette affectationn doit être celui de TYPE.
 	AFFX^typeH := TYPE^type;
 	AFFX^ni := INST^ni;
-	AFFX^indentation := INST^indentation + 1 ;
+  AFFX^listeNi := INST^listeNi;
+  AFFX^indentation := INST^indentation + 1 ;
 end
 }
 
@@ -1219,7 +1241,8 @@ do
 	E^tfun := INST^tfun;
 	E^talias := INST^talias;
 	E^ni := INST^ni;
-	E^indentation := INST^indentation + 1 ;
+  E^listeNi := INST^listeNi;
+  E^indentation := INST^indentation + 1 ;
 end
 }
 
@@ -1246,7 +1269,8 @@ do
 	BLOC^tvar := tfille;
 	BLOC^funInfoH := INST^funInfoH;
   BLOC^ni := INST^ni;
-	BLOC^indentation := INST^indentation + 1 ;
+  BLOC^listeNi := INST^listeNi;
+  BLOC^indentation := INST^indentation + 1 ;
 end
 }
 
@@ -1272,6 +1296,7 @@ do
 	E^tfun := INST^tfun;
 	E^talias := INST^talias;
 	E^ni := INST^ni;
+	E^listeNi := INST^listeNi;
 	E^indentation := INST^indentation + 1 ;
 end
 }
@@ -1288,7 +1313,8 @@ do
 	BLOC^talias := INST^talias;
 	BLOC^machine := INST^machine;
 	BLOC^ni := INST^ni;
-	BLOC^indentation := INST^indentation + 1 ;
+  BLOC^listeNi := INST^listeNi;
+  BLOC^indentation := INST^indentation + 1 ;
 end
 }
 
@@ -1302,7 +1328,8 @@ do
 	SIX^talias := INST^talias;
 	SIX^machine := INST^machine;
 	SIX^ni := INST^ni;
-	SIX^indentation := INST^indentation + 1 ;
+  SIX^listeNi := INST^listeNi;
+  SIX^indentation := INST^indentation + 1 ;
 end
 }
 
@@ -1362,7 +1389,8 @@ do
 	BLOC^talias := SIX^talias;
 	BLOC^machine := SIX^machine;
 	BLOC^ni := SIX^ni;
-	BLOC^indentation := SIX^indentation + 1 ; 
+  BLOC^listeNi := SIX^listeNi;
+  BLOC^indentation := SIX^indentation + 1 ; 
 end
 }
 
@@ -1398,6 +1426,7 @@ do
 	E^tfun := INST^tfun;
 	E^talias := INST^talias;
 	E^ni := INST^ni;
+	E^listeNi := INST^listeNi;
 	E^indentation := INST^indentation + 1 ;
 end
 }
@@ -1414,7 +1443,8 @@ do
 	BLOC^talias := INST^talias;
 	BLOC^machine := INST^machine;
 	BLOC^ni := INST^ni;
-	BLOC^indentation := INST^indentation + 1 ;
+	BLOC^listeNi := INST^listeNi;
+  BLOC^indentation := INST^indentation + 1 ;
 end
 }
 
@@ -1428,7 +1458,7 @@ do
 	match E^type
 	with IntegerType then
 		-- Si c'est le cas, on génère le code
-    code := INST^machine.generateWhile(E^cond, E^reg, BLOC^code);
+    code := INST^machine.generateWhile(E^code, E^reg, BLOC^code);
 	else
 		-- Sinon, on renvoie une erreur
 		error(TYPE_NOT_EQUAL);
@@ -1450,7 +1480,8 @@ do
 	E^tfun := INST^tfun;
 	E^talias := INST^talias;
 	E^ni := INST^ni;
-	E^indentation := INST^indentation + 1 ; 
+  E^listeNi := INST^listeNi;
+  E^indentation := INST^indentation + 1 ; 
 end
 }
 
@@ -1511,6 +1542,7 @@ do
 	A^tfun := E^tfun;
 	A^talias := E^talias;
 	A^ni := E^ni;
+  A^listeNi := E^listeNi;
   A^indentation := E^indentation + 1 ;
 end
 }
@@ -1527,7 +1559,8 @@ do
 	AFFX^tfun := E^tfun;
 	AFFX^talias := E^talias;
 	AFFX^ni := E^ni;
-	-- L'affectation est possible si A est une variable.
+  AFFX^listeNi := E^listeNi;
+  -- L'affectation est possible si A est une variable.
 	AFFX^affPossible := A^estVar;
 	-- Le type de cette afectation doit être le même que A.
 	AFFX^typeH := A^type;
@@ -1614,6 +1647,7 @@ do
 	A^tfun := AFFX^tfun;
 	A^talias := AFFX^talias;
 	A^ni := AFFX^ni;
+  A^listeNi := AFFX^listeNi;
   A^indentation := AFFX^indentation + 1 ;
 end
 }
@@ -1679,7 +1713,8 @@ do
 	R^tfun := A^tfun;
 	R^talias := A^talias;
 	R^ni := A^ni;
-  R^indentation := A^indentation + 1 ;
+  R^listeNi := A^listeNi;
+	R^indentation := A^indentation + 1 ;
 end
 }
 
@@ -1692,7 +1727,8 @@ do
 	AX^tfun := A^tfun;
 	AX^talias := A^talias;
 	AX^ni := A^ni;
-  AX^indentation := A^indentation + 1 ;
+  AX^listeNi := A^listeNi;
+	AX^indentation := A^indentation + 1 ;
 end
 }
 
@@ -1787,7 +1823,8 @@ do
 	R^tfun := AX^tfun;
 	R^talias := AX^talias;
 	R^ni := AX^ni;
-  R^indentation := AX^indentation + 1 ; 
+  R^listeNi := AX^listeNi;
+	R^indentation := AX^indentation + 1 ; 
 end
 }
 
@@ -1907,7 +1944,8 @@ do
 	T^tfun := R^tfun;
 	T^tvar := R^tvar;
 	T^ni := R^ni;
-  T^indentation := R^indentation + 1 ; 
+  T^listeNi := R^listeNi;
+	T^indentation := R^indentation + 1 ; 
 end
 }
 
@@ -1922,7 +1960,8 @@ do
 	RX^tfun := R^tfun;
 	RX^tvar := R^tvar;
 	RX^ni := R^ni;
-  RX^indentation := R^indentation + 1 ; 
+  RX^listeNi := R^listeNi;
+	RX^indentation := R^indentation + 1 ; 
 end
 }
 
@@ -2010,7 +2049,8 @@ do
 	T^tfun := RX^tfun;
 	T^tvar := RX^tvar;
 	T^ni := RX^ni;
-  T^indentation := RX^indentation + 1 ; 
+  T^listeNi := RX^listeNi;
+	T^indentation := RX^indentation + 1 ; 
 end
 }
 
@@ -2023,7 +2063,8 @@ do
 	RX1^tfun := RX^tfun;
 	RX1^tvar := RX^tvar;
 	RX1^ni := RX^ni;
-  RX1^indentation := RX^indentation + 1 ; 
+  RX1^listeNi := RX^listeNi;
+	RX1^indentation := RX^indentation + 1 ; 
 end
 }
 
@@ -2139,7 +2180,8 @@ do
 	F^tfun := T^tfun;
 	F^tvar := T^tvar;
 	F^ni := T^ni;
-  F^indentation := T^indentation + 1 ; 
+  F^listeNi := T^listeNi;
+	F^indentation := T^indentation + 1 ; 
 end
 }
 
@@ -2153,7 +2195,8 @@ do
 	TX^tfun := T^tfun;
 	TX^tvar := T^tvar;
 	TX^ni := T^ni;
-  TX^indentation := T^indentation + 1 ; 
+  TX^listeNi := T^listeNi;
+	TX^indentation := T^indentation + 1 ; 
 --write("(53) Code de F :\n" + F^code + "\n");
 end
 }
@@ -2239,7 +2282,8 @@ do
 	F^tfun := TX^tfun;
 	F^tvar := TX^tvar;
 	F^ni := TX^ni;
-  F^indentation := TX^indentation + 1 ; 
+  F^listeNi := TX^listeNi;
+	F^indentation := TX^indentation + 1 ; 
 end
 }
 
@@ -2252,7 +2296,8 @@ do
 	TX1^tfun := TX^tfun;
 	TX1^tvar := TX^tvar;
 	TX1^ni := TX^ni;
-  TX1^indentation := TX^indentation + 1 ; 
+  TX1^listeNi := TX^listeNi;
+	TX1^indentation := TX^indentation + 1 ; 
 end
 }
 
@@ -2506,7 +2551,8 @@ do
 	F1^tfun := F^tfun;
 	F1^tvar := F^tvar;
 	F1^ni := F^ni;
-  F1^indentation := F^indentation + 1; 
+  F1^listeNi := F^listeNi;
+	F1^indentation := F^indentation + 1; 
 end
 }
 
@@ -2608,7 +2654,8 @@ do
 	E^tfun := F^tfun;
 	E^talias := F^talias;
 	E^ni := F^ni;
-  E^indentation := F^indentation + 1 ; 
+  E^listeNi := F^listeNi;
+	E^indentation := F^indentation + 1 ; 
 end
 }
 
@@ -2632,7 +2679,8 @@ do
 	-- On fait passer le type de E à FX pour d'éventuelles verifs.
 	FX^typeH := E^type;
 	FX^ni := F^ni;
-  FX^indentation := F^indentation + 1 ; 
+  FX^listeNi := F^listeNi;
+	FX^indentation := F^indentation + 1 ; 
 end
 }
 
@@ -2711,7 +2759,8 @@ do
 	F1^tfun := F^tfun;
 	F1^tvar := F^tvar;
 	F1^ni := F^ni;
-  F1^indentation := F^indentation + 1 ; 
+  F1^listeNi := F^listeNi;
+	F1^indentation := F^indentation + 1 ; 
 end
 }
 
@@ -2755,7 +2804,8 @@ do
 	F1^tfun := F^tfun;
 	F1^tvar := F^tvar;
 	F1^ni := F^ni;
-  F1^indentation := F^indentation + 1 ; 
+  F1^listeNi := F^listeNi;
+	F1^indentation := F^indentation + 1 ; 
 end
 }
 
@@ -2873,7 +2923,8 @@ do
 	FX^talias := F^talias;
 	FX^machine := F^machine;
 	FX^ni := F^ni;
-  FX^indentation := F^indentation + 1 ; 
+  FX^listeNi := F^listeNi;
+	FX^indentation := F^indentation + 1 ; 
 --write("Regle 71 : au milieu à peu près\n");
 end
 }
@@ -3089,7 +3140,8 @@ do
 	FX1^talias := FX^talias;
 	FX1^machine := FX^machine;
 	FX1^ni := FX^ni;
-  FX1^indentation := FX^indentation + 1 ; 
+  FX1^listeNi := FX^listeNi;
+	FX1^indentation := FX^indentation + 1 ; 
 end
 }
 
@@ -3133,7 +3185,8 @@ do
 	ES^talias := FX^talias;
 	ES^machine := FX^machine;
 	ES^ni := FX^ni;
-  ES^indentation := FX^indentation + 1 ; 
+  ES^listeNi := FX^listeNi;
+	ES^indentation := FX^indentation + 1 ; 
 end
 }
 
@@ -3186,12 +3239,14 @@ do
 	FX1^talias := FX^talias;
 	FX1^machine := FX^machine;
 	FX^reg := reg;
+	FX1^ni := FX^ni;
+	FX1^listeNi := FX^listeNi;
 --write("(75) Code: " + code + "\n");
-	if reg = null then
+--	if reg = null then
 	--write("(75) Reg: NULL\n");
-	else
+--	else
 	--write("(75) Reg: " + reg + "\n");
-	end
+--	end
   FX1^indentation := FX^indentation + 1 ; 
 end
 }
@@ -3240,7 +3295,8 @@ do
 	E^tfun := ES^tfun;
 	E^talias := ES^talias;
 	E^ni := ES^ni;
-  E^indentation := ES^indentation + 1 ; 
+  E^listeNi := ES^listeNi;
+	E^indentation := ES^indentation + 1 ; 
 end
 }
 
@@ -3266,7 +3322,8 @@ do
 	ESX^tfun := ES^tfun;
 	ESX^talias := ES^talias;
 	ESX^ni := ES^ni;
-  ESX^indentation := ES^indentation + 1 ; 
+  ESX^listeNi := ES^listeNi;
+	ESX^indentation := ES^indentation + 1 ; 
 end
 }
 
@@ -3307,7 +3364,8 @@ do
 	E^tfun := ESX^tfun;
 	E^talias := ESX^talias;
 	E^ni := ESX^ni;
-  E^indentation := ESX^indentation + 1 ; 
+  E^listeNi := ESX^listeNi;
+	E^indentation := ESX^indentation + 1 ; 
 end
 }
 
@@ -3332,7 +3390,8 @@ do
 	ESX1^tfun := ESX^tfun;
 	ESX1^talias := ESX^talias;
 	ESX1^ni := ESX^ni;
-  ESX1^indentation := ESX^indentation + 1 ; 
+  ESX1^listeNi := ESX^listeNi;
+	ESX1^indentation := ESX^indentation + 1 ; 
 end
 }
 
@@ -3398,787 +3457,786 @@ end
 }
 
 
-
 -----------------------------------------------------
 ------------------- CS extension --------------------
 -----------------------------------------------------
-
--- (82)
-TYPE -> bool #attTYPE ;
-
-#attTYPE {
-local
-do
-  TYPE^type := new BooleanType();
-end
-}
-
--- (83) Definit un contenu d'un namespace
-ENTITE -> namespace identc #attENTITES aco ENTITES acf #attENTITE;
-
--- Ajout de identc à la table des namespaces.
--- Vérifie que identc n'est pas déjà utilisé (par une classe ou un namespace).
--- TODO : ou un alias ?
-#ajout {
-local
--- TODO: vérifier tout ca quand Namespace & co seront finis
-	tns : NamespaceTable;
-do
-  tns := ENTITE^tns;
-  -- Si identc est une clef dans la TDSKlass, erreur.
-  if (ENTITE^tklass.lookup(identc^txt, ENTITE^ni) != null) then
-     error(IDENT_TAKEN, identc^txt);
-  else
-  -- Si identc est une clef dans la TDSNamespace, erreur.	
-    if (tns.lookup(identc^txt, ENTITE^ni) != null) then
-      error(IDENT_TAKEN, identc^txt);
-    else
-     -- Sinon, on peut ajouter le nouveau namespace à la TDS.
-			tns.insert(identc^txt, ENTITE^ni);
-    end
-  end  
-	ENTITES^machine := ENTITE^machine;
-	ENTITES^tvar : =ENTITE^tvar;
-	ENTITES^tfun := ENTITE^tfun;
-	ENTITES^talias := ENTITE^talias;
-  ENTITES^tns := ENTITE^tns;
-	ENTITES^tklass := ENTITE^tklass;
-	--ENTITE^tnsS := tns;
-	--TODO: Faire remonter les tns avec des tnsS au sein du prog µC
-end
-}
-
--- Attributs syn de ENTITE.
-#attENTITE {
-local
-do
-  -- Pas de code à ajouter dans cette RP, 
-	-- on fait tout de même remonter le code des ENTITES du namespace.
-  ENTITE^code := ENTITES^code;
-  ENTITE^tvarS := ENTITE^tvar;
-	ENTITE^tfunS := ENTITE^tfun;
-	ENTITE^taliasS := ENTITE^talias;
-end
-}
-
-
--- (84) Donne l'acces au contenu du 'namespace'.
--- Le chemin du ns doit être donné depuis "la racine".
-ENTITE -> using identc #attIDC IDC #attENTITE pv ;
-
--- Attributs inh de IDC.
-#attIDC {
-local 
-  ni : NamespaceInfo;
-do
-  -- Comme l'adresse du namesapce doit être donnée depuis la racine,
-	-- on effectue la première recherche en mettant le dns comme parent.
-	ni := ENTITE^tns.lookup(identc^txt, new DefaultNamespaceInfo());
-	if (ni = null) then 
-		error(NOT_A_NS);
-	end
-	-- Passage des attributs à IDC pour continuer la recherche à partir du ni.
-	IDC^machine := ENTITE^machine;
-  IDC^tns := ENTITE^tns;
-  IDC^tklass := ENTITE^tklass;
-  -- On ne cherche pas une classe.
---  IDC^rechKlass := false;
-	-- TODO : utile ?
---	IDC^nomIDC := identc^txt;
-	-- Le ni qui sera utilisé comme parent de la prochaine recherche.
-	IDC^ni := ni;
-end
-}
-
--- Attributs syn de ENTITE.
-#attENTITE {
-local 
-do
-  -- On ajoute à la liste des ns utilisés ici celui renvoyé par IDC.
-	if (IDC^niS = null) then
-	  error(PATH_NOT_NS);
-	end
-	ENTITE^listeNi.add(IDC^niS);
-end
-}
-
-
--- (85)
-IDC -> #attIDC ;
-
--- Attributs syn de IDC.
--- On vérifie qu'on a obtenu ce qu'on cherchait.
-#attIDC {
-local
--*  niS : NamespaceInfo;
-	klassHerit : Klass;*- 
-do
--*	klassHerit := null;
-  -- On verifie si on cherche à obtenir une classe ou un namespace
-	if (IDC^rechKlass) then
-	  -- TODO
-		-- On cherche si on a bien obtenu une classe
-	  if (IDC^tklass.exists(IDC^nomIDC, IDC^ni)) then
-	    -- Si c'est le cas, on la renvoie
-		  klassHerit := IDC^tklass.lookup(IDC^nomIDC, IDC^ni);
-		else
-		  -- Sinon, on renvoie une erreur
-		  error(IDENT_UNDEFINED, IDC^nomIDC);
-	  end
---	else
---	  -- On cherche si on a bien obtenu un namespace
---	  if (IDC^tns.exists(IDC^nomIDC, IDC^ni)) then
+--
+---- (82)
+--TYPE -> bool #attTYPE ;
+--
+--#attTYPE {
+--local
+--do
+--  TYPE^type := new BooleanType();
+--end
+--}
+--
+---- (83) Definit un contenu d'un namespace
+--ENTITE -> namespace identc #attENTITES aco ENTITES acf #attENTITE;
+--
+---- Ajout de identc à la table des namespaces.
+---- Vérifie que identc n'est pas déjà utilisé (par une classe ou un namespace).
+---- TODO : ou un alias ?
+--#ajout {
+--local
+---- TODO: vérifier tout ca quand Namespace & co seront finis
+--	tns : NamespaceTable;
+--do
+--  tns := ENTITE^tns;
+--  -- Si identc est une clef dans la TDSKlass, erreur.
+--  if (ENTITE^tklass.lookup(identc^txt, ENTITE^ni) != null) then
+--     error(IDENT_TAKEN, identc^txt);
+--  else
+--  -- Si identc est une clef dans la TDSNamespace, erreur.	
+--    if (tns.lookup(identc^txt, ENTITE^ni) != null) then
+--      error(IDENT_TAKEN, identc^txt);
+--    else
+--     -- Sinon, on peut ajouter le nouveau namespace à la TDS.
+--			tns.insert(identc^txt, ENTITE^ni);
+--    end
+--  end  
+--	ENTITES^machine := ENTITE^machine;
+--	ENTITES^tvar : =ENTITE^tvar;
+--	ENTITES^tfun := ENTITE^tfun;
+--	ENTITES^talias := ENTITE^talias;
+--  ENTITES^tns := ENTITE^tns;
+--	ENTITES^tklass := ENTITE^tklass;
+--	--ENTITE^tnsS := tns;
+--	--TODO: Faire remonter les tns avec des tnsS au sein du prog µC
+--end
+--}
+--
+---- Attributs syn de ENTITE.
+--#attENTITE {
+--local
+--do
+--  -- Pas de code à ajouter dans cette RP, 
+--	-- on fait tout de même remonter le code des ENTITES du namespace.
+--  ENTITE^code := ENTITES^code;
+--  ENTITE^tvarS := ENTITE^tvar;
+--	ENTITE^tfunS := ENTITE^tfun;
+--	ENTITE^taliasS := ENTITE^talias;
+--end
+--}
+--
+--
+---- (84) Donne l'acces au contenu du 'namespace'.
+---- Le chemin du ns doit être donné depuis "la racine".
+--ENTITE -> using identc #attIDC IDC #attENTITE pv ;
+--
+---- Attributs inh de IDC.
+--#attIDC {
+--local 
+--  ni : NamespaceInfo;
+--do
+--  -- Comme l'adresse du namesapce doit être donnée depuis la racine,
+--	-- on effectue la première recherche en mettant le dns comme parent.
+--	ni := ENTITE^tns.lookup(identc^txt, new DefaultNamespaceInfo());
+--	if (ni = null) then 
+--		error(NOT_A_NS);
+--	end
+--	-- Passage des attributs à IDC pour continuer la recherche à partir du ni.
+--	IDC^machine := ENTITE^machine;
+--  IDC^tns := ENTITE^tns;
+--  IDC^tklass := ENTITE^tklass;
+--  -- On ne cherche pas une classe.
+----  IDC^rechKlass := false;
+--	-- TODO : utile ?
+----	IDC^nomIDC := identc^txt;
+--	-- Le ni qui sera utilisé comme parent de la prochaine recherche.
+--	IDC^ni := ni;
+--end
+--}
+--
+---- Attributs syn de ENTITE.
+--#attENTITE {
+--local 
+--do
+--  -- On ajoute à la liste des ns utilisés ici celui renvoyé par IDC.
+--	if (IDC^niS = null) then
+--	  error(PATH_NOT_NS);
+--	end
+--	ENTITE^listeNi.add(IDC^niS);
+--end
+--}
+--
+--
+---- (85)
+--IDC -> #attIDC ;
+--
+---- Attributs syn de IDC.
+---- On vérifie qu'on a obtenu ce qu'on cherchait.
+--#attIDC {
+--local
+--  niS : NamespaceInfo;
+--	klassHerit : Klass; 
+--do
+--	klassHerit := null;
+--  -- On verifie si on cherche à obtenir une classe ou un namespace
+--	if (IDC^rechKlass) then
+--	  -- TODO
+--		-- On cherche si on a bien obtenu une classe
+--	  if (IDC^tklass.exists(IDC^nomIDC, IDC^ni)) then
 --	    -- Si c'est le cas, on la renvoie
---		  niS := IDC^tns.lookup(IDC^nomIDC, IDC^ni);
+--		  klassHerit := IDC^tklass.lookup(IDC^nomIDC, IDC^ni);
 --		else
 --		  -- Sinon, on renvoie une erreur
 --		  error(IDENT_UNDEFINED, IDC^nomIDC);
 --	  end
-	end
-	IDC^klassHerit := klassHerit;
-	-- On fait directement remonter le ni de IDC.*-
-	IDC^klassS := IDC^klass;
-	IDC^niS := IDC^ni;
-end
-}
-
--- (86)
-IDC -> pt identc #attIDC1 IDC #attIDC ;
-
--- Attributs inh de IDC1.
-#attIDC1 {
-local
-  ni : NamespaceInfo;
-	k : Klass;
-do
-  ni := null;
-	k := null;
-  -- On cherche si on a bien obtenu un namespace précédemment
-	-- Comme on n'a pas de classe interne, on doit avoir ni.ni.ni.X
- 	if (IDC^ni = null) then
-	  -- Si le ni de IDC est null, on a eu le chemin d'une classe à l'étape d'avant : erreur.
-		error(INVALID_PATH);
-	else
-	  -- On recherche l'existence d'identc, d'abord dans les ns, 
-		-- en précisant le ns précédent en parent.
-		ni := IDC^tns.lookup(ident^txt, IDC^ni);
-  	if (ni = null)) then
-			-- On cherche si ce n'est pas une classe, avec le même ns en parent.
-			k := IDC^tklass.lookup(ident^txt, IDC^ni);
-			if (k = null) then
-			  error(INVALID_PATH);
-			end
-		else
-		  error(INVALID_PATH);
-		end
-	end
---	IDC1^rechKlass := IDC^rechKlass;
-	IDC1^machine := IDC^machine;
-  IDC1^tns := IDC^tns;
-  IDC1^tklass := IDC^tklass;
---  IDC1^nomIDC := identc^txt;
-	IDC1^ni := ni;
-	IDC1^klass := k;
-end
-}
-
--- Attributs syn de IDC.
-#attIDC {
-local 
-do
-  -- On propage ce qu'il y a à propager
-	if IDC^rechKlass then
-		IDC^klassHerit := IDC1^klassHerit;
-	else
-		IDC^niS := IDC1^niS;
-	end
-end
-}
-
--- (87) definition d'une classe (peut etre en dehors d'un namespace)
-
-ENTITE -> ACCES class identc #verif HERITAGE #ajout aco DEFS acf ;
-
--- Vérifie que identc n'est pas déjà utilisé (par une classe ou un namespace).
-#verif {
-local
--- TODO: vérifier tout ca quand KlassTable & co seront finis
-do
-  -- Si identc est une clef dans la TDSKlass, erreur.
-  if tklass.lookup(identc^txt, ENTITE^ni) != null then
-     error(IDENT_TAKEN, identc^txt);
-  else
-    if ENTITE^tns.lookup(identc^txt, ENTITE^ni) != null then
-      error(IDENT_TAKEN, identc^txt);
-    else
-		  -- Pas de code pour cette RP.	
-		  ENTITE^code := "";
-			HERITAGE^machine := ENTITE^machine;
- 		  HERITAGE^tns := ENTITE^tns;
-			HERITAGE^tklass := ENTITE^tklass;
-			HERITAGE^ni := ENTITE^ni;
-    end
-  end  
-end
-}
-
-#ajout {
-local
-	tk : KlassTable;
-	kl : Klass;
-do
-  tk := ENTITE^tklass;
-	kl := new Klass(ACCES^acc,identc^txt,HERITAGE^klassHerit,ENTITE^ni);
-	tk.insert(kl);
-  -- On peut enfin ajouter la nouvelle classe à la TDS, maintenant qu'on a la classe héritée.
-	--TODO: Faire remonter les tklass avec des tklassS au sein du prog µC	
-	ENTITE^tklassS = tk; 
-	DEFS^machine := ENTITE^machine;
-	DEFS^klass := kl;
-	DEFS^ni := ENTITE^ni;
-end
-}
-
-
--- (88) : Acces 
-ACCES -> #acc public;
-
-#acc {
-local
-do
-  ACCES^acc := 1;
-end
-}
-
--- (89)
-ACCES -> #acc private;
-
-#acc {
-local
-do
-  ACCES^acc := 2;
-end
-}
-
--- (90)
-ACCES -> #acc;
-
-#acc {
-local
-do
-  ACCES^acc := 3;
-end
-}
-
--- (91) heritage
-
-HERITAGE -> #heritNull;
-
-#heritNull{
-local 
-do
-  -- Aucun héritage
-	HERITAGE^klassHerit := null;
-end
-}
-
--- (92)
-HERITAGE -> dpts identc #passIdentc IDC #herit;
-
-#passIdentc{
-local 
-do
-  -- On commence la recherche de la classe dont on hérite
-  -- TODO: vérif quand la partie arm est clean
-	if (HERITAGE^tklass.exists(identc^txt, HERITAGE^ni) or HERITAGE^tns.exists(identc^txt, HERITAGE^ni)) then 
-		-- S'il est possible de continuer (i.e. identc ou namespace ou classe) on le fait dans IDC
-	  IDC^rechKlass := true;
-	  IDC^machine := HERITAGE^machine;
-    IDC^tns := HERITAGE^tns;
-  	IDC^tklass := HERITAGE^tklass;
-		IDC^nomIDC := identc^txt;
-		IDC^ni := HERITAGE^ni;
-	else
-		error(IDENT_UNDEFINED, identc^txt);
-	end
-end
-}
-
-#herit{
-local 
-do
-	-- On renvoie la classe dont on hérite
-	HERITAGE^classHerit := IDC^classHerit;
-end
-}
--- membres d'une classe
-
--- (93)
-DEFS -> ;
-
--- (94)
-DEFS ->  ACCES #passdef DEF #passdefs DEFS ;
-
-#passdef {
-local
-do
-	DEF^machine := DEFS^machine;
-	DEF^kl :=DEFS^kl;
-	DEF^ni := DEFS^ni;
-	DEF^accH := ACCES^acc;
-end
-}
-#passdefs {
-local
-do
-	DEFS1^machine := DEFS^machine;
-	DEFS1^kl :=DEFS^kl;
-	DEFS1^ni := DEFS^ni;
-end
-}
-
--- (95)
-DEF  ->  TYPE ident #verifIdent DECL #addenKlass ;
-
-#verifIdent {
-local
-do
-	if (DEF^kl.name() = ident^txt) then
-		error(DEFINITION_SAME_NAME_CLASS,ident^txt);
-	end if;
-end
-}
-
-#addenKlass {
-local
-	fi : FunctionInfo
-do
-	if (DEF^funInfo = null) then
-		if (DEF^kl.attributeExists(ident^txt)) then
-		  error(ALREADY_ATTRIBUTE,ident^txt,DEF^kl.name());			
-		else
-		  DEF^kl.addAttribute(DEF^name,DEF^accH,TYPE^type);
-		end if;
-	else
-		fi := DECL^funInfo;
-		match fi
-		with MethodInfo then
-			if (DEF^kl.attributeExists(ident^txt,fi)) then
-		  	error(ALREADY_METHOD,ident^txt,DEF^kl.name());			
-			else
-		 		DEF^kl.addMethod(DEF^name,DEF^accH,DEF^funInfo);		
-			  DEF^code := DEF^machine.generateMethodDeclaration(fi,DECL^code);			
-			end if;
-		else
-			error(NOT_A_METHOD);
-		end
-	end if
-end
-}
-
-
--- (96) constructeur
-
-DEF  ->  identc #verifIdentc #attPARFS paro PARFS parf #attBASE BASE #attBLOC BLOC #attDEF ;
-
-global
-	tvparams : VariableTable;
-
-#verifIdentc {
-local
-do
-	if (DEF^kl.name() != identc^txt) then
-		error(CONSTR_NOT_NAME_CLASS,ident^txt,DEF^kl.name());
-	end if;
-end
-}
-
--- Init des attributs hérités pour PARFS.
-#attPARFS {
-local
-do
-	tvparams := new VariableTable();
-  -- On crée une TDSvar vide pour la passer à PARFS.
-  PARFS^tvar := tvparams;
-  PARFS^tfun := new FunctionTable();
-	PARFS^talias := new AliasTable();
-	-- Creation de la FunctionInfo avec le type retour.
-  PARFS^funInfoH := new FunctionInfo(identc^txt, DEF^kl.name(), DEF^ni, DEF^machine.functionReturn());
-  -- Initialisation du compteur de parametres.
-  PARFS^cParam := 0;
-  PARFS^machine := DEF^machine;
-	PARFS^ni := DEF^ni;
-  PARFS^indentation := DEF^indentation + 1;	
-end
-}
-
--- Init des attributs hérités pour PARFS.
-#attBASE {
-local
-do
-  BASE^machine := DEF^machine;
-	BASE^ni := DEF^ni;
-	BASE^kl := DEF^kl;
-	BASE^indentation := DEF^indentation;
-end
-}
-
--- Ajout de la FunctionInfo à la tfun de BLOC.
--- Passage de la FunctionInfo à BLOC.
-#attBLOC {
-local
-  tf : FunctionTable;
-  fi : FunctionInfo;
-do
-  tf := PARFS^tfun;
-  fi := PARFS^funInfo;
- 	BLOC^tfun := tf;
-  BLOC^indentation := DEF^indentation + 1;	
-	BLOC^funInfoH := fi;
-  BLOC^tvar := new VariableTable(tvparams);
-	BLOC^talias := PARFS^talias;
-	BLOC^machine := PARFS^machine;
-	BLOC^ni := PARFS^ni;
-end
-}
-
--- Génération du constructeur + GC
-#attDEF {
-local
-	fi : FunctionInfo
-do
-	fi := DECL^funInfo;
-	match fi
-	with ConstructorInfo then
-		DEF^kl.addConstructor(fi);
-	  DEF^code := DEF^machine.generateFunctionDeclaration(fi , BASE^code+BLOC^code);			
-	else
-			error(NOT_A_CONSTR);
-	end
-	--TODO: evaluer la nécessité de ce truc
-	DEF^funInfo := PARFS^funInfo;
-end
-}
-
--- appel eventuel au constructeur de la classe parente.
-
--- (97)
-BASE -> #codeVide ;
-
-#codeVide {
-local
-do
-	BASE^code := "";
-end
-}
-
--- (98)
-BASE -> dpts base #attES paro ES parf #validGC ;
-
--- Attributs inh de ES.
--- Verification que l'appelant est une fonction.
-#attES {
-local
-do
-  if (BASE^kl = null) then
-	  error(NO_PARENT_CLASS,BASE^kl.name());
-	end if;
-  ES^typesParams := new ArrayList<Type>();
-  ES^codeH := "";
-	ES^tvar := new VariableTable();
-	ES^tfun := new FunctionTable();
-	ES^talias := new AliasTable();
-	ES^machine := BASE^machine;
-	ES^ni := BASE^ni;
-  ES^indentation := BASE^indentation + 1 ; 
-end
-}
-
--- Verification qu'il existe bien un constructeur parent avec cette signature.
-#validGC {
-local
-	ci : ConstructorInfo;
-do
-  ci := BASE^parent().lookupConstructor(ES^typesParamsS);
-	if (ci = null) then
-	  error(NO_CONSTR_WITH_SUCH_PARS, BASE^kl.name());
-	end
-	BASE^code := ES^code + FX^machine.generateConstructorCall(ci,true);
-end
-}
-
--- (99) Mode de passage pour les fonctions et méthodes : rien : D, ref : D/R, out : R
-
-PARF ->  MODE TYPE ident ;
-
--- (100)
-MODE -> ref ;
-
--- (101)
-MODE -> out ; 
-
--- (102)
-F -> true #typeEtGenCode #estVarEtVi ;
-
--- Set de l'attribut de type de F pour indiquer qu'il s'agit d'un booléen.
--- Génération du code pour load la valeur du booléen dans la mémoire.
-
-#typeEtGenCode {
-local
-  t : BooleanType;
-  r : Register;
-do
-  -- Creation du type et du registre.
-  t := new BooleanType();
-  r := new Register();
-	-- Set de l'attribut type.
-	F^type := t;
-	-- Génération du code, et set de l'attribut le contenant.
-  F^code := F^machine.generateLoadConstant(new ConstantInfo(t, true), r); 
-	-- Set de l'attribut registre de F, c'est le registre contenant l'entier.
-	F^reg := r;
-end
-}
-
--- Une expression de base ne peut representer une variable.
--- Donc pas de vi.
-
-#estVarEtVi {
-local
-do
-  F^estVar := false;
-	F^vi := null;
-end
-}
-
--- (103)
-F -> false #typeEtGenCode #estVarEtVi ;
-
--- Set de l'attribut de type de F pour indiquer qu'il s'agit d'un booléen.
--- Génération du code pour load la valeur du booléen dans la mémoire.
-
-#typeEtGenCode {
-local
-  t : BooleanType;
-  r : Register;
-do
-  -- Creation du type et du registre.
-  t := new BooleanType();
-  r := new Register();
-	-- Set de l'attribut type.
-	F^type := t;
-	-- Génération du code, et set de l'attribut le contenant.
-  F^code := F^machine.generateLoadConstant(new ConstantInfo(t, false), r); 
-	-- Set de l'attribut registre de F, c'est le registre contenant l'entier.
-	F^reg := r;
-end
-}
-
--- Une expression de base ne peut representer une variable.
--- Donc pas de vi.
-
-#estVarEtVi {
-local
-do
-  F^estVar := false;
-	F^vi := null;
-end
-}
-
--- (104)
-F -> this #attFX FX #attF ;
-
---TODO: faire descendre l'attribut kl jusqu'à F
-
--- Attributs inh de FX.
-#attFX {
-local
-  listeDepl : DisplacementList ;
-	type : Type;
-  info : SymbolInfo; 
-do
-  if (F^kl = null) then
-	  error(NOT_IN_A_CLASS);
-	end
---Initialisations.
-  listeDepl := new DisplacementList();
-	type := null;
-	info := null;
-	listeDepl.add(0, false);
-	FX^listeDepl := listeDepl;
-	FX^estFun := false;
-	--TODO: Ajouter estKlass partout
-	FX^estKlass := true;
-	FX^typeH := type;
-	FX^nom := F^kl;name();
-	FX^tvar := F^tvar;
-	FX^tfun := F^tfun;
-	FX^talias := F^talias;
-	FX^machine := F^machine;
-	FX^ni := F^ni;
-  FX^indentation := F^indentation + 1 ; 
-end
-}
-
--- Attributs syn de F.
-#attF {
-local
-  listeDepl : DisplacementList; 
-  reg : Register;
-	code : String;
-do
-  listeDepl := FX^listeDeplS;
-  reg := new Register();
-	code := FX^code; 
-	if ((listeDepl.size() != 0 )&&(listeDepl.size() != 1)) then --> 1) then
-    -- Des déplacements ont été ajoutés à la liste en plus de celui de base : on a accédé à des champs!
-	  -- Le registre contient l'adresse de la variable accédée par FX.
-    code := code
-		      + F^machine.generateComment("(71) Make address:", "\t\t") 
-		      + F^machine.generateMakeAddress(listeDepl, reg)
-					+ F^machine.generateComment("(71) End make address.", "\t\t");
-	end
-    -- Sinon, accès direct à this, on ne génère pas de code.	
-	F^vi := null;
-	F^code := code;
-  F^estVar := false;
-  F^type := FX^type;
-	F^reg := reg;
-end
-}
-
-
--- (105) base = super
-
-F -> base #attFX FX #attF ;
-
---TODO: faire descendre l'attribut kl jusqu'à F
-
--- Attributs inh de FX.
-#attFX {
-local
-  listeDepl : DisplacementList ;
-	type : Type;
-  info : SymbolInfo; 
-do
-  if (F^kl = null) then
-	  error(NOT_IN_A_CLASS);
-	else
-		if (F^kl.parent = null) then
-		  error(NO_PARENT_CLASS,F^kl.name());
-		end
-	end
---Initialisations.
-  listeDepl := new DisplacementList();
-	type := null;
-	info := null;
-	listeDepl.add(0, false);
-	FX^listeDepl := listeDepl;
-	FX^estFun := false;
-	--TODO: Ajouter estKlass partout
-	FX^estKlass := true;
-	FX^typeH := type;
-	FX^nom := F^kl;name();
-	FX^tvar := F^tvar;
-	FX^tfun := F^tfun;
-	FX^talias := F^talias;
-	FX^machine := F^machine;
-	FX^ni := F^ni;
-  FX^indentation := F^indentation + 1 ; 
-end
-}
-
--- Attributs syn de F.
-#attF {
-local
-  listeDepl : DisplacementList; 
-  reg : Register;
-	code : String;
-do
-  listeDepl := FX^listeDeplS;
-  reg := new Register();
-	code := FX^code; 
-	if ((listeDepl.size() != 0 )&&(listeDepl.size() != 1)) then --> 1) then
-    -- Des déplacements ont été ajoutés à la liste en plus de celui de base : on a accédé à des champs!
-	  -- Le registre contient l'adresse de la variable accédée par FX.
-    code := code
-		      + F^machine.generateComment("(71) Make address:", "\t\t") 
-		      + F^machine.generateMakeAddress(listeDepl, reg)
-					+ F^machine.generateComment("(71) End make address.", "\t\t");
-	end
-    -- Sinon, accès direct à base, on ne génère pas de code.	
-	F^vi := null;
-	F^code := code;
-  F^estVar := false;
-  F^type := FX^type;
-	F^reg := reg;
-end
-}
-
-
--- (106) objet null
-
-F -> null2 #attF ;
-
-#attF {
-local
-do
-	F^estVar := false;
-	F^vi := null;
-	F^code := F^machine.generateComment("(67) Null object: NO CODE", "\t\t");
-	F^type := null;
-	F^reg := null;
-end
-}
-
--- (107)
-F -> new identc #passIdentc IDC #instES paro ES parf #validGC ;
-
-#passIdentc{
-local 
-do
-  -- On commence la recherche de la classe à instancier
-  -- TODO: vérif quand la partie arm est clean
-	if (F^tklass.exists(identc^txt, HERITAGE^ni) or F^tns.exists(identc^txt, HERITAGE^ni)) then 
-		-- S'il est possible de continuer (i.e. identc ou namespace ou classe) on le fait dans IDC
-	  IDC^rechKlass := true;
-	  IDC^machine := HERITAGE^machine;
-    IDC^tns := HERITAGE^tns;
-  	IDC^tklass := HERITAGE^tklass;
-		IDC^nomIDC := identc^txt;
-		IDC^ni := HERITAGE^ni;
-	else
-		error(IDENT_UNDEFINED, identc^txt);
-	end
-end
-}
-
-#instES{
-local 
-do
-  ES^typesParams := new ArrayList<Type>();
-  ES^codeH := "";
-	ES^tvar := F^tvar;
-	ES^tfun := F^tfun;
-	ES^talias := F^talias;
-	ES^machine := F^machine;
-	ES^ni := F^ni;
-  ES^indentation := FX^indentation + 1 ; 
-end
-}
-
--- Verification qu'il existe bien un constructeur avec cette signature.
-#validGC {
-local
-	ci : ConstructorInfo;
-do
-  ci := IDC^klassHerit.lookupConstructor(ES^typesParamsS);
-	if (ci = null) then
-	  error(NO_CONSTR_WITH_SUCH_PARS, BASE^kl.name());
-	end
-	F^code := ES^code + F^machine.generateConstructorCall(ci,true);
-end
-}
+----	else
+----	  -- On cherche si on a bien obtenu un namespace
+----	  if (IDC^tns.exists(IDC^nomIDC, IDC^ni)) then
+----	    -- Si c'est le cas, on la renvoie
+----		  niS := IDC^tns.lookup(IDC^nomIDC, IDC^ni);
+----		else
+----		  -- Sinon, on renvoie une erreur
+----		  error(IDENT_UNDEFINED, IDC^nomIDC);
+----	  end
+--	end
+--	IDC^klassHerit := klassHerit;
+--	-- On fait directement remonter le ni de IDC.
+--	IDC^klassS := IDC^klass;
+--	IDC^niS := IDC^ni;
+--end
+--}
+--
+---- (86)
+--IDC -> pt identc #attIDC1 IDC #attIDC ;
+--
+---- Attributs inh de IDC1.
+--#attIDC1 {
+--local
+--  ni : NamespaceInfo;
+--	k : Klass;
+--do
+--  ni := null;
+--	k := null;
+--  -- On cherche si on a bien obtenu un namespace précédemment
+--	-- Comme on n'a pas de classe interne, on doit avoir ni.ni.ni.X
+-- 	if (IDC^ni = null) then
+--	  -- Si le ni de IDC est null, on a eu le chemin d'une classe à l'étape d'avant : erreur.
+--		error(INVALID_PATH);
+--	else
+--	  -- On recherche l'existence d'identc, d'abord dans les ns, 
+--		-- en précisant le ns précédent en parent.
+--		ni := IDC^tns.lookup(ident^txt, IDC^ni);
+--  	if (ni = null)) then
+--			-- On cherche si ce n'est pas une classe, avec le même ns en parent.
+--			k := IDC^tklass.lookup(ident^txt, IDC^ni);
+--			if (k = null) then
+--			  error(INVALID_PATH);
+--			end
+--		else
+--		  error(INVALID_PATH);
+--		end
+--	end
+----	IDC1^rechKlass := IDC^rechKlass;
+--	IDC1^machine := IDC^machine;
+--  IDC1^tns := IDC^tns;
+--  IDC1^tklass := IDC^tklass;
+----  IDC1^nomIDC := identc^txt;
+--	IDC1^ni := ni;
+--	IDC1^klass := k;
+--end
+--}
+--
+---- Attributs syn de IDC.
+--#attIDC {
+--local 
+--do
+--  -- On propage ce qu'il y a à propager
+--	if IDC^rechKlass then
+--		IDC^klassHerit := IDC1^klassHerit;
+--	else
+--		IDC^niS := IDC1^niS;
+--	end
+--end
+--}
+--
+---- (87) definition d'une classe (peut etre en dehors d'un namespace)
+--
+--ENTITE -> ACCES class identc #verif HERITAGE #ajout aco DEFS acf ;
+--
+---- Vérifie que identc n'est pas déjà utilisé (par une classe ou un namespace).
+--#verif {
+--local
+---- TODO: vérifier tout ca quand KlassTable & co seront finis
+--do
+--  -- Si identc est une clef dans la TDSKlass, erreur.
+--  if tklass.lookup(identc^txt, ENTITE^ni) != null then
+--     error(IDENT_TAKEN, identc^txt);
+--  else
+--    if ENTITE^tns.lookup(identc^txt, ENTITE^ni) != null then
+--      error(IDENT_TAKEN, identc^txt);
+--    else
+--		  -- Pas de code pour cette RP.	
+--		  ENTITE^code := "";
+--			HERITAGE^machine := ENTITE^machine;
+-- 		  HERITAGE^tns := ENTITE^tns;
+--			HERITAGE^tklass := ENTITE^tklass;
+--			HERITAGE^ni := ENTITE^ni;
+--    end
+--  end  
+--end
+--}
+--
+--#ajout {
+--local
+--	tk : KlassTable;
+--	kl : Klass;
+--do
+--  tk := ENTITE^tklass;
+--	kl := new Klass(ACCES^acc,identc^txt,HERITAGE^klassHerit,ENTITE^ni);
+--	tk.insert(kl);
+--  -- On peut enfin ajouter la nouvelle classe à la TDS, maintenant qu'on a la classe héritée.
+--	--TODO: Faire remonter les tklass avec des tklassS au sein du prog µC	
+--	ENTITE^tklassS = tk; 
+--	DEFS^machine := ENTITE^machine;
+--	DEFS^klass := kl;
+--	DEFS^ni := ENTITE^ni;
+--end
+--}
+--
+--
+---- (88) : Acces 
+--ACCES -> #acc public;
+--
+--#acc {
+--local
+--do
+--  ACCES^acc := 1;
+--end
+--}
+--
+---- (89)
+--ACCES -> #acc private;
+--
+--#acc {
+--local
+--do
+--  ACCES^acc := 2;
+--end
+--}
+--
+---- (90)
+--ACCES -> #acc;
+--
+--#acc {
+--local
+--do
+--  ACCES^acc := 3;
+--end
+--}
+--
+---- (91) heritage
+--
+--HERITAGE -> #heritNull;
+--
+--#heritNull{
+--local 
+--do
+--  -- Aucun héritage
+--	HERITAGE^klassHerit := null;
+--end
+--}
+--
+---- (92)
+--HERITAGE -> dpts identc #passIdentc IDC #herit;
+--
+--#passIdentc{
+--local 
+--do
+--  -- On commence la recherche de la classe dont on hérite
+--  -- TODO: vérif quand la partie arm est clean
+--	if (HERITAGE^tklass.exists(identc^txt, HERITAGE^ni) or HERITAGE^tns.exists(identc^txt, HERITAGE^ni)) then 
+--		-- S'il est possible de continuer (i.e. identc ou namespace ou classe) on le fait dans IDC
+--	  IDC^rechKlass := true;
+--	  IDC^machine := HERITAGE^machine;
+--    IDC^tns := HERITAGE^tns;
+--  	IDC^tklass := HERITAGE^tklass;
+--		IDC^nomIDC := identc^txt;
+--		IDC^ni := HERITAGE^ni;
+--	else
+--		error(IDENT_UNDEFINED, identc^txt);
+--	end
+--end
+--}
+--
+--#herit{
+--local 
+--do
+--	-- On renvoie la classe dont on hérite
+--	HERITAGE^classHerit := IDC^classHerit;
+--end
+--}
+---- membres d'une classe
+--
+---- (93)
+--DEFS -> ;
+--
+---- (94)
+--DEFS ->  ACCES #passdef DEF #passdefs DEFS ;
+--
+--#passdef {
+--local
+--do
+--	DEF^machine := DEFS^machine;
+--	DEF^kl :=DEFS^kl;
+--	DEF^ni := DEFS^ni;
+--	DEF^accH := ACCES^acc;
+--end
+--}
+--#passdefs {
+--local
+--do
+--	DEFS1^machine := DEFS^machine;
+--	DEFS1^kl :=DEFS^kl;
+--	DEFS1^ni := DEFS^ni;
+--end
+--}
+--
+---- (95)
+--DEF  ->  TYPE ident #verifIdent DECL #addenKlass ;
+--
+--#verifIdent {
+--local
+--do
+--	if (DEF^kl.name() = ident^txt) then
+--		error(DEFINITION_SAME_NAME_CLASS,ident^txt);
+--	end if;
+--end
+--}
+--
+--#addenKlass {
+--local
+--	fi : FunctionInfo
+--do
+--	if (DEF^funInfo = null) then
+--		if (DEF^kl.attributeExists(ident^txt)) then
+--		  error(ALREADY_ATTRIBUTE,ident^txt,DEF^kl.name());			
+--		else
+--		  DEF^kl.addAttribute(DEF^name,DEF^accH,TYPE^type);
+--		end if;
+--	else
+--		fi := DECL^funInfo;
+--		match fi
+--		with MethodInfo then
+--			if (DEF^kl.attributeExists(ident^txt,fi)) then
+--		  	error(ALREADY_METHOD,ident^txt,DEF^kl.name());			
+--			else
+--		 		DEF^kl.addMethod(DEF^name,DEF^accH,DEF^funInfo);		
+--			  DEF^code := DEF^machine.generateMethodDeclaration(fi,DECL^code);			
+--			end if;
+--		else
+--			error(NOT_A_METHOD);
+--		end
+--	end if
+--end
+--}
+--
+--
+---- (96) constructeur
+--
+--DEF  ->  identc #verifIdentc #attPARFS paro PARFS parf #attBASE BASE #attBLOC BLOC #attDEF ;
+--
+--global
+--	tvparams : VariableTable;
+--
+--#verifIdentc {
+--local
+--do
+--	if (DEF^kl.name() != identc^txt) then
+--		error(CONSTR_NOT_NAME_CLASS,ident^txt,DEF^kl.name());
+--	end if;
+--end
+--}
+--
+---- Init des attributs hérités pour PARFS.
+--#attPARFS {
+--local
+--do
+--	tvparams := new VariableTable();
+--  -- On crée une TDSvar vide pour la passer à PARFS.
+--  PARFS^tvar := tvparams;
+--  PARFS^tfun := new FunctionTable();
+--	PARFS^talias := new AliasTable();
+--	-- Creation de la FunctionInfo avec le type retour.
+--  PARFS^funInfoH := new FunctionInfo(identc^txt, DEF^kl.name(), DEF^ni, DEF^machine.functionReturn());
+--  -- Initialisation du compteur de parametres.
+--  PARFS^cParam := 0;
+--  PARFS^machine := DEF^machine;
+--	PARFS^ni := DEF^ni;
+--  PARFS^indentation := DEF^indentation + 1;	
+--end
+--}
+--
+---- Init des attributs hérités pour PARFS.
+--#attBASE {
+--local
+--do
+--  BASE^machine := DEF^machine;
+--	BASE^ni := DEF^ni;
+--	BASE^kl := DEF^kl;
+--	BASE^indentation := DEF^indentation;
+--end
+--}
+--
+---- Ajout de la FunctionInfo à la tfun de BLOC.
+---- Passage de la FunctionInfo à BLOC.
+--#attBLOC {
+--local
+--  tf : FunctionTable;
+--  fi : FunctionInfo;
+--do
+--  tf := PARFS^tfun;
+--  fi := PARFS^funInfo;
+-- 	BLOC^tfun := tf;
+--  BLOC^indentation := DEF^indentation + 1;	
+--	BLOC^funInfoH := fi;
+--  BLOC^tvar := new VariableTable(tvparams);
+--	BLOC^talias := PARFS^talias;
+--	BLOC^machine := PARFS^machine;
+--	BLOC^ni := PARFS^ni;
+--end
+--}
+--
+---- Génération du constructeur + GC
+--#attDEF {
+--local
+--	fi : FunctionInfo
+--do
+--	fi := DECL^funInfo;
+--	match fi
+--	with ConstructorInfo then
+--		DEF^kl.addConstructor(fi);
+--	  DEF^code := DEF^machine.generateFunctionDeclaration(fi , BASE^code+BLOC^code);			
+--	else
+--			error(NOT_A_CONSTR);
+--	end
+--	--TODO: evaluer la nécessité de ce truc
+--	DEF^funInfo := PARFS^funInfo;
+--end
+--}
+--
+---- appel eventuel au constructeur de la classe parente.
+--
+---- (97)
+--BASE -> #codeVide ;
+--
+--#codeVide {
+--local
+--do
+--	BASE^code := "";
+--end
+--}
+--
+---- (98)
+--BASE -> dpts base #attES paro ES parf #validGC ;
+--
+---- Attributs inh de ES.
+---- Verification que l'appelant est une fonction.
+--#attES {
+--local
+--do
+--  if (BASE^kl = null) then
+--	  error(NO_PARENT_CLASS,BASE^kl.name());
+--	end if;
+--  ES^typesParams := new ArrayList<Type>();
+--  ES^codeH := "";
+--	ES^tvar := new VariableTable();
+--	ES^tfun := new FunctionTable();
+--	ES^talias := new AliasTable();
+--	ES^machine := BASE^machine;
+--	ES^ni := BASE^ni;
+--  ES^indentation := BASE^indentation + 1 ; 
+--end
+--}
+--
+---- Verification qu'il existe bien un constructeur parent avec cette signature.
+--#validGC {
+--local
+--	ci : ConstructorInfo;
+--do
+--  ci := BASE^parent().lookupConstructor(ES^typesParamsS);
+--	if (ci = null) then
+--	  error(NO_CONSTR_WITH_SUCH_PARS, BASE^kl.name());
+--	end
+--	BASE^code := ES^code + FX^machine.generateConstructorCall(ci,true);
+--end
+--}
+--
+---- (99) Mode de passage pour les fonctions et méthodes : rien : D, ref : D/R, out : R
+--
+--PARF ->  MODE TYPE ident ;
+--
+---- (100)
+--MODE -> ref ;
+--
+---- (101)
+--MODE -> out ; 
+--
+---- (102)
+--F -> true #typeEtGenCode #estVarEtVi ;
+--
+---- Set de l'attribut de type de F pour indiquer qu'il s'agit d'un booléen.
+---- Génération du code pour load la valeur du booléen dans la mémoire.
+--
+--#typeEtGenCode {
+--local
+--  t : BooleanType;
+--  r : Register;
+--do
+--  -- Creation du type et du registre.
+--  t := new BooleanType();
+--  r := new Register();
+--	-- Set de l'attribut type.
+--	F^type := t;
+--	-- Génération du code, et set de l'attribut le contenant.
+--  F^code := F^machine.generateLoadConstant(new ConstantInfo(t, true), r); 
+--	-- Set de l'attribut registre de F, c'est le registre contenant l'entier.
+--	F^reg := r;
+--end
+--}
+--
+---- Une expression de base ne peut representer une variable.
+---- Donc pas de vi.
+--
+--#estVarEtVi {
+--local
+--do
+--  F^estVar := false;
+--	F^vi := null;
+--end
+--}
+--
+---- (103)
+--F -> false #typeEtGenCode #estVarEtVi ;
+--
+---- Set de l'attribut de type de F pour indiquer qu'il s'agit d'un booléen.
+---- Génération du code pour load la valeur du booléen dans la mémoire.
+--
+--#typeEtGenCode {
+--local
+--  t : BooleanType;
+--  r : Register;
+--do
+--  -- Creation du type et du registre.
+--  t := new BooleanType();
+--  r := new Register();
+--	-- Set de l'attribut type.
+--	F^type := t;
+--	-- Génération du code, et set de l'attribut le contenant.
+--  F^code := F^machine.generateLoadConstant(new ConstantInfo(t, false), r); 
+--	-- Set de l'attribut registre de F, c'est le registre contenant l'entier.
+--	F^reg := r;
+--end
+--}
+--
+---- Une expression de base ne peut representer une variable.
+---- Donc pas de vi.
+--
+--#estVarEtVi {
+--local
+--do
+--  F^estVar := false;
+--	F^vi := null;
+--end
+--}
+--
+---- (104)
+--F -> this #attFX FX #attF ;
+--
+----TODO: faire descendre l'attribut kl jusqu'à F
+--
+---- Attributs inh de FX.
+--#attFX {
+--local
+--  listeDepl : DisplacementList ;
+--	type : Type;
+--  info : SymbolInfo; 
+--do
+--  if (F^kl = null) then
+--	  error(NOT_IN_A_CLASS);
+--	end
+----Initialisations.
+--  listeDepl := new DisplacementList();
+--	type := null;
+--	info := null;
+--	listeDepl.add(0, false);
+--	FX^listeDepl := listeDepl;
+--	FX^estFun := false;
+--	--TODO: Ajouter estKlass partout
+--	FX^estKlass := true;
+--	FX^typeH := type;
+--	FX^nom := F^kl;name();
+--	FX^tvar := F^tvar;
+--	FX^tfun := F^tfun;
+--	FX^talias := F^talias;
+--	FX^machine := F^machine;
+--	FX^ni := F^ni;
+--  FX^indentation := F^indentation + 1 ; 
+--end
+--}
+--
+---- Attributs syn de F.
+--#attF {
+--local
+--  listeDepl : DisplacementList; 
+--  reg : Register;
+--	code : String;
+--do
+--  listeDepl := FX^listeDeplS;
+--  reg := new Register();
+--	code := FX^code; 
+--	if ((listeDepl.size() != 0 )&&(listeDepl.size() != 1)) then --> 1) then
+--    -- Des déplacements ont été ajoutés à la liste en plus de celui de base : on a accédé à des champs!
+--	  -- Le registre contient l'adresse de la variable accédée par FX.
+--    code := code
+--		      + F^machine.generateComment("(71) Make address:", "\t\t") 
+--		      + F^machine.generateMakeAddress(listeDepl, reg)
+--					+ F^machine.generateComment("(71) End make address.", "\t\t");
+--	end
+--    -- Sinon, accès direct à this, on ne génère pas de code.	
+--	F^vi := null;
+--	F^code := code;
+--  F^estVar := false;
+--  F^type := FX^type;
+--	F^reg := reg;
+--end
+--}
+--
+--
+---- (105) base = super
+--
+--F -> base #attFX FX #attF ;
+--
+----TODO: faire descendre l'attribut kl jusqu'à F
+--
+---- Attributs inh de FX.
+--#attFX {
+--local
+--  listeDepl : DisplacementList ;
+--	type : Type;
+--  info : SymbolInfo; 
+--do
+--  if (F^kl = null) then
+--	  error(NOT_IN_A_CLASS);
+--	else
+--		if (F^kl.parent = null) then
+--		  error(NO_PARENT_CLASS,F^kl.name());
+--		end
+--	end
+----Initialisations.
+--  listeDepl := new DisplacementList();
+--	type := null;
+--	info := null;
+--	listeDepl.add(0, false);
+--	FX^listeDepl := listeDepl;
+--	FX^estFun := false;
+--	--TODO: Ajouter estKlass partout
+--	FX^estKlass := true;
+--	FX^typeH := type;
+--	FX^nom := F^kl;name();
+--	FX^tvar := F^tvar;
+--	FX^tfun := F^tfun;
+--	FX^talias := F^talias;
+--	FX^machine := F^machine;
+--	FX^ni := F^ni;
+--  FX^indentation := F^indentation + 1 ; 
+--end
+--}
+--
+---- Attributs syn de F.
+--#attF {
+--local
+--  listeDepl : DisplacementList; 
+--  reg : Register;
+--	code : String;
+--do
+--  listeDepl := FX^listeDeplS;
+--  reg := new Register();
+--	code := FX^code; 
+--	if ((listeDepl.size() != 0 )&&(listeDepl.size() != 1)) then --> 1) then
+--    -- Des déplacements ont été ajoutés à la liste en plus de celui de base : on a accédé à des champs!
+--	  -- Le registre contient l'adresse de la variable accédée par FX.
+--    code := code
+--		      + F^machine.generateComment("(71) Make address:", "\t\t") 
+--		      + F^machine.generateMakeAddress(listeDepl, reg)
+--					+ F^machine.generateComment("(71) End make address.", "\t\t");
+--	end
+--    -- Sinon, accès direct à base, on ne génère pas de code.	
+--	F^vi := null;
+--	F^code := code;
+--  F^estVar := false;
+--  F^type := FX^type;
+--	F^reg := reg;
+--end
+--}
+--
+--
+---- (106) objet null
+--
+--F -> null2 #attF ;
+--
+--#attF {
+--local
+--do
+--	F^estVar := false;
+--	F^vi := null;
+--	F^code := F^machine.generateComment("(67) Null object: NO CODE", "\t\t");
+--	F^type := null;
+--	F^reg := null;
+--end
+--}
+--
+---- (107)
+--F -> new identc #passIdentc IDC #instES paro ES parf #validGC ;
+--
+--#passIdentc{
+--local 
+--do
+--  -- On commence la recherche de la classe à instancier
+--  -- TODO: vérif quand la partie arm est clean
+--	if (F^tklass.exists(identc^txt, HERITAGE^ni) or F^tns.exists(identc^txt, HERITAGE^ni)) then 
+--		-- S'il est possible de continuer (i.e. identc ou namespace ou classe) on le fait dans IDC
+--	  IDC^rechKlass := true;
+--	  IDC^machine := HERITAGE^machine;
+--    IDC^tns := HERITAGE^tns;
+--  	IDC^tklass := HERITAGE^tklass;
+--		IDC^nomIDC := identc^txt;
+--		IDC^ni := HERITAGE^ni;
+--	else
+--		error(IDENT_UNDEFINED, identc^txt);
+--	end
+--end
+--}
+--
+--#instES{
+--local 
+--do
+--  ES^typesParams := new ArrayList<Type>();
+--  ES^codeH := "";
+--	ES^tvar := F^tvar;
+--	ES^tfun := F^tfun;
+--	ES^talias := F^talias;
+--	ES^machine := F^machine;
+--	ES^ni := F^ni;
+--  ES^indentation := FX^indentation + 1 ; 
+--end
+--}
+--
+---- Verification qu'il existe bien un constructeur avec cette signature.
+--#validGC {
+--local
+--	ci : ConstructorInfo;
+--do
+--  ci := IDC^klassHerit.lookupConstructor(ES^typesParamsS);
+--	if (ci = null) then
+--	  error(NO_CONSTR_WITH_SUCH_PARS, BASE^kl.name());
+--	end
+--	F^code := ES^code + F^machine.generateConstructorCall(ci,true);
+--end
+--}
 
 
 end
