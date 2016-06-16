@@ -288,8 +288,8 @@ public class ARMEngine extends AbstractMachine {
      */
     public String generateLoadConstant(ConstantInfo info, RegisterWrapper rout) throws MCSException  {
         
-        System.out.println("gLCst : " + (info == null ? "NULL" : ""));
-        System.out.println("gLCst : " + info);
+        //trace System.out.println("gLCst : " + (info == null ? "NULL" : ""));
+        //trace System.out.println("gLCst : " + info);
         String code = "";
         Register r = getNextUnusedRegister();
         rout.set(r);
@@ -392,12 +392,12 @@ public class ARMEngine extends AbstractMachine {
      */
     public String generateStoreVariable(VariableInfo vinfo, Register rin) throws MCSException  {
        
-        System.out.println("generateStoreVariable " + vinfo);
+        //trace System.out.println("generateStoreVariable " + vinfo);
 
         Type t = vinfo.type();
         String code = "";
 
-        System.out.println("generateStoreVariable " + t + " " + rin.debug());
+        //trace System.out.println("generateStoreVariable " + t + " " + rin.debug());
 
         if (t instanceof SimpleType) {
             code +=
@@ -519,7 +519,7 @@ public class ARMEngine extends AbstractMachine {
      */
     public String generateAllocateInStack(Type type) throws MCSException  {
         
-        System.out.println("gAIS : allouer " + type + " dans la face");
+        //trace System.out.println("gAIS : allouer " + type + " dans la face");
         String code = "";
 
         if (type instanceof CompositeType || type instanceof PointerType) {
@@ -528,19 +528,19 @@ public class ARMEngine extends AbstractMachine {
             if (type instanceof PointerType)
                 t = ((PointerType)type).getType();
 
-            System.out.println("gAIS : c'est un type composite ou un pointeur");
+            //trace System.out.println("gAIS : c'est un type composite ou un pointeur");
             RegisterWrapper raddr = new RegisterWrapper();
             code +=
                 generateAllocate(t, raddr, null) +
                 generateInstruction("PUSH", raddr.get());
             raddr.get().setStatus(Register.Status.Used);
         } else {
-            System.out.println("gAIS : c'est un type simple");
+            //trace System.out.println("gAIS : c'est un type simple");
             code +=
                 generateInstruction("ADD", sp, sp, type.size());
         }
 
-        System.out.println("gAIS : code = " + code);
+        //trace System.out.println("gAIS : code = " + code);
 
         return code;
         
@@ -558,14 +558,14 @@ public class ARMEngine extends AbstractMachine {
         Register reg = getNextUnusedRegister();
         raddr.set(reg);
         
-        System.out.println("gAll : allouer un '" + type + "' dans le tas");
+        //trace System.out.println("gAll : allouer un '" + type + "' dans le tas");
 
         String code =
             generateInstruction("MOV", reg, ht);
         reg.setStatus(Register.Status.Loaded);
 
         if (type instanceof StructType) {
-            System.out.println("gAll : c'est une structure");
+            //trace System.out.println("gAll : c'est une structure");
             StructType ts = (StructType)type;
             RegisterWrapper r = new RegisterWrapper();
             code +=
@@ -576,7 +576,9 @@ public class ARMEngine extends AbstractMachine {
                     code +=
                         generateAllocate(t, r, null) +
                         generateInstruction("STR", true, r.get(), reg, ts.fieldDisplacement(f)); 
-                }
+        
+										r.get().setStatus(Register.Status.Used);
+								}
             }
         } else if (type instanceof Klass) {
             Klass k = (Klass)type;
@@ -589,7 +591,9 @@ public class ARMEngine extends AbstractMachine {
                     code +=
                         generateAllocate(dl.get(disp), r, null) +
                         generateInstruction("STR", true, r.get(), reg, disp); 
-                }
+        
+						   			r.get().setStatus(Register.Status.Used);
+								}
             }
         } else if (type instanceof ArrayType) {
             ArrayType t = (ArrayType)type;
@@ -601,12 +605,12 @@ public class ARMEngine extends AbstractMachine {
                 generateInstruction("ADD", ht, ht, rs);
             rsize.setStatus(Register.Status.Used);
         } else {
-            System.out.println("gAll : c'est un type simple");
+            //trace System.out.println("gAll : c'est un type simple");
             code +=
                 generateInstruction("ADD", ht, ht, type.size());
         }
 
-        System.out.println("gAll : code = " + code);
+        //trace System.out.println("gAll : code = " + code);
 
         return code;
         
@@ -1382,7 +1386,7 @@ public class ARMEngine extends AbstractMachine {
         
         // TODO: register use policy
         for (int i = 0; i < registers.size(); i++) {
-            System.out.println(registers.get(i).debug());
+            //trace System.out.println(registers.get(i).debug());
             if ((registers.get(i).status() == Register.Status.Empty)||(registers.get(i).status() == Register.Status.Used))
                 return registers.get(i);
         }
