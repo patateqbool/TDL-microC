@@ -2,12 +2,12 @@ option version = 1.0.1;
 option k = 2;
 option auto = true;
 
-syn code_asm	: STRING for  ASM, INSTS, INST, OPCODE, PAR, SHIFTOP, SHIFTTYPE, ADDR, ADDRSEC, ADDRSUFF, VARIABLE, REGORNUM,
+syn code_asm	: STRING for  ARMASM, INSTS, INST, OPCODE, PAR, SHIFTOP, SHIFTTYPE, ADDR, ADDRSEC, ADDRSUFF, VARIABLE, REGORNUM,
                             NUMBER, REGISTER, NINST, VINST, CC, S, SM, SMX, SMLX, SMLXA, SMMX, SMMLX, SMUX, SMULX,
                             SMBT, SMW, LDSTR, LSX, LSRX, LSRXX, LSMX;
-inh namespace : NamespaceInfo for ASM, INSTS, INST, PAR, PARS, PARSX, ADDR, VARIABLE;
-inh tds_asm		: VariableTable for ASM, INSTS, INST, PAR, PARS, PARSX, ADDR, VARIABLE;
-inh mach_asm	:	AbstractMachine for ASM, INSTS, INST, PAR, PARS, PARSX, ADDR, ADDRSEC, REGISTER, NUMBER, VARIABLE, REGORNUM;
+inh namespace : NamespaceInfo for ARMASM, INSTS, INST, PAR, PARS, PARSX, ADDR, VARIABLE;
+inh tds_asm		: VariableTable for ARMASM, INSTS, INST, PAR, PARS, PARSX, ADDR, VARIABLE;
+inh mach_asm	:	AbstractMachine for ARMASM, INSTS, INST, PAR, PARS, PARSX, ADDR, ADDRSEC, REGISTER, NUMBER, VARIABLE, REGORNUM;
 inh parlist		: List<Object> for PAR, PARS, PARSX;
 
 -- Separators
@@ -345,18 +345,18 @@ term	genreg	is	"r[0-9]";
 term 	comm 		is	"[^\n]*\n";
 
 -- Rules
-ASM -> ocbrack #init INSTS ccbrack #gen ;
+ARMASM -> ocbrack #init INSTS ccbrack #gen ;
 #init {
     do
-        INSTS^mach_asm := ASM^mach_asm;
-        INSTS^tds_asm := ASM^tds_asm;
-        INSTS^namespace := ASM^namespace;
+        INSTS^mach_asm := ARMASM^mach_asm;
+        INSTS^tds_asm := ARMASM^tds_asm;
+        INSTS^namespace := ARMASM^namespace;
     end
 }
 
 #gen {
     do
-        ASM^code_asm := ASM^mach_asm.generateComment("Inline ASM", "\t\t") + INSTS^code_asm;
+        ARMASM^code_asm := ARMASM^mach_asm.generateComment("Inline ASM", "\t\t") + INSTS^code_asm;
     end
 }
 

@@ -218,6 +218,14 @@ public interface IMachine {
      */
     String generateFlush(SymbolTable symtab) throws MCSException;
 
+    /**
+     * Generate the code for copying a variable
+     * @param t type
+     * @param rin address of the original
+     * @param rout address of the copy
+     */
+    String generateCopy(Type t, Register rin, RegisterWrapper rout) throws MCSException;
+
     /////////////////////// FUNCTION MANAGEMENT ///////////////////////
 
     /**

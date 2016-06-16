@@ -186,9 +186,9 @@ inh ni : NamespaceInfo for
 --				 IDC
 --				 ;
 -- ces attributs permettent de recuperer les instructions du code ASM inline       
---syn code_asm : STRING for ASM;
+syn code_asm : STRING for ARMASM;
 -- la TDS courante
---inh tds_asm : TDS for ASM;
+inh tds_asm : VariableTable for ARMASM;
 
 --terminals
 space separateur is  "[\r\n\t ]+";     
@@ -252,7 +252,7 @@ term identc is  "[A-Z][_0-9A-Za-z]*";
 
 -- pour les instructions en assembleur TAM 'inline'
 -- TODO décommenter plus tard.
--- compil ASM;
+compil ARMASM;
 
 -- (1) : REGLES DE PRODUCTION
 PROGRAMME -> #attENTITES ENTITES #attPROGRAMME;
@@ -3349,39 +3349,43 @@ end
 -------------------------------------------
 --
 ---- (80)
---ENTITE -> asm #tds ASM #gen; 
---#tds {
---do 
---  -- A faire : Remplacer 'null' par la table courante pour que
---  -- le code ASM puisse acceder aux variables de MC ou MCS
---  ASM^tds_asm := null; 
---end
---}
---
---#gen {
---do
---  -- On recupere le code assembleur 'inline' dans : ASM^code_asm ;
---end
---}
---
---
----- (81)
---INST ->  asm   #tds ASM #gen ;
---#tds {
---do
---  -- A remplacer par la table courante pour que
---  -- l'assembleur puisse acceder aux variables
---  ASM^tds_asm := null; 
---end
---}
---
---#gen {
---do
---  -- ASM^code_asm contient le code assembleur inline
---  -- dans lequel les noms de variables ont ete remplaces
---  -- par leurs adresses.
---end
---}
+ENTITE -> asm #tds ARMASM #gen; 
+#tds {
+do 
+  -- A faire : Remplacer 'null' par la table courante pour que
+  -- le code ASM puisse acceder aux variables de MC ou MCS
+  ARMASM^tds_asm := ENTITE^tvar; 
+end
+}
+
+#gen {
+do
+  -- On recupere le code assembleur 'inline' dans : ASM^code_asm ;
+  ENTITE^code := ARMASM^code_asm;
+  ENTITE^taliasS := ENTITE^talias;
+  ENTITE^tfunS := ENTITE^tfun;
+end
+}
+
+
+-- (81)
+INST ->  asm   #tds ARMASM #gen ;
+#tds {
+do
+  -- A remplacer par la table courante pour que
+  -- l'assembleur puisse acceder aux variables
+  ARMASM^tds_asm := INST^tvar; 
+end
+}
+
+#gen {
+do
+  -- ASM^code_asm contient le code assembleur inline
+  -- dans lequel les noms de variables ont ete remplaces
+  -- par leurs adresses.
+  INST^code := ARMASM^code_asm;
+end
+}
 
 ------------------- CS extension --------------------
 ------ Decommenter les regles suivantes pour l'extension CS

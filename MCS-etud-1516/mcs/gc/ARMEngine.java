@@ -655,7 +655,10 @@ public class ARMEngine extends AbstractMachine {
         String code = "";
 
         if (t instanceof CompositeType) {
+            // lol nope
         }
+
+        return code;
     }
 
 
@@ -1027,7 +1030,6 @@ public class ARMEngine extends AbstractMachine {
      * @return the generated code
      */
     public String generateMultiComments(String com, String indent) throws MCSException {
-        
         String code = "";
 
         String[] lines = com.split("\n");
@@ -1035,7 +1037,6 @@ public class ARMEngine extends AbstractMachine {
             code += generateComment(l, indent);
 
         return code;
-        
     }
 
 
@@ -1053,9 +1054,7 @@ public class ARMEngine extends AbstractMachine {
      * @return the generated code
      */
     public String generateMakeAddress(DisplacementList dlist, RegisterWrapper raddr) throws MCSException {
-        
         return generateMakeAddress(dlist, sb, raddr);
-        
     }
 
     /**
@@ -1067,7 +1066,6 @@ public class ARMEngine extends AbstractMachine {
      * @return the generated code
      */
     public String generateMakeAddress(DisplacementList dlist, Register rbaseaddr, RegisterWrapper raddr) throws MCSException {
-        
         String code = "";
         Register r = getNextUnusedRegister();
         raddr.set(r);
@@ -1094,7 +1092,6 @@ public class ARMEngine extends AbstractMachine {
         r.setStatus(Register.Status.Loaded);
 
         return code;
-        
     }
 
     /**
