@@ -21,7 +21,7 @@ public class FunctionTable implements SymbolTable {
     this.content = new ArrayList<FunctionInfo>();
   }
 
-  public boolean exists(String name, NamespaceInfo namespace, List<NamespaceInfo> usedns, SymbolInfo si) {
+  public boolean exists(String name, NamespaceInfo namespace, NamespaceInfoList usedns, SymbolInfo si) {
 		System.out.println("Checking for existence of " + name);
 		System.out.println(this.toString());
 
@@ -37,7 +37,7 @@ public class FunctionTable implements SymbolTable {
     return false;
   }
 
-  public boolean exists(SymbolInfo si, NamespaceInfo namespace, List<NamespaceInfo> usedns) {
+  public boolean exists(SymbolInfo si, NamespaceInfo namespace, NamespaceInfoList usedns) {
     for (FunctionInfo csi : this.content) {
       if (csi.equals(si)) {
         if (csi.namespace().equals(namespace) || usedns.contains(csi.namespace()))
@@ -48,7 +48,7 @@ public class FunctionTable implements SymbolTable {
     return false;
   }
 
-	public boolean exists(String name, NamespaceInfo namespace, List<NamespaceInfo> usedns) {
+	public boolean exists(String name, NamespaceInfo namespace, NamespaceInfoList usedns) {
 		for (FunctionInfo csi : this.content) {
 			if (csi.name().equals(name) && (namespace.equals(csi.namespace()) || usedns.contains(csi.namespace())))
 				return true;
@@ -62,7 +62,7 @@ public class FunctionTable implements SymbolTable {
    * Retrieving the actual function must be done with a complete
    * set of parameters
    */
-  public SymbolInfo lookup(String name, NamespaceInfo namespace, List<NamespaceInfo> usedns, boolean local) {
+  public SymbolInfo lookup(String name, NamespaceInfo namespace, NamespaceInfoList usedns, boolean local) {
     for (FunctionInfo fi : this.content) {
       if (fi.name().equals(name)) {
         if (fi.namespace().equals(namespace) || usedns.contains(fi.namespace()))
@@ -72,7 +72,7 @@ public class FunctionTable implements SymbolTable {
     return null;
   }
 
-  public SymbolInfo lookup(String name,  NamespaceInfo namespace, List<NamespaceInfo> usedns, List<Type> params) {
+  public SymbolInfo lookup(String name,  NamespaceInfo namespace, NamespaceInfoList usedns, List<Type> params) {
     for (FunctionInfo fi : this.content) {
       if (fi.similar(name, params)) {
         if (fi.namespace().equals(namespace) || usedns.contains(fi.namespace()))

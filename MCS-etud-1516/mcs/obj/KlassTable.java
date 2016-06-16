@@ -9,6 +9,7 @@ package mcs.obj;
 import java.util.List;
 import java.util.ArrayList;
 import mcs.symtab.NamespaceInfo;
+import mcs.symtab.NamespaceInfoList;
 
 public class KlassTable {
     private List<Klass> content;
@@ -17,7 +18,7 @@ public class KlassTable {
         this.content = new ArrayList<Klass>();
     }
 
-    public boolean exists(String name, NamespaceInfo ns, List<NamespaceInfo> usedns) {
+    public boolean exists(String name, NamespaceInfo ns, NamespaceInfoList usedns) {
         for (Klass k : this.content) {
             if (k.name().equals(name) && (k.namespace().equals(ns) || usedns.contains(k.namespace())))
                 return true;
@@ -27,7 +28,7 @@ public class KlassTable {
     }
 
     // hahaha je suis caché
-    public Klass lookup(String name, NamespaceInfo ns, List<NamespaceInfo> usedns) {
+    public Klass lookup(String name, NamespaceInfo ns, NamespaceInfoList usedns) {
         for (Klass k : this.content) {
             if (k.name().equals(name) && (k.namespace().equals(ns) || usedns.contains(k.namespace())))
                 return k;
