@@ -345,7 +345,7 @@ term	genreg	is	"r[0-9]";
 term 	comm 		is	"[^\n]*\n";
 
 -- Rules
-ARMASM -> ocbrack #init INSTS ccbrack #gen ;
+ARMASM -> ocbrack spce #init INSTS ccbrack spce #gen ;
 #init {
     do
         INSTS^mach_asm := ARMASM^mach_asm;

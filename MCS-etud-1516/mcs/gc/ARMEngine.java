@@ -1071,7 +1071,9 @@ public class ARMEngine extends AbstractMachine {
         String code = "", codeaddr = "";
         Register ra = getNextUnusedRegister(), rv = getNextUnusedRegister();
         raddr.set(ra);
+        ra.setStatus(Register.Status.Loaded);
         rvalue.set(rv);
+        rv.setStatus(Register.Status.Loaded);
         DisplacementPair dp;
 
         // First displacement is the one of the struct itself
@@ -1099,8 +1101,6 @@ public class ARMEngine extends AbstractMachine {
         }
 
         rbaseaddr.setStatus(Register.Status.Used);
-        rv.setStatus(Register.Status.Loaded);
-        ra.setStatus(Register.Status.Loaded);
 
         return code;
     }
