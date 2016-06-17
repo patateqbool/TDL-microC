@@ -75,7 +75,6 @@ public class VariableTable implements SymbolTable {
     }
     if (!local && this.parent != null)
       return ((VariableTable)this.parent).exists(name, namespace, usedns, false);
-    System.out.println("Not found :'(");
     return false;
 	}
 

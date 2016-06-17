@@ -1,0 +1,25 @@
+public class KK {
+	private int b;
+	
+	public KK() {
+	}
+
+	public void m(int a) {
+		this.b = a + 2;
+	}
+}
+
+namespace A {
+  int a;
+	int b;
+  namespace B {
+	  int c;
+	}
+}
+
+using A.B;
+
+int main(){
+  c = 2;
+}
+

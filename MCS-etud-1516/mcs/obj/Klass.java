@@ -300,7 +300,7 @@ public class Klass extends CompositeType {
   }
 
 	public String name() {
-		return this.name();
+		return this.name;
 	}
 
   public String completeName() {

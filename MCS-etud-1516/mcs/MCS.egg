@@ -2975,7 +2975,7 @@ do
 	-- Recherche dans la TVar (globalement).
   write("(71) NamespaceList : " + F^listeNi + "\n");
 	if (!(F^tvar.exists(ident^txt, F^ni, F^listeNi, false))) then
-	  write("(71) " + ident^txt + " n'est pas dans la tvar\n");
+	  --write("(71) " + ident^txt + " n'est pas dans la tvar\n");
 	  -- ident n'est pas dans la TVar, F n'est pas une variable.
 		-- On regarde dans la TFun s'il s'agit de l'identifiant d'une fonction.
     if (!(F^tfun.exists(ident^txt, F^ni, F^listeNi))) then
@@ -2991,7 +2991,7 @@ do
     end
   else
 		-- On peut passer le type.
-	  write("(71) " + ident^txt + " trouvé.\n");
+	  --write("(71) " + ident^txt + " trouvé.\n");
 		info := F^tvar.lookup(ident^txt, F^ni, F^listeNi, false);
 		match info
 		with VariableInfo then
@@ -3801,6 +3801,7 @@ ENTITE -> #attACCES ACCES class identc #attHERITAGE HERITAGE aco #attDEFS DEFS a
 #attACCES {
 local
 do
+  write("(87) Definition d'une classe.\n");
   ACCES^indentation := ENTITE^indentation + 1;
 end
 }
@@ -3834,7 +3835,9 @@ end
 local
 	kl : Klass;
 do
-	kl := new Klass(ENTITE^klass.intToEnum(ACCES^acc), identc^txt, HERITAGE^klassS, ENTITE^ni);
+  write("(87) Avant les DEFS.\n");
+-- ENTITE^klass.intToEnum(ACCES^acc)
+	kl := new Klass(ACCES^acc, identc^txt, HERITAGE^klassS, ENTITE^ni);
 	ENTITE^tklass.insert(kl);
   DEFS^tvar := ENTITE^tvar;
 	DEFS^tfun := ENTITE^tfun;
@@ -3895,6 +3898,7 @@ HERITAGE -> #attHERITAGE;
 #attHERITAGE {
 local 
 do
+  write("(91) Pas d'héritage.\n");
   -- Aucun héritage
 	HERITAGE^klassS := null;
 end
@@ -4022,11 +4026,17 @@ end
 
 #attDECL {
 local
+  name : String;
+	k : Klass;
 do
+  k := DEF^klass;
+	name := k.name();
   -- Normalement impossible de rentrer dans ce cas (ident != identc)
-	if (DEF^klass.name() = ident^txt) then
-		error(DEFINITION_SAME_NAME_CLASS,ident^txt);
+	if (name.equals(ident^txt)) then
+		write("WOW");
+		error(DEFINITION_SAME_NAME_CLASS, ident^txt);
 	end
+  write("(95) Definition de : " + ident^txt + "\n");
 	DECL^tvar := DEF^tvar;
 	DECL^tfun := DEF^tfun;
 	DECL^talias := DEF^talias;
