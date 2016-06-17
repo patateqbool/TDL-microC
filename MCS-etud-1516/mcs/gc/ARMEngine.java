@@ -27,8 +27,8 @@ public class ARMEngine extends AbstractMachine {
     private List<Register> registers;							// List of registers on the machine
     private Register sp, lr, pc, ht, sb, oi, fr;	// Special registers
     private int heapbase = 0;											// Manual heap base calculus
-    private int condition_nb = 0;									// Number of if-then-else (/other conditionnal) structuresi
-    private int loop_nb = 0;
+    private int condition_nb = 0;									// Number of if-then-else structures
+    private int loop_nb = 0;                      // Number of when strctures
 
     /**
      * Constructor
@@ -64,7 +64,6 @@ public class ARMEngine extends AbstractMachine {
      */
     @Override
     public void writeCode(String fileName, String code) throws MCSException {
-        
         // Generate the vtables
         String vtables =
             generateAllVtables() +
@@ -94,7 +93,7 @@ public class ARMEngine extends AbstractMachine {
             "\n" +
             ".text\n" +
             // Declarations
-            generateComment("Preliminary definitions : heap top, stack base, heap base", "") +
+            generateComment("Preliminary definitions : heap top, stack base, object id, function return", "") +
             ht.alias() + "\t.req\t" + ht.name() + "\n" +
             sb.alias() + "\t.req\t" + sb.name() + "\n" +
             oi.alias() + "\t.req\t" + oi.name() + "\n" +
@@ -103,7 +102,6 @@ public class ARMEngine extends AbstractMachine {
 
         // Actually write the code to the file
         super.writeCode(fileName, preliminary + init + vtables + code);
-        
     }
 
     /**
@@ -111,7 +109,6 @@ public class ARMEngine extends AbstractMachine {
      * @return the code
      */
     private String generateAllVtables() throws MCSException {
-        
         String code = generateMultiComments(
                 "@@\n" +
                 "Code for virtual tables\n" +
@@ -122,14 +119,12 @@ public class ARMEngine extends AbstractMachine {
         }
 
         return code;
-        
     }
 
     /**
      * Generate the code for a virtual table
      */
     public String generateVtable(MethodInfo mi) throws MCSException {
-        
         // Retrieve the vtable for this method
         VirtualTable vt = VirtualTableCentral.instance().vtables().get(mi);
 
@@ -146,7 +141,6 @@ public class ARMEngine extends AbstractMachine {
         }
 
         return code + "\n";
-        
     }
 
     /**********************************************************
@@ -163,7 +157,6 @@ public class ARMEngine extends AbstractMachine {
      * @return the generated code
      */
     public String generateLoadValue(VariableInfo info, RegisterWrapper rout) throws MCSException  {
-        
         String code = "";
 
         if (info instanceof ConstantInfo)
@@ -173,7 +166,6 @@ public class ARMEngine extends AbstractMachine {
         }
 
         return code;
-        
     }
 
     /**
@@ -184,7 +176,6 @@ public class ARMEngine extends AbstractMachine {
      * @return the generated code
      */
     public String generateLoadValue(VariableInfo info, int disp, RegisterWrapper rout) throws MCSException  {
-        
         String code = "";
         Register r = getNextUnusedRegister();
         rout.set(r);
@@ -215,7 +206,6 @@ public class ARMEngine extends AbstractMachine {
         r.setStatus(Register.Status.Loaded);
 
         return code;
-        
     }
 
     /**
@@ -225,9 +215,7 @@ public class ARMEngine extends AbstractMachine {
      * @param rout (out) register in which the value will be
      * @return the generated code
      */
-    public String generateLoadValue(VariableInfo info, Register rdisp, RegisterWrapper rout) throws MCSException 
-
-    {
+    public String generateLoadValue(VariableInfo info, Register rdisp, RegisterWrapper rout) throws MCSException {
         RegisterWrapper raddr = new RegisterWrapper();
         Register r = getNextUnusedRegister();
         rout.set(r);
@@ -258,7 +246,6 @@ public class ARMEngine extends AbstractMachine {
      * @return the generated code
      */
     public String generateLoadFromStack(int disp, RegisterWrapper rout) throws MCSException  {
-        
         Register r = getNextUnusedRegister();
         rout.set(r);
         String code = "";
@@ -278,7 +265,6 @@ public class ARMEngine extends AbstractMachine {
         r.setStatus(Register.Status.Loaded);
 
         return code;
-        
     }
 
     /**
@@ -288,7 +274,6 @@ public class ARMEngine extends AbstractMachine {
      * @return the generated code
      */
     public String generateLoadConstant(ConstantInfo info, RegisterWrapper rout) throws MCSException  {
-        
         //trace System.out.println("gLCst : " + (info == null ? "NULL" : ""));
         //trace System.out.println("gLCst : " + info);
         String code = "";
@@ -319,16 +304,13 @@ public class ARMEngine extends AbstractMachine {
                     generateInstruction("MOVT", r, (val >> 16));
             }
         } else if (t instanceof StructType) {
-            // TODO
         } else if (t instanceof ArrayType) {
-            // TODO
         } else if (t instanceof Klass) {
         }
 
         r.setStatus(Register.Status.Loaded);
 
         return code;
-        
     }
 
     /**
@@ -339,7 +321,6 @@ public class ARMEngine extends AbstractMachine {
      * @return the generated code
      */
     public String generateLoadFromHeap(Register raddr, int disp, RegisterWrapper rout) throws MCSException  {
-        
         Register r = new Register();
         String code = "";
 
@@ -356,7 +337,6 @@ public class ARMEngine extends AbstractMachine {
         }
 
         return code;
-        
     }
 
     /**
@@ -367,7 +347,6 @@ public class ARMEngine extends AbstractMachine {
      * @return the generated code
      */
     public String generateLoadFromHeap(Register raddr, Register rdisp, RegisterWrapper rout) throws MCSException  {
-        
         String code = "";
         Register r = getNextUnusedRegister();
         rout.set(r);
@@ -380,7 +359,6 @@ public class ARMEngine extends AbstractMachine {
         r.setStatus(Register.Status.Loaded);
 
         return code;
-        
     }
 
     ///////////// STORE ////////////
@@ -392,7 +370,6 @@ public class ARMEngine extends AbstractMachine {
      * @return the generated code
      */
     public String generateStoreVariable(VariableInfo vinfo, Register rin) throws MCSException  {
-       
         //trace System.out.println("generateStoreVariable " + vinfo);
 
         Type t = vinfo.type();
@@ -412,7 +389,6 @@ public class ARMEngine extends AbstractMachine {
 
         rin.setStatus(Register.Status.Used);
         return code;
-        
     }
 
     /**
@@ -423,7 +399,6 @@ public class ARMEngine extends AbstractMachine {
      * @return the generated code
      */
     public String generateStoreVariable(VariableInfo vinfo, int disp, Register rin) throws MCSException  {
-        
         String code = "", addr = "";
         Type t = vinfo.type();
 
@@ -437,7 +412,6 @@ public class ARMEngine extends AbstractMachine {
         }
 
         return code;
-        
     }
 
     /**
@@ -448,7 +422,6 @@ public class ARMEngine extends AbstractMachine {
      * @return the generated code
      */
     public String generateStoreVariable(VariableInfo vinfo, Register rdisp, Register rin) throws MCSException  {
-        
         String code = "";
         Type t = vinfo.type();
 
@@ -462,7 +435,6 @@ public class ARMEngine extends AbstractMachine {
         }
 
         return code;
-        
     }
 
     /**
@@ -473,7 +445,6 @@ public class ARMEngine extends AbstractMachine {
      * @return the generated code
      */
     public String generateStoreInHeap(Register raddr, int disp, Register rin) throws MCSException  {
-        
         String code = "", addr = raddr + ", ";
 
         raddr.setStatus(Register.Status.Used);
@@ -492,7 +463,6 @@ public class ARMEngine extends AbstractMachine {
         rin.setStatus(Register.Status.Used);
 
         return code;
-        
     }
 
     /**
@@ -503,14 +473,12 @@ public class ARMEngine extends AbstractMachine {
      * @return the generated code
      */
     public String generateStoreInHeap(Register raddr, Register rdisp, Register rin) throws MCSException  {
-        
         String code =
             generateInstruction("STR", true, rin, raddr, rdisp);
         raddr.setStatus(Register.Status.Used);
         rdisp.setStatus(Register.Status.Used);
         rin.setStatus(Register.Status.Used);
         return code;
-        
     }
 
     /**
@@ -519,7 +487,6 @@ public class ARMEngine extends AbstractMachine {
      * @return the generated code
      */
     public String generateAllocateInStack(Type type) throws MCSException  {
-        
         //trace System.out.println("gAIS : allouer " + type + " dans la face");
         String code = "";
 
@@ -544,7 +511,6 @@ public class ARMEngine extends AbstractMachine {
         //trace System.out.println("gAIS : code = " + code);
 
         return code;
-        
     }
 
     /**
@@ -555,22 +521,35 @@ public class ARMEngine extends AbstractMachine {
      * @return the generated code
      */
     public String generateAllocate(Type type, RegisterWrapper raddr, Register rsize) throws MCSException  {
-        
+        // Init the output register
         Register reg = getNextUnusedRegister();
         raddr.set(reg);
         
-        //trace System.out.println("gAll : allouer un '" + type + "' dans le tas");
-
+        // The register is set to the current value of the heap's top
         String code =
             generateInstruction("MOV", reg, ht);
         reg.setStatus(Register.Status.Loaded);
 
+        /* For structures, we allocate room for each field and then allocate
+         * each field that is a composite type, putting the address of the
+         * allocated field in the corresponding field.
+         * For example :
+         * struct {
+         *    int a;
+         *    struct {
+         *      int c;
+         *    } b;
+         * }
+         * Will allocate 8 bytes of space (for a and for b) and then allocate the structure
+         * b, that is allocate 4 bytes of space and putting the generated address in b.
+         */
         if (type instanceof StructType) {
-            //trace System.out.println("gAll : c'est une structure");
             StructType ts = (StructType)type;
             RegisterWrapper r = new RegisterWrapper();
+            // Allocate room for all the fields
             code +=
                 generateInstruction("ADD", ht, ht, ts.realSize());
+            // Allocate every composite type fields
             for (String f : ts.fields()) {
                 Type t = ts.find(f);
                 if (t instanceof CompositeType) {
@@ -581,11 +560,15 @@ public class ARMEngine extends AbstractMachine {
 										r.get().setStatus(Register.Status.Used);
 								}
             }
-        } else if (type instanceof Klass) {
+        }
+        /* This works exactly the same way than structures */
+        else if (type instanceof Klass) {
             Klass k = (Klass)type;
             RegisterWrapper r = new RegisterWrapper();
+            // Allocate room for all the fields
             code +=
                 generateInstruction("ADD", ht, ht, k.realSize());
+            // Allocate every composite type fields
             Map<Integer,Type> dl = k.displacementList();
             for (Integer disp : dl.keySet()) {
                 if (dl.get(disp) instanceof CompositeType) {
@@ -596,7 +579,12 @@ public class ARMEngine extends AbstractMachine {
 						   			r.get().setStatus(Register.Status.Used);
 								}
             }
-        } else if (type instanceof ArrayType) {
+        }
+        /* Allocating an array of size sa made of a type of size st is easy :
+         *    size(array) = sa * st
+         * We put an extra integer in front of the array, containing the size of it
+         */
+        else if (type instanceof ArrayType) {
             ArrayType t = (ArrayType)type;
             Register rs = getNextUnusedRegister();
             code +=
@@ -605,7 +593,8 @@ public class ARMEngine extends AbstractMachine {
                 generateInstruction("ADD", ht, ht, 4) +
                 generateInstruction("ADD", ht, ht, rs);
             rsize.setStatus(Register.Status.Used);
-        } else {
+        }
+        else {
             //trace System.out.println("gAll : c'est un type simple");
             code +=
                 generateInstruction("ADD", ht, ht, type.size());
@@ -623,11 +612,9 @@ public class ARMEngine extends AbstractMachine {
      * @return the generated code
      */
     public String generateFlushVariable(Type type) throws MCSException  {
-        
+        // This is a dummy register, as POP needs a register
         Register reg = getNextUnusedRegister();
-
         return generateInstruction("POP", reg);
-        
     }
 
     /**
@@ -637,9 +624,10 @@ public class ARMEngine extends AbstractMachine {
      * @return the generated code
      */
     public String generateFlush(SymbolTable symtab) throws MCSException  {
-        
         Register reg = getNextUnusedRegister();
         String code = "";
+
+        // Remark: we flush the symbol table starting from the end, as we use a stack
         ListIterator<Type> iter = symtab.symbolsTypes().listIterator(symtab.symbols().size());
 
         while (iter.hasPrevious()) {
@@ -647,7 +635,6 @@ public class ARMEngine extends AbstractMachine {
         }
 
         return code;
-        
     }
 
     /**
@@ -660,7 +647,6 @@ public class ARMEngine extends AbstractMachine {
         String code = "";
 
         if (t instanceof CompositeType) {
-            // lol nope
         }
 
         return code;
@@ -676,13 +662,10 @@ public class ARMEngine extends AbstractMachine {
      * @return the generated code
      */
     public String generateFunctionDeclaration(FunctionInfo info, String blockcode) throws MCSException {
-        
-        //Register r = getNextUnusedRegister();
-        //info.assignRegister(r);
-
         String label = info.label();
 
         if (info instanceof MethodInfo)
+            // Method labels are preceded by the class's name
             label = ((MethodInfo)info).parent().name() + label;
 
         String code =
@@ -735,7 +718,6 @@ public class ARMEngine extends AbstractMachine {
             generateInstruction("BX", lr) + "\n";
 
         return code;
-        
     }
 
 
@@ -746,15 +728,12 @@ public class ARMEngine extends AbstractMachine {
      * @return the generated code
      */
     public String generateFunctionReturn(FunctionInfo info, Register rval) throws MCSException {
-        
         String code = "", label = info.label();
 
         if (info instanceof MethodInfo)
             label = ((MethodInfo)info).parent().name() + label;
 
         if (!(info.returnType() instanceof VoidType)) {
-            //Register r = getNextUnusedRegister();
-            //info.assignRegister(r);
             code +=
                 generateInstruction("MOV", info.register(), ht) +
                 generateInstruction("STMIA", "!" + ht, rval);
@@ -767,7 +746,6 @@ public class ARMEngine extends AbstractMachine {
             generateInstruction("B", label + "_end") + "\n";
 
         return code;
-        
     }
 
     /**
@@ -789,11 +767,9 @@ public class ARMEngine extends AbstractMachine {
      * @return the generated code
      */
     public String generateFunctionCall(FunctionInfo info) throws MCSException  {
-        
         String code =
             generateInstruction("BL", info.label());
         return code;
-        
     }
 
     /**
@@ -803,7 +779,6 @@ public class ARMEngine extends AbstractMachine {
      * @return the generated code
      */
     public String generateMethodDeclaration(MethodInfo info, String blockcode) throws MCSException {
-        
         Klass kmeth = info.parent();
         String code =
             generateComment("Vtable redirection", ARMEngine.Prefix) +
@@ -822,7 +797,6 @@ public class ARMEngine extends AbstractMachine {
             blockcode;
 
         return generateFunctionDeclaration(info, code);
-        
     }
 
     /**
@@ -832,12 +806,10 @@ public class ARMEngine extends AbstractMachine {
      * @return the generated code
      */
     public String generateMethodCall(MethodInfo info, Register robj) throws MCSException {
-        
         String code =
             generateFunctionPushArgument(robj) +
             generateFunctionCall(info);
         return code;
-        
     }
 
     /**
@@ -849,7 +821,6 @@ public class ARMEngine extends AbstractMachine {
      * @return the generated code
      */
     public String generateConstructorDeclaration(ConstructorInfo info, ConstructorInfo base, String pcode, String bcode) throws MCSException {
-        
         Register r = getNextUnusedRegister();
 
         String codeinst =
@@ -861,18 +832,10 @@ public class ARMEngine extends AbstractMachine {
             generateInstruction("STR", true, r, info.register()) +
             generateComment("Instanciate attributes", ARMEngine.Prefix);
 
+        RegisterWrapper raddr = new RegisterWrapper();
         Klass k = info.parent();
-        int rs = k.realSize();
-
-        if (rs < 65535) {
-            codeinst +=
-                generateInstruction("ADD", ht, ht, rs);
-        } else {
-            RegisterWrapper rsize = new RegisterWrapper();
-            codeinst +=
-                generateLoadConstant(new ConstantInfo(new IntegerType(), rs), rsize) +
-                generateInstruction("ADD", ht, ht, rsize);
-        }
+        codeinst +=
+            generateAllocate(k, raddr, null);
 
         codeinst +=
             generateInstruction("PUSH", info.register());
@@ -888,21 +851,17 @@ public class ARMEngine extends AbstractMachine {
                 bcode;
 
         return codeinst + generateFunctionDeclaration(info, ecode);
-        
     }
 
     /**
      * Generate the code for calling a constructor
      * @param info info of the constructor to call
-     * @param base determines if this call is made to the super constructor (in another constructor)
      * @return the generated code
      */
-    public String generateConstructorCall(ConstructorInfo info, boolean base) throws MCSException {
-        
+    public String generateConstructorCall(ConstructorInfo info) throws MCSException {
         String code =
-            generateInstruction("BL", info.parent().name() + info.label() + (base ? "" : "_inst"));
+            generateInstruction("BL", info.parent().name() + info.label() + "_inst");
         return code;
-        
     }
 
     ////////////////////////////// MISC ///////////////////////////////
@@ -1418,28 +1377,28 @@ public class ARMEngine extends AbstractMachine {
      * @return the register
      */
     private Register getNextUnusedRegister() throws MCSException {
-        
-        // TODO: register use policy
         for (int i = 0; i < registers.size(); i++) {
-            //trace System.out.println(registers.get(i).debug());
             if ((registers.get(i).status() == Register.Status.Empty)||(registers.get(i).status() == Register.Status.Used))
                 return registers.get(i);
         }
 
-        System.err.println("FATAL ERROR : NO MORE REGISTER !");
-
         throw new MCSRegisterLimitReachedException();
-        
     }
 
     public String logRegisters() {
-        
         String txt = "";
         for (Register r : this.registers) {
             txt += r.debug() + "\n";
         }
         return txt;
-    
+    }
+
+    /**
+     * Return the size of the context.
+     * As we use only 3 registers, this context is 12 (4*3)
+     */
+    public int contextSize() {
+        return 12;
     }
 }
 

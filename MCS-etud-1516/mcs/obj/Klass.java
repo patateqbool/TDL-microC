@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Map;
 import mcs.util.OrderedMap;
 import mcs.symtab.*;
+import mcs.gc.IMachine;
 
 public class Klass extends CompositeType {
   enum AccessSpecifier {
@@ -283,6 +284,15 @@ public class Klass extends CompositeType {
     return res;
   }
 
+  /**
+   * Return the displacement of this for using in a member function.
+   * As this is always the last parameter, it is just below the context.
+   * @param machine machine for calculating (with context size)
+   * @return displacement of this
+   */
+  public int thisDisplacement(IMachine machine) {
+      return -(machine.contextSize() + 4);
+  }
 
 	/**
 	 * Sum all the sizes of the fields preceding the field "to"
