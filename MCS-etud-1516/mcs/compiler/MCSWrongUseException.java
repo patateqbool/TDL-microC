@@ -8,8 +8,8 @@ package mcs.compiler;
 
 public class MCSWrongUseException extends MCSException {
 	private static final long serialVersionUID = 1L;
-	public MCSWrongUseException(String m) {
-		super("Method '" + m + "' is not supposed to be used like that");
+	public MCSWrongUseException(String m, String compl) {
+		super("Method '" + m + "' is not supposed to be used like that: " + compl);
 	}
 }
 
