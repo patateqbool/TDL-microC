@@ -25,6 +25,14 @@ public class NamespaceInfoList extends ArrayList<NamespaceInfo> {
 
         return false;
     }
+		
+		public String toString() {
+			String str = "";  
+			for (NamespaceInfo ni : this)
+				str += ni.label() + "\n";
+			return str;
+		}
+
 }
 
 

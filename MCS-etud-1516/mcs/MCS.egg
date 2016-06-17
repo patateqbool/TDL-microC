@@ -512,19 +512,12 @@ do
 				--write("(5) Add variable \\o/\n");
 				  -- Si ce n'est pas le cas, on peut add la variable à la tvar.
           tv.insert(ident^txt, TYPE^type, ENTITE^ni);
-			  	write("on est actuellement en train d'ajouter " + ident^txt + " dans le ns " + ENTITE^ni.name() + "\n");					
+			  	write("(5) Ajout de " + ident^txt + " dans le ns " + ENTITE^ni.name() + "\n");					
 					code := ENTITE^machine.generateComment("(5) Variable declaration:", "") + code ;
 				end
 	   else
-		   code := ENTITE^machine.generateComment("(5) Function declaration:", "") + code ;
-			----write("(5) It's a function declaration\n");
-        -- On a une fonction.
-				-- On ajoute la fonction à la tfun, 
-				-- si la valeur retour est false c'est qu'on avait déjà une fonction
-				-- avec la même signature. Dans ce cas, erreur.
-				--if (!(tf.insert(ident^txt, ENTITE^ni, fi))) then 
-				  --error(ALREADY_A_FUN_WITH_THAT_SIGN, ident^txt);
-				--end
+		   code := ENTITE^machine.generateComment("(5) Function declaration:", "")
+			       + code ;
 	    end
     end
 	end
@@ -1307,6 +1300,7 @@ end
 #attINST {
 local
 do
+  write("(29) Code de E :\n" + E^code + "\n"); 
 	-- Remontée du code.
 	INST^code := INST^machine.generateComment("(29) Expression:", "\t")
 	           + E^code
@@ -1602,7 +1596,7 @@ E -> #attA A #attAFFX AFFX #attE;
 #attA {
 local
 do
-  write("(35) Début.\n");
+  --write("(35) Début.\n");
 	A^machine := E^machine;
 	A^tvar := E^tvar;
 	A^tfun := E^tfun;
@@ -1654,7 +1648,7 @@ do
 	vi := null;
 	-- On n'a pas d'affectation à droite.
 	if (AFFX^estVar) then
-		write("(35) AFFX est vide.\n");
+		--write("(35) AFFX est vide.\n");
 		-- E peut dans ce cas représenter une variable.
 		estVar := true ;
 		vi := A^vi ;
@@ -1780,7 +1774,7 @@ A -> #attR R #attAX AX #attA ;
 #attR {
 local
 do
-  write("Regle (38)\n");
+  --write("Regle (38)\n");
 	R^machine := A^machine;
 	R^tvar := A^tvar;
 	R^tfun := A^tfun;
@@ -2297,6 +2291,7 @@ do
 	rw := new RegisterWrapper();
 	code := F^code;
 	t := F^type;
+	write("(53) Code de F :\n" + code + "\n");
 	if (TX^op != 0) then
 		-- Si il y a un opération : verif sur les types.
 		match t
@@ -2967,7 +2962,7 @@ local
 	rw : RegisterWrapper;
   reg : Register;
 do
---write("Regle (71) : " + ident^txt + ", " + F^ni.name() + "\n");
+  write("(71) : " + ident^txt + ", " + F^ni.name() + "\n");
   --Initialisations.
 	code := "";
   listeDepl := new DisplacementList();
@@ -2977,11 +2972,10 @@ do
 	info := null;
 	reg := null;
 	rw := new RegisterWrapper();
---write("(71) VARTABLE :\n" + F^tvar);
-
 	-- Recherche dans la TVar (globalement).
-  if (!(F^tvar.exists(ident^txt, F^ni, F^listeNi, false))) then
-	--write("(71) " + ident^txt + " not in tvar\n");
+  write("(71) NamespaceList : " + F^listeNi + "\n");
+	if (!(F^tvar.exists(ident^txt, F^ni, F^listeNi, false))) then
+	  write("(71) " + ident^txt + " n'est pas dans la tvar\n");
 	  -- ident n'est pas dans la TVar, F n'est pas une variable.
 		-- On regarde dans la TFun s'il s'agit de l'identifiant d'une fonction.
     if (!(F^tfun.exists(ident^txt, F^ni, F^listeNi))) then
@@ -2997,7 +2991,7 @@ do
     end
   else
 		-- On peut passer le type.
-	--write("(71) " + ident^txt + " is a var\n");
+	  write("(71) " + ident^txt + " trouvé.\n");
 		info := F^tvar.lookup(ident^txt, F^ni, F^listeNi, false);
 		match info
 		with VariableInfo then
@@ -3091,6 +3085,7 @@ do
 		  reg := rv.get();
 		end
   end
+	write("(71) Fin, code :\n" + code + "\n"); 
 	F^vi := varInfo;
 	F^code := code;
   F^estVar := true;
@@ -3657,6 +3652,7 @@ local
 	tns : NamespaceTable;
 	ni : NamespaceInfo;
 do
+  write("Creation namespace.\n");
   tns := ENTITE^tns;
   -- Si identc est une clef dans la TDSKlass, erreur.
   if (ENTITE^tklass.exists(identc^txt, ENTITE^ni, ENTITE^listeNi)) then
@@ -3690,12 +3686,14 @@ local
 do
   -- Pas de code à ajouter dans cette RP, 
 	-- on fait tout de même remonter le code des ENTITES du namespace.
-  ENTITE^code := ENTITES^code;
+  ENTITE^code := ENTITE^machine.generateComment("(83) Namesapce creation (" + identc^txt + "):", "")
+	             + ENTITES^code
+							 + ENTITE^machine.generateComment("(83) End of namespace.", "");
 end
 }
 
 
--- (84) Donne l'acces au contenu du 'namespace'.
+-- (84) : Donne l'acces au contenu du 'namespace'.
 -- Le chemin du ns doit être donné depuis "la racine".
 ENTITE -> using identc #attIDC IDC #attENTITE pv ;
 

@@ -106,9 +106,9 @@ public class Register {
         Status old = this.status;;
         if (!this.lck){
             this.status = s;
-						System.out.println("(" + this + ") Status changed : " + old + " => " + s);
+						//trace System.out.println("(" + this + ") Status changed : " + old + " => " + s);
         } else {
-				    System.out.println("(" + this + ") I can not change this status, you put a lock on it! My status is still " + this.status);
+				    //trace System.out.println("(" + this + ") I can not change this status, you put a lock on it! My status is still " + this.status);
 				}
 		}
 

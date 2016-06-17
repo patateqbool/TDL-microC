@@ -22,13 +22,13 @@ public class FunctionTable implements SymbolTable {
   }
 
   public boolean exists(String name, NamespaceInfo namespace, NamespaceInfoList usedns, SymbolInfo si) {
-		System.out.println("Checking for existence of " + name);
-		System.out.println(this.toString());
+		//trace System.out.println("Checking for existence of " + name);
+		//trace System.out.println(this.toString());
 
     for (FunctionInfo csi : this.content) {
       if (csi.similar(name, ((FunctionInfo)si).parameters())) {
         if (csi.namespace().equals(namespace) || usedns.contains(csi.namespace())) {
-					System.out.println("I found something ! \\o/");
+					//trace System.out.println("I found something ! \\o/");
           return true;
 				}
       }

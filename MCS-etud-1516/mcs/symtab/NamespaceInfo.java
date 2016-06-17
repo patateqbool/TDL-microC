@@ -57,6 +57,9 @@ public class NamespaceInfo {
     }
 
     public boolean equals(NamespaceInfo ni) {
+			if (ni instanceof DefaultNamespaceInfo)
+				return false;
+
         return (ni.parent.equals(this.parent) && ni.name.equals(this.name));
     }
 }
