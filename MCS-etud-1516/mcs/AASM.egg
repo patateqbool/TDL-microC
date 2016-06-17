@@ -8,6 +8,7 @@ inh listeni_asm : NamespaceInfoList for ASM, INSTS, INST, PAR, PARS, PARSX, ADDR
 inh tds_asm		: VariableTable for ASM, INSTS, INST, PAR, PARS, PARSX, ADDR, VARIABLE;
 inh mach_asm	:	AbstractMachine for ASM, INSTS, INST, PAR, PARS, PARSX, ADDR, ADDRSEC, REGISTER, NUMBER, VARIABLE, REGORNUM;
 inh parlist		: List<Object> for PAR, PARS, PARSX;
+inh reglist   : List<Register> for REGLIST, REGLISTX;
 
 -- Separators
 space	spce		is	"[\t ]+";
@@ -141,6 +142,13 @@ PAR -> SHIFTOP REGORNUM #gen ;
 #gen {
     do
         PAR^code_asm := SHIFTOP^code_asm + REGORNUM^code_asm;
+    end
+}
+
+PAR -> ocbrack REGLIST ccbrack #gen ;
+#gen {
+    do
+        PAR^code_asm := PAR^mach_asm.generateRegisterList(REGLIST^reglist);
     end
 }
 

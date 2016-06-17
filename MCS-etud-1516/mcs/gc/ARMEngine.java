@@ -125,7 +125,8 @@ public class ARMEngine extends AbstractMachine {
                 init +
                 vtables +
                 code +
-                exit
+                exit +
+                "END"
         );
     }
 
