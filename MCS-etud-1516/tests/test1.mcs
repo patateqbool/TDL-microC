@@ -1,12 +1,12 @@
 int c;
 int d;
 
-//int funTest (int a, int b) {
-//	funTest(b, a);
-//	return 2;
-//}
+int funTest (int a, int b) {
+	funTest(b, a);
+	return 2;
+}
 
-void main() {
+int main() {
 	d = (c = 18);
 	d = (int) c;
 	struct {
@@ -17,8 +17,9 @@ void main() {
 			int d;
 		} ste;
 	} st;
-	//st.a = 3;
-//	funTest(5, 3);
+	st.a = 3;
+	return funTest(5, 3);
+
 }
 
 

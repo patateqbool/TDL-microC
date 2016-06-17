@@ -13,6 +13,6 @@ int x(Point p) {
   return p.x;
 }
 
-void main(){
-  x(b);
+int main(){
+  return x(b);
 }

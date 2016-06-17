@@ -272,6 +272,10 @@ compil AASM;
 PROGRAMME -> #attENTITES ENTITES #attPROGRAMME;
 global
    machine : AbstractMachine;
+   ni : NamespaceInfo;
+	 listeNi : NamespaceInfoList;
+   tfun : FunctionTable;
+
 -- Transmission de la machine cible  (choisie par l'option -m au lancement) 
 #attENTITES {
 local
@@ -283,13 +287,16 @@ do
     ENTITES^machine := machine;
   end
   ENTITES^tvar := new VariableTable();
-  ENTITES^tfun := new FunctionTable();
+  tfun := new FunctionTable();
+	ENTITES^tfun := tfun;
   ENTITES^talias := new AliasTable();
 	ENTITES^tklass := new KlassTable();
 	ENTITES^tns := new NamespaceTable();
 	ENTITES^machine := machine;
-	ENTITES^ni := new DefaultNamespaceInfo();
-  ENTITES^listeNi := new NamespaceInfoList();
+	ni := new DefaultNamespaceInfo();
+	ENTITES^ni := ni;
+	listeNi := new NamespaceInfoList();
+  ENTITES^listeNi := listeNi;
 	ENTITES^indentation := 0;
   ENTITES^klass := null;
 end
@@ -297,9 +304,25 @@ end
 -- Ecrit le code dans un fichier
 #attPROGRAMME {
 local
+  fi : SymbolInfo;
+  t : Type;
 do
-   machine.writeCode(PROGRAMME^source.getFileName(), ENTITES^code); 
-   write("\nEtat final des registres (L est une anomalie) :\n" + machine.logRegisters());
+  fi := tfun.lookup("main", ni, listeNi, new ArrayList<Type>());
+	if (fi = null) then
+    error(NO_MAIN);
+	else
+	  match fi 
+		with FunctionInfo then
+		  t := fi.returnType();
+	    match t
+		  with IntegerType then
+		  else
+		    error(MAIN_NOT_INT);
+		  end
+		end
+	end
+	machine.writeCode(PROGRAMME^source.getFileName(), ENTITES^code); 
+  write("\nEtat final des registres (L est une anomalie) :\n" + machine.logRegisters());
 end
 }
 
@@ -1385,9 +1408,9 @@ do
 	code := "";
 	codeTHEN := BLOC^code;
 	codeELSE := SIX^code;
-	-- On vérifie que le type dans la conditionnelle est bien un entier (en l'absence de booléens)
+	-- On vérifie que le type dans la conditionnelle est bien un booléen (prec. un entier)
 	match E^type
-	with IntegerType then
+	with BooleanType then
 		-- Si c'est le cas, on génère le code
 		code := INST^machine.generateComment("(31) IF THEN ELSE:", "\t") 
 		      + INST^machine.generateComment("(31) Expression for condition:", "\t\t")
@@ -1497,9 +1520,9 @@ local
 do
 	-- Génération du code pour une boucle tant que.
 	code := "";
-	-- On vérifie que le type dans la conditionnelle est bien un entier (en l'absence de booléens)
+	-- On vérifie que le type dans la conditionnelle est bien un booléen (prec. un entier)
 	match E^type
-	with IntegerType then
+	with BooleanType then
 		-- Si c'est le cas, on génère le code
     code := INST^machine.generateWhile(E^code, E^reg, BLOC^code);
 	else
@@ -1758,7 +1781,7 @@ A -> #attR R #attAX AX #attA ;
 #attR {
 local
 do
---write("Regle (38)\n");
+  write("Regle (38)\n");
 	R^machine := A^machine;
 	R^tvar := A^tvar;
 	R^tfun := A^tfun;
@@ -1801,7 +1824,7 @@ do
 	rw := new RegisterWrapper();
 	code := R^code;
 	t := R^type;
---write("(38) R^type = " + t + "\n");
+  --write("(38) R^type = " + t + "\n");
 	-- Si AX n'est pas une variable, on doit générer le code de l'opération.
 	if !(AX^estVar) then
 		-- Le type de A doit être comparable, ie il doit s'agir d'un type simple.
@@ -1812,7 +1835,7 @@ do
 			if !(t.isCompatible(AX^type)) then 
 				error(TYPE_NOT_EQUAL);
 			else
-				-- On génnère le code de l'opération.
+				-- On génère le code de l'opération.
 				code := A^machine.generateComment("(38) Comparison, left part:","\t\t")
 				      + code
 							+ A^machine.generateComment("(38) End left part, right part:","\t\t")
@@ -1821,8 +1844,8 @@ do
 							+ A^machine.generateOperation(AX^oprel,R^reg,AX^reg,rw)
 							+ A^machine.generateComment("(38) End of comparison.","\t\t");
 				reg := rw.get();
-				-- Une comparaison renvoie un entier (/un booléen)
-				type := new IntegerType();
+				-- Une comparaison renvoie un booléen (précédemment un entier)
+				type := new BooleanType();
 			end
 		else
 			-- Le type n'est pas simple : impossible de faire une comparaison.
