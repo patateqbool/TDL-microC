@@ -287,10 +287,9 @@ public interface IMachine {
     /**
      * Generate the code for calling a constructor
      * @param info info of the constructor to call
-     * @param base determines if this call is made to the super constructor (in another constructor)
      * @return the generated code
      */
-    String generateConstructorCall(ConstructorInfo info, boolean base) throws MCSException;
+    String generateConstructorCall(ConstructorInfo info) throws MCSException;
 
     ////////////////////////////// MISC ///////////////////////////////
     /**
@@ -429,11 +428,16 @@ public interface IMachine {
      */
     String generateOperation(int op, Register rin, RegisterWrapper rout) throws MCSException;
 
-
+    // For debug
     /** 
 		 * Returns the status of every registers.
 		 */
 		String logRegisters();
+
+    /**
+     * Returns the size of the context
+     */
+    int contextSize();
 }
 
 
