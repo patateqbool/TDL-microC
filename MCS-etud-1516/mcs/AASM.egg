@@ -26,7 +26,7 @@ sugar	obrack	is	"\[";
 sugar cbrack	is 	"\]";
 sugar ocbrack	is	"\{";
 sugar ccbrack	is	"\}";
-sugar commbeg is  "\/\/";
+--sugar commbeg is  "\/\/";
 
 -- Shift types
 sugar st_asr	is "ASR";
@@ -44,23 +44,18 @@ sugar sb	is "sb";
 sugar fr	is "fr";
 
 -- Terms
+term	str			is	"\"([^\"]|\\.)*\"";
+term 	num			is	"\$((\-|\+)?[0-9]+|0x[0-9a-fA-F]+|0b[0-1]+)";
 term  opcode  is  "[A-Z][A-Z0-9]*";
 term	genreg	is	"r[0-9]";
-term 	num			is	"((\-|\+)?[0-9]+|0x[0-9a-fA-F]+|0b[0-1]+)";
-term	str			is	"\"([^\"]|\\.)*\"";
+term	var			is	"#[A-Za-z][A-Za-z0-9_]*";
 term	direct	is	"\.[a-z0-9_\.]+";
-term	var			is	"[A-Za-z][A-Za-z0-9_]*";
 term  ident		is	"[0-9a-zA-Z_\$@#\.\?\<\>]+";
-term 	comm 		is	"[^\n]*\n";
+term  label   is  "[0-9a-zA-Z_\$@#\.\?\<\>]+:";
+--term 	comm 		is	"[^\n]*\n";
 
 -- Rules
-ASM -> ocbrack #init INSTS ccbrack #gen ;
-#init {
-    do
-        write("I'm in ASM\n");
-    end
-}
-
+ASM -> ocbrack INSTS ccbrack #gen ;
 #gen {
     do
         ASM^code_asm := ASM^mach_asm.generateComment("Inline ASM", "\t\t") + INSTS^code_asm;
@@ -78,7 +73,7 @@ INSTS -> INST INSTS #gen ;
 INSTS -> #gen ;
 #gen {
     do
-        INSTS^code_asm := "\n";
+        INSTS^code_asm := "";
     end
 }
 
@@ -95,16 +90,23 @@ global
 
 #gen {
     do
-        INST^code_asm := INST^mach_asm.generateInstruction(opcode^txt, pl) + "\n";
+        INST^code_asm := INST^mach_asm.generateInstruction(opcode^txt, pl);
     end
 }
 
-INST -> commbeg comm #gen ;
+INST -> label #gen ;
 #gen {
     do
-        INST^code_asm := INST^mach_asm.generateComment(comm^txt, "\t\t");
+        INST^code_asm := INST^mach_asm.generateLabel(label^txt.substring(0, label^txt.length() - 1));
     end
 }
+
+--INST -> commbeg comm #gen ;
+--#gen {
+    --do
+        --INST^code_asm := INST^mach_asm.generateComment(comm^txt, "\t\t");
+    --end
+--}
 
 -- Parameters
 PARS -> ;
@@ -126,6 +128,8 @@ PARSX -> coma PAR #gen PARSX ;
     end
 }
 
+
+
 PAR -> ADDR #gen ;
 #gen {
     do
@@ -137,6 +141,13 @@ PAR -> SHIFTOP REGORNUM #gen ;
 #gen {
     do
         PAR^code_asm := SHIFTOP^code_asm + REGORNUM^code_asm;
+    end
+}
+
+PAR -> ident #gen ;
+#gen {
+    do
+        PAR^code_asm := ident^txt;
     end
 }
 
@@ -232,7 +243,7 @@ end
 }
 
 -- Variables
-VARIABLE -> sharp var #gen ;
+VARIABLE -> var #gen ;
 #gen {
 local
     si : SymbolInfo;
@@ -240,7 +251,7 @@ do
     if VARIABLE^tds_asm = null then
         error(ASM_ERROR_NO_TDS);
     else
-        si := VARIABLE^tds_asm.lookup(var^txt, VARIABLE^namespace_asm, VARIABLE^listeni_asm, false);
+        si := VARIABLE^tds_asm.lookup(var^txt.substring(1), VARIABLE^namespace_asm, VARIABLE^listeni_asm, false);
 
         if si = null then
             error(VARIABLE_UNKNOWN, var^txt);
@@ -273,10 +284,10 @@ REGORNUM -> NUMBER #gen ;
 }
 
 -- Numbers
-NUMBER -> dollar num #gen ;
+NUMBER -> num #gen ;
 #gen {
 do
-    NUMBER^code_asm := NUMBER^mach_asm.generateDirect(num^txt);
+    NUMBER^code_asm := NUMBER^mach_asm.generateDirect(num^txt.substring(1));
 end
 }
 
