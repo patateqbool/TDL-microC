@@ -1,0 +1,34 @@
+void write(char* str, int size) {
+    // SWI write
+    // r0 <- file descriptor
+    // r1 <- pointer to buffer
+    // r2 <- size
+    // r7 <- 0x04
+    asm {
+        MOV r3, lr
+        MOV r0, $1
+        LDR r1, #str
+        LDR r2, #size
+        MOV r7, $4
+        SVC $0
+    }
+}
+
+void append(char* str, char c, int disp) {
+    asm {
+        LDR r0, #c
+        ADD r1, sb, #24
+        LDR r2, #disp
+        STR r0, [r1, r2]
+    }
+}
+
+int main() {
+    char* c;
+    append(c, 'a', 0);
+    append(c, 'b', 1);
+    write(c, 2);
+    return 0;
+}
+
+
