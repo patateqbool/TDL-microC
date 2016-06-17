@@ -3758,7 +3758,7 @@ end
 local
 	kl : Klass;
 do
-	kl := new Klass(ACCES^acc, identc^txt, HERITAGE^klassS, ENTITE^ni);
+	kl := new Klass(ENTITE^klas.intToEnum(ACCES^acc), identc^txt, HERITAGE^klassS, ENTITE^ni);
 	ENTITE^tklass.insert(kl);
   DEFS^tvar := ENTITE^tvar;
 	DEFS^tfun := ENTITE^tfun;
@@ -3977,7 +3977,7 @@ do
 		if (DEF^klass.attributeExists(ident^txt)) then
 		  error(ALREADY_ATTRIBUTE, ident^txt, DEF^klass.name());			
 		else
-		  DEF^klass.addAttribute(ident^txt, DEF^accH, TYPE^type);
+		  DEF^klass.addAttribute(ident^txt, DEF^klass.intToEnum(DEF^accH), TYPE^type);
 		end
 	else
 		match fi
@@ -3985,7 +3985,7 @@ do
 			if (DEF^klass.methodExists(fi)) then
 		  	error(ALREADY_METHOD, ident^txt, DEF^klass.name());			
 			else
-		 		DEF^klass.addMethod(ident^txt, DEF^accH, DECL^funInfo);		
+		 		DEF^klass.addMethod(ident^txt, DEF^klass.intToEnum(DEF^accH), DECL^funInfo);		
 			  code := DEF^machine.generateMethodDeclaration(fi, DECL^code);			
 			end
 		else
@@ -4015,7 +4015,7 @@ do
   PARFS^tfun := DEF^tfun;
 	PARFS^talias := DEF^talias;
 	-- Creation de la FunctionInfo avec le type retour.
-  PARFS^funInfoH := new ConstructorInfo(DEF^accH, DEF^klass, DEF^machine.functionReturn());
+  PARFS^funInfoH := new ConstructorInfo(DEF^klass.intToEnum(DEF^accH), DEF^klass, DEF^machine.functionReturn());
   -- Initialisation du compteur de parametres.
   PARFS^cParam := 0;
   PARFS^machine := DEF^machine;
@@ -4150,16 +4150,18 @@ F -> true #attF ;
 #attF {
 local
   t : BooleanType;
+	rw : RegisterWrapper;
   r : Register;
 do
   -- Creation du type et du registre.
   t := new BooleanType();
-  r := new Register();
+  rw := new RegisterWrapper();
 	-- Set de l'attribut type.
 	F^type := t;
 	-- Génération du code, et set de l'attribut le contenant.
-  F^code := F^machine.generateLoadConstant(new ConstantInfo(t, true), r); 
+  F^code := F^machine.generateLoadConstant(new ConstantInfo(t, true), rw); 
 	-- Set de l'attribut registre de F, c'est le registre contenant l'entier.
+	r := rw.get();
 	F^reg := r;
 	F^regAdr := null;
   -- Une expression de base ne peut representer une variable.
@@ -4178,19 +4180,21 @@ F -> false #attF;
 #attF {
 local
   t : BooleanType;
+	rw : RegisterWrapper;
   r : Register;
 do
   -- Creation du type et du registre.
   t := new BooleanType();
-  r := new Register();
+  rw := new RegisterWrapper();
 	-- Set de l'attribut type.
 	F^type := t;
 	-- Génération du code, et set de l'attribut le contenant.
-  F^code := F^machine.generateLoadConstant(new ConstantInfo(t, false), r); 
+  F^code := F^machine.generateLoadConstant(new ConstantInfo(t, false), rw); 
 	-- Set de l'attribut registre de F, c'est le registre contenant l'entier.
+	r := rw.get();
 	F^reg := r;
-  F^regAdr := null;
-	-- Une expression de base ne peut representer une variable.
+	F^regAdr := null;
+  -- Une expression de base ne peut representer une variable.
   -- Donc pas de vi.
   F^estVar := false;
 	F^vi := null;
@@ -4404,20 +4408,17 @@ end
 #attF {
 local
 	ci : ConstructorInfo;
-	ciReg : Register;
 do
   ci := IDC^klassS.lookupConstructor(ES^typesParamsS);
-	ciReg := ci.register();	
 	if (ci = null) then
 	  error(NO_CONSTR_WITH_SUCH_PARS, identc^txt);
 	end
-	F^code := ES^code + F^machine.generateConstructorCall(ci)
-					+ F^machine.generateLoadFromHeap(ciReg, 0, new RegisterWrapper());
+	F^code := ES^code + F^machine.generateConstructorCall(ci);
 	F^estVar := false;
 	F^vi := null;
 	F^type := IDC^klassS;
-	F^regAdr := ciReg;
-  F^reg := rw.get();
+  F^reg := null;
+	F^regAdr := null;
 end
 }
 
