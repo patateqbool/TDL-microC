@@ -2,6 +2,8 @@
 -- Grammaires de MC  et MCS                       --
 ----------------------------------------------------
 
+
+
 --options
 option auto = true;
 option version = 0.0.1;
@@ -41,11 +43,6 @@ inh tfun : FunctionTable for
          ENTITES, ENTITE, BLOC, F, INSTS, INST, SIX, E, AFFX, A, AX, DECL, FONCTION, PARFS, PARF, PARFSX,
 				 R, RX, T, TX, FX, ES, ESX, DEFS, DEF, BASE
 				 ;
-
--- TODO cf plus haut.
-syn tfunS : FunctionTable for 
-         ENTITE
-         ;
 
 syn type : Type for
          TYPE, STYPE, PTRS, F, CHAMP, E, A, AFFX, AX, FX,
@@ -341,7 +338,6 @@ end
 local
 do
   ENTITES1^tvar := ENTITES^tvar;
-  ENTITES1^tfun := ENTITE^tfunS;
 	ENTITES1^machine := ENTITES^machine;
 	ENTITES1^ni := ENTITES^ni;
 	ENTITES1^listeNi := ENTITES^listeNi;
@@ -407,8 +403,6 @@ do
 			end
     end
   end  
-	-- Les autres tds ne sont pas modifiées.
-	ENTITE^tfunS := ENTITE^tfun;
 	-- Pas de code pour cette RP.
   ENTITE^code := ENTITE^machine.generateComment("(4) TypeDef: " + identc^txt + " (" + TYPE^type + ")", "");
 end
@@ -510,7 +504,6 @@ do
 	    end
     end
 	end
-  ENTITE^tfunS := tf ;
   -- Passage du code généré par DECL à ENTITE.
 --write("Code (5) : " + DECL^code + "\n");
   ENTITE^code := code + ENTITE^machine.generateComment("(5) End of declaration.", "");
@@ -1335,6 +1328,7 @@ INST -> si paro #attE E parf #attBLOC BLOC #attSIX SIX #attINST;
 #attE {
 local
 do
+--write("(31) Avant la condition.\n");
 	E^machine := INST^machine;
 	E^tvar := INST^tvar;
 	E^tfun := INST^tfun;
@@ -1351,6 +1345,7 @@ end
 local
 	tfille : VariableTable;
 do
+--write("(31) Après la condition,\n     Type de la condition : " + E^type + "\n");
 	BLOC^funInfoH := INST^funInfoH;
 	tfille := new VariableTable(INST^tvar);
 	BLOC^tvar := tfille;
@@ -1413,7 +1408,7 @@ do
 	        + INST^machine.generateComment("(31) END IF THEN ELSE.", "\t");
 	else
 		-- Sinon, on renvoie une erreur
-		error(TYPE_NOT_EQUAL);
+		error(TYPE_CONDITION);
 	end
 	INST^code := code ;
 end
@@ -1509,7 +1504,7 @@ do
     code := INST^machine.generateWhile(E^code, E^reg, BLOC^code);
 	else
 		-- Sinon, on renvoie une erreur
-		error(TYPE_NOT_EQUAL);
+		error(TYPE_CONDITION);
 	end
 	INST^code := code ;
 end
@@ -1585,7 +1580,7 @@ E -> #attA A #attAFFX AFFX #attE;
 #attA {
 local
 do
---write("Regle (35): A AFFX\n");
+  write("(35) Début.\n");
 	A^machine := E^machine;
 	A^tvar := E^tvar;
 	A^tfun := E^tfun;
@@ -1629,7 +1624,7 @@ local
 	estVar : boolean;
 	vi : VariableInfo;
 do
---write("(35) Debut de la fin\n");
+--write("(35) Après AFFX, type de A : " + A^type + "\n");
 --write("(35) Code de AFFX :\n" + AFFX^code + "\n");
   reg := null;
 	code := A^code;
@@ -1637,6 +1632,7 @@ do
 	vi := null;
 	-- On n'a pas d'affectation à droite.
 	if (AFFX^estVar) then
+		write("(35) AFFX est vide.\n");
 		-- E peut dans ce cas représenter une variable.
 		estVar := true ;
 		vi := A^vi ;
@@ -1644,7 +1640,9 @@ do
 		code := E^machine.generateComment("(35) Not an affectation.", "\t\t")
 		      + code;
 		-- regAdr ne sera pas use, on peut changer le statut.
-		A^regAdr.setStatus(2);
+		if (!(A^regAdr = null)) then
+		  A^regAdr.setStatus(2);
+		end
 	else
 		if (A^estVar) then
 			-- E ne représente pas de variable.
@@ -1676,6 +1674,7 @@ do
 	end
 --write("(35) reg = " + reg.debug() + "\n");
 --write("(35) type = " + A^type + "\n");
+--write("(35) Type de A : " + A^type + "\n");
 	E^type := A^type;
 	E^reg := reg;
 	E^estVar := estVar;
@@ -3515,7 +3514,6 @@ end
 do
   -- On recupere le code assembleur 'inline' dans : ASM^code_asm ;
   ENTITE^code := AASM^code_asm;
-  ENTITE^tfunS := ENTITE^tfun;
 end
 }
 
@@ -3598,7 +3596,6 @@ do
   -- Pas de code à ajouter dans cette RP, 
 	-- on fait tout de même remonter le code des ENTITES du namespace.
   ENTITE^code := ENTITES^code;
-	ENTITE^tfunS := ENTITE^tfun;
 end
 }
 
@@ -3638,7 +3635,6 @@ do
 	end
 	ENTITE^listeNi.add(IDC^niS);
 	ENTITE^code := "";
-	ENTITE^tfunS := ENTITE^tfun;
 end
 }
 
@@ -3765,7 +3761,6 @@ end
 local
 do
   ENTITE^code := DEFS^code;
-	ENTITE^tfunS := ENTITE^tfun;
 end
 }
 
