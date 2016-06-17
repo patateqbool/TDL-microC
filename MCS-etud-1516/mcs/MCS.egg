@@ -151,13 +151,13 @@ syn champsS : StructFields for
 inh ni : NamespaceInfo for 
          ENTITE, PARF, INST, F, FX, ENTITES, FONCTION, DECL,
 				 PARFS, PARFSX, INSTS, BLOC, AFFX, E, SIX, A, R, AX, T, RX,
-				 TX, ES, ESX, IDC, HERITAGE, DEFS, DEF, BASE
+				 TX, ES, ESX, IDC, HERITAGE, DEFS, DEF, BASE, TYPE, STYPE, CHAMPS, CHAMP 
 				 ;
 
 inh listeNi : NamespaceInfoList for
          ENTITE, PARF, INST, F, FX, ENTITES, FONCTION, DECL,
 				 PARFS, PARFSX, INSTS, BLOC, AFFX, E, SIX, A, R, AX, T, RX,
-				 TX, ES, ESX, HERITAGE, IDC, DEFS, DEF, BASE
+				 TX, ES, ESX, HERITAGE, IDC, DEFS, DEF, BASE, TYPE, STYPE, CHAMPS, CHAMP
 				 ;
 
 inh tklass : KlassTable for
@@ -376,7 +376,10 @@ ENTITE -> typedef #attTYPE TYPE identc pv #attENTITE ;
 local
 do
   TYPE^talias := ENTITE^talias;
-	TYPE^indentation := ENTITE^indentation + 1 ;  
+  TYPE^tklass := ENTITE^tklass;
+	TYPE^ni := ENTITE^ni;
+	TYPE^listeNi := ENTITE^listeNi;
+	TYPE^indentation := ENTITE^indentation + 1;
 end
 }
 
@@ -402,11 +405,11 @@ do
      -- Sinon, on peut ajouter le nouveau type à la TDS.
     else
 		  -- Vérification dans la table des alias.
-			t := ta.lookup(identc^txt);
+			t := ta.lookup(identc^txt, ENTITE^ni, ENTITE^listeNi);
 			if (t != null) then
 			  error(IDENT_TAKEN, identc^txt);
       else
-        ta.insert(identc^txt, TYPE^type );
+        ta.insert(identc^txt, TYPE^type, ENTITE^ni);
 			end
     end
   end  
@@ -433,6 +436,8 @@ local
 do
   TYPE^talias := ENTITE^talias;
   TYPE^tklass := ENTITE^tklass;
+	TYPE^ni := ENTITE^ni;
+	TYPE^listeNi := ENTITE^listeNi;
 	TYPE^indentation := ENTITE^indentation + 1; 
 end
 }
@@ -481,7 +486,7 @@ do
 	if (info != null) then
     error(IDENT_TAKEN, ident^txt);
   else
-		t := ENTITE^talias.lookup(ident^txt);
+		t := ENTITE^talias.lookup(ident^txt, ENTITE^ni, ENTITE^listeNi);
 	--write("(5) info not null\n");
 		if (t!= null) then
 		  error(ALREADY_AN_ALIAS, ident^txt);
@@ -780,6 +785,8 @@ local
 do
   TYPE^talias := PARF^talias;
 	TYPE^tklass := PARF^tklass;
+	TYPE^ni := PARF^ni;
+	TYPE^listeNi := PARF^listeNi;
 	TYPE^indentation := PARF^indentation + 1; 
 end
 }
@@ -810,7 +817,7 @@ do
     if (PARF^tfun.exists(ident^txt, PARF^ni, PARF^listeNi)) then
       error(IDENT_TAKEN, ident^txt);
     else
-		  t := PARF^talias.lookup(ident^txt);
+		  t := PARF^talias.lookup(ident^txt, PARF^ni, PARF^listeNi);
 			-- De même dans talias.
 			if (t != null) then
 			  error(IDENT_TAKEN, ident^txt);
@@ -841,6 +848,8 @@ local
 do
   STYPE^talias := TYPE^talias;
 	STYPE^tklass := TYPE^tklass;
+  STYPE^ni := TYPE^ni;
+	STYPE^listeNi := TYPE^listeNi;
 	STYPE^indentation := TYPE^indentation + 1;
 end
 }
@@ -936,10 +945,10 @@ STYPE -> identc #attSTYPE ;
 local
   typeRech : Type;
 do
-  typeRech := STYPE^talias.lookup(identc^txt);
+  typeRech := STYPE^talias.lookup(identc^txt, STYPE^ni, STYPE^listeNi);
   -- Si identc n'est pas une clef dans la TDSvar, erreur.
   if (typeRech = null) then
-	  typeRech := STYPE^tklass.lookup(identc^txt);
+	  typeRech := STYPE^tklass.lookup(identc^txt, STYPE^ni, STYPE^listeNi);
 	  if (typeRech = null) then
 	    error(IDENT_UNDEFINED, identc^txt);
     end
@@ -963,6 +972,8 @@ do
   CHAMPS^champs := new StructFields();
 	CHAMPS^talias := STYPE^talias;
 	CHAMPS^tklass := STYPE^tklass;
+	CHAMPS^ni := STYPE^ni;
+	CHAMPS^listeNi := STYPE^listeNi;
 	CHAMPS^indentation := STYPE^indentation + 1;
 end
 }
@@ -997,6 +1008,8 @@ local
 do
   CHAMP^talias := CHAMPS^talias;
 	CHAMP^tklass := CHAMPS^tklass;
+	CHAMP^ni := CHAMPS^ni;
+	CHAMP^listeNi := CHAMPS^listeNi;
 	CHAMP^indentation := CHAMPS^indentation + 1;
 end
 }
@@ -1037,6 +1050,8 @@ local
 do
   TYPE^talias := CHAMP^talias;
 	TYPE^tklass := CHAMP^tklass;
+	TYPE^ni := CHAMP^ni;
+	TYPE^listeNi := CHAMP^listeNi;
 	TYPE^indentation := CHAMP^indentation + 1;
 end
 }
@@ -1172,6 +1187,8 @@ do
 --write("Regle (28)\n");
   TYPE^talias := INST^talias;
 	TYPE^tklass := INST^tklass;
+	TYPE^ni := INST^ni;
+	TYPE^listeNi := INST^listeNi;
 	TYPE^indentation := INST^indentation + 1 ;
 end
 }
@@ -1222,7 +1239,7 @@ do
     if (INST^tfun.exists(nom, INST^ni, INST^listeNi)) then
       error(ALREADY_A_FUNCTION_IDENT, nom);
 		else
-		  t := INST^talias.lookup(nom);
+		  t := INST^talias.lookup(nom, INST^ni, INST^listeNi);
 			-- De même pour la talias.
 			if (t != null) then 
 			  error(ALREADY_AN_ALIAS, nom);
@@ -2808,6 +2825,8 @@ local
 do
   TYPE^talias := F^talias;
   TYPE^tklass := F^tklass;
+	TYPE^ni := F^ni;
+	TYPE^listeNi := F^listeNi;
 	TYPE^indentation := F^indentation + 1 ; 
 end
 }
@@ -3607,7 +3626,7 @@ local
 do
   -- Comme l'adresse du namesapce doit être donnée depuis la racine,
 	-- on effectue la première recherche en mettant le dns comme parent.
-	ni := ENTITE^tns.lookup(identc^txt, new DefaultNamespaceInfo());
+	ni := ENTITE^tns.lookup(identc^txt, new DefaultNamespaceInfo(), new NamespaceInfoList());
 	if (ni = null) then 
 		error(NOT_A_NS);
 	end
@@ -3921,6 +3940,8 @@ local
 do
   TYPE^talias := DEF^talias;
   TYPE^tklass := DEF^tklass;
+	TYPE^ni := DEF^ni;
+	TYPE^listeNi := DEF^listeNi;
 	TYPE^indentation := DEF^indentation + 1;
 end
 }
