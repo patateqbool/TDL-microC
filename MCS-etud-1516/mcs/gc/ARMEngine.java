@@ -1286,7 +1286,7 @@ public class ARMEngine extends AbstractMachine {
         rout.set(r);
         String cc = "", operand = "";
         String code = 
-            generateInstruction("MOV", rout, 0);
+            generateInstruction("MOV", r, 0);
 
         switch (op) {
             case EQ:
