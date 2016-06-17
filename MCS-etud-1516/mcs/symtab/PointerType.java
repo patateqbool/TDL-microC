@@ -23,7 +23,7 @@ public class PointerType extends SimpleType {
 	 * toString();
 	 */
 	public String toString() {
-		return this.type + "*";
+		return "p" + this.type;
 	}
 
 	/**

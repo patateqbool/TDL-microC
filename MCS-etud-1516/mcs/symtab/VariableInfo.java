@@ -71,7 +71,7 @@ public class VariableInfo extends SymbolInfo {
    */
   @Override
   public String toString() {
-    return this.type.toString() + " [" + this.displacement + "];";
+    return this.namespace() + this.type.toString() + " [" + this.displacement + "];";
   }
 }
 

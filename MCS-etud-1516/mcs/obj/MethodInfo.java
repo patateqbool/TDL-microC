@@ -46,12 +46,12 @@ public class MethodInfo extends FunctionInfo {
   @Override
   public String label() {
       return
-          "_" + this.parent.completeName() + "#" + this.name() + "@" + this.returnType() + this.makeParamsLabel();
+          "_" + this.parent.completeName() + "." + this.name() + "__" + this.returnType() + this.makeParamsLabel();
   }
 
   public String shortLabel() {
       return
-          "_" + this.name() + "@" + this.returnType() + this.makeParamsLabel();
+          "_" + this.name() + "__" + this.returnType() + this.makeParamsLabel();
   }
 
   @Override

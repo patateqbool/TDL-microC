@@ -74,19 +74,6 @@ public class ARMEngine extends AbstractMachine {
             "\n" +
             generateComment("@@", "");
 
-        // Generate the init
-        String init =
-            generateComment("Initialize registers", "") +
-            generateInstruction("MOV", ht, "hb") +
-            generateInstruction("MOV", sb, sp) +
-            "\n";
-
-        // Generate the code to go to main entry
-        String callmain =
-            generateInstruction("BL", mainfi.label()) +
-            generateInstruction("B", ARMEngine.ExitLabel) + 
-            "\n";
-
         // Generate the exit
         String exit = 
             generateLabel(ARMEngine.ExitLabel) +
@@ -107,24 +94,35 @@ public class ARMEngine extends AbstractMachine {
             ".arm\n" +
             "\n" +
             ".data\n" +
-            "hb:\t.word\t" + (heapbase+4)*4 + "\n" +
             "\n" +
             ".text\n" +
             "\n" +
-            ".global " + mainfi.label() + "\n" +
+            "\n" +
+            ".global _start\n" +
             // Declarations
             generateComment("Preliminary definitions : heap top, stack base, object id, function return", "") +
             ht.alias() + "\t.req\t" + ht.name() + "\n" +
-            sb.alias() + "\t.req\t" + sb.name() + "\n" +
+            //sb.alias() + "\t.req\t" + sb.name() + "\n" +
             oi.alias() + "\t.req\t" + oi.name() + "\n" +
             fr.alias() + "\t.req\t" + fr.name() + "\n" +
+            "\n";
+
+        // Generate the init
+        String init =
+            generateLabel("_start") +
+            generateComment("Initialize registers", "") +
+            generateInstruction("MOV", ht, (heapbase+4)*4) +
+            generateInstruction("MOV", sb, sp) +
+            "\n" +
+            generateComment("Call main entry point", "") +
+            generateInstruction("BL", mainfi.label()) +
+            generateInstruction("B", ARMEngine.ExitLabel) + 
             "\n";
 
         // Actually write the code to the file
         super.writeCode(fileName,
                 preliminary +
                 init +
-                callmain +
                 vtables +
                 code +
                 exit
@@ -527,7 +525,7 @@ public class ARMEngine extends AbstractMachine {
             RegisterWrapper raddr = new RegisterWrapper();
             code +=
                 generateAllocate(t, raddr, null) +
-                generateInstruction("PUSH", raddr.get());
+                generateInstruction("PUSH", new RegisterList(raddr.get()));
             raddr.get().setStatus(Register.Status.Used);
         } else {
             //trace System.out.println("gAIS : c'est un type simple");
@@ -641,7 +639,7 @@ public class ARMEngine extends AbstractMachine {
     public String generateFlushVariable(Type type) throws MCSException  {
         // This is a dummy register, as POP needs a register
         Register reg = getNextUnusedRegister();
-        return generateInstruction("POP", reg);
+        return generateInstruction("POP", new RegisterList(reg));
     }
 
     /**
@@ -698,9 +696,9 @@ public class ARMEngine extends AbstractMachine {
                     "@@\n", "") +
             generateLabel(label) +
             generateComment("Push link register, stack base and stack pointer", ARMEngine.Prefix) +
-            generateInstruction("PUSH", lr) +
-            generateInstruction("PUSH", sb) +
-            generateInstruction("PUSH", sp) +
+            generateInstruction("PUSH", new RegisterList(lr)) +
+            generateInstruction("PUSH", new RegisterList(sb)) +
+            generateInstruction("PUSH", new RegisterList(sp)) +
             "\n" +
             generateComment("Body", ARMEngine.Prefix) +
             blockcode +
@@ -718,9 +716,9 @@ public class ARMEngine extends AbstractMachine {
         code +=
             generateLabel(label + "_end") +
             generateComment("Pop registers", ARMEngine.Prefix) +
-            generateInstruction("POP", sp) +
-            generateInstruction("POP", sb) +
-            generateInstruction("POP", lr) +
+            generateInstruction("POP", new RegisterList(sp)) +
+            generateInstruction("POP", new RegisterList(sb)) +
+            generateInstruction("POP", new RegisterList(lr)) +
             "\n" +
             generateComment("Pop arguments", ARMEngine.Prefix);
 
@@ -756,7 +754,7 @@ public class ARMEngine extends AbstractMachine {
         if (!(info.returnType() instanceof VoidType)) {
             code +=
                 generateInstruction("MOV", info.register(), ht) +
-                generateInstruction("STMIA", "!" + ht, rval);
+                generateInstruction("STMIA", generateRegister(ht) + "!", new RegisterList(rval));
 
             info.register().setStatus(Register.Status.Loaded);
             rval.setStatus(Register.Status.Used);
@@ -775,7 +773,7 @@ public class ARMEngine extends AbstractMachine {
      */
     public String generateFunctionPushArgument(Register reg) throws MCSException  { 
         String code =
-            generateInstruction("PUSH", reg);
+            generateInstruction("PUSH", new RegisterList(reg));
         reg.setStatus(Register.Status.Used);
         return code;
     }
@@ -859,7 +857,7 @@ public class ARMEngine extends AbstractMachine {
 
         // this is the last argument, we push it
         codeinst +=
-            generateInstruction("PUSH", raddr);
+            generateInstruction("PUSH", new RegisterList(raddr.get()));
 
         info.register().setStatus(Register.Status.Loaded);
 
@@ -980,7 +978,7 @@ public class ARMEngine extends AbstractMachine {
      * @return the generated code
      */
     public String generateRegister(Register reg) throws MCSException {
-        return "%" + reg.toString();   
+        return reg.toString();   
     }
 
     /**
@@ -989,9 +987,34 @@ public class ARMEngine extends AbstractMachine {
      * @return the generated code
      */
     public String generateRegister(String reg) throws MCSException {
-        return "%" + reg;
+        return reg;
     }
 
+    /**
+     * Generate a direct access to a macro
+     * @param macro
+     * @return the generated code
+     */
+    public String generateAccess(String macro) throws MCSException {
+        return "#" + macro;
+    }
+
+    /**
+     * Generate a register list
+     * @param regl the register list
+     * @return the generated code
+     */
+    public String generateRegisterList(RegisterList reglist) throws MCSException {
+        String code = "{";
+
+        ListIterator<Register> rli = reglist.listIterator();
+        code += rli.next();
+        while (rli.hasNext()) {
+            code += ", " + rli.next();
+        }
+
+        return code + "}";
+    }
 
     private String format(Object o) throws MCSException {
         if (o instanceof String)
@@ -1000,6 +1023,8 @@ public class ARMEngine extends AbstractMachine {
             return generateDirect((Integer)o);
         else if (o instanceof Register)
             return generateRegister((Register)o);
+        else if (o instanceof RegisterList)
+            return generateRegisterList((RegisterList)o);
 
         throw new MCSWrongUseException("format()", "you used it with an object of type '" + o.getClass().getName() + "'");
     }

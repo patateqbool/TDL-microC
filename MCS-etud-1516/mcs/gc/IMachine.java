@@ -5,6 +5,7 @@ import mcs.symtab.*;
 import mcs.obj.*;
 import mcs.compiler.MCSException;
 import java.util.List;
+import java.util.ArrayList;
 
 /**
  * Cette interface décrit une machine cible. A compléter, selon votre modèle
@@ -13,6 +14,18 @@ import java.util.List;
  * 
  */
 public interface IMachine {
+    public class RegisterList extends ArrayList<Register> {
+        private static final long serialVersionUID = 1l;
+        public RegisterList() {
+            super();
+        }
+
+        public RegisterList(Register single) {
+            this();
+            this.add(single);
+        }
+    }
+
     /**
      * Enumeration that define possible arithmetic operations
      */
@@ -340,6 +353,20 @@ public interface IMachine {
      * @return the generated code
      */
     String generateRegister(String reg) throws MCSException;
+
+    /**
+     * Generate a register list
+     * @param regl the register list
+     * @return the generated code
+     */
+    String generateRegisterList(RegisterList reglist) throws MCSException;
+
+    /**
+     * Generate a direct access to a macro
+     * @param macro
+     * @return the generated code
+     */
+    String generateAccess(String macro) throws MCSException;
 
     /**
      * Generate the code for making an address from a list of displacement pair; the 

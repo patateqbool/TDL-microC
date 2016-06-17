@@ -78,13 +78,13 @@ public class FunctionInfo extends SymbolInfo {
      */
     public String label() {
         return
-            "_" + this.namespace().label() + this.name + "@" + this.retType + makeParamsLabel();
+            "_" + this.namespace().label() + this.name + "__" + this.retType + makeParamsLabel();
     }
 
     protected String makeParamsLabel() {
         String label = "";
         for (Type t : this.parameters)
-            label += "$" + t;
+            label += "_" + t;
         return label;
     }
 
