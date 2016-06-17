@@ -232,7 +232,7 @@ sugar int is  "int";
 sugar char is  "char";
 sugar struct is "struct";
 sugar typedef is "typedef";
-
+--Objet.
 sugar ref is "ref" ;
 sugar out is "out";
 sugar namespace is "namespace";
@@ -248,7 +248,7 @@ sugar this is "this";
 sugar new is "new" ;
 sugar null2 is "null";
 sugar base is "base" ;
-
+--Operateurs et idents.
 sugar retour is  "return";
 sugar arrow is "\-\>";
 sugar null is  "NULL";
@@ -579,7 +579,6 @@ end
 
 -- (8)
 FONCTION -> #attPARFS paro PARFS parf #attBLOC BLOC #attFONCTION ;
-
 global
 	tvparams : VariableTable;
 
@@ -2922,7 +2921,6 @@ end
 
 -- (71)
 F -> ident #attFX FX #attF ;
-
 global
   varInfo : VariableInfo;
 	estFun : boolean;
@@ -3238,7 +3236,6 @@ end
 -- La verification des paramètres ainsi que la generation des pushs
 -- se font dans ES.
 FX -> #attES paro ES parf #attFX1 FX #attFX;
-
 global
 	code : String;  
 
@@ -3563,18 +3560,18 @@ local
 do
   tns := ENTITE^tns;
   -- Si identc est une clef dans la TDSKlass, erreur.
-  if (ENTITE^tklass.exists(identc^txt, ENTITE^ni)) then
+  if (ENTITE^tklass.exists(identc^txt, ENTITE^ni, ENTITE^listeNi)) then
      error(IDENT_TAKEN, identc^txt);
   end
   -- Si identc est une clef dans la TDSNamespace, erreur.	
-  if (tns.exists(identc^txt, ENTITE^ni)) then
+  if (tns.exists(identc^txt, ENTITE^ni, ENTITE^listeNi)) then
     error(IDENT_TAKEN, identc^txt);
   end
   -- Sinon, on peut ajouter le nouveau namespace à la TDS.
 	if (ENTITE^talias.exists(identc^txt, ENTITE^ni, ENTITE^listeNi)) then
 	  error(IDENT_TAKEN, identc^txt);
 	end
-	tns.insert(identc^txt, ENTITE^ni);
+	tns.add(new NamespaceInfo(identc^txt, ENTITE^ni));
   ENTITES^machine := ENTITE^machine;
 	ENTITES^tvar := ENTITE^tvar;
 	ENTITES^tfun := ENTITE^tfun;
@@ -4254,7 +4251,7 @@ end
 -- (105) : base = super
 F -> base #attFX FX #attF ;
 global
-  kl : klass;
+  kl : Klass;
 
 -- Attributs inh de FX.
 #attFX {
@@ -4321,7 +4318,7 @@ end
 }
 
 
--- (106) objet null TODO
+-- (106) objet null
 F -> null2 #attF ;
 
 #attF {
