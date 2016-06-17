@@ -512,6 +512,7 @@ do
 				--write("(5) Add variable \\o/\n");
 				  -- Si ce n'est pas le cas, on peut add la variable à la tvar.
           tv.insert(ident^txt, TYPE^type, ENTITE^ni);
+			  	write("on est actuellement en train d'ajouter " + ident^txt + " dans le ns " + ENTITE^ni.name() + "\n");					
 					code := ENTITE^machine.generateComment("(5) Variable declaration:", "") + code ;
 				end
 	   else
@@ -3584,6 +3585,7 @@ ENTITE -> namespace identc #attENTITES aco ENTITES acf #attENTITE;
 #attENTITES {
 local
 	tns : NamespaceTable;
+	ni : NamespaceInfo;
 do
   tns := ENTITE^tns;
   -- Si identc est une clef dans la TDSKlass, erreur.
@@ -3598,7 +3600,9 @@ do
 	if (ENTITE^talias.exists(identc^txt, ENTITE^ni, ENTITE^listeNi)) then
 	  error(IDENT_TAKEN, identc^txt);
 	end
-	tns.add(new NamespaceInfo(identc^txt, ENTITE^ni));
+	ni := new NamespaceInfo(identc^txt, ENTITE^ni);
+	tns.add(ni);
+	ENTITES^ni := ni;
   ENTITES^machine := ENTITE^machine;
 	ENTITES^tvar := ENTITE^tvar;
 	ENTITES^tfun := ENTITE^tfun;
