@@ -117,7 +117,7 @@ syn regAdr : Register for
          A, R, T, F;
 
 syn estVar : boolean for
-         R, RX, FX, T, TX, E, A, AFFX, AX, F
+         R, RX, T, TX, E, A, AFFX, AX, F, FX
 				 ;
 
 inh estFun : boolean for
@@ -161,8 +161,10 @@ inh listeNi : NamespaceInfoList for
 				 ;
 
 inh tklass : KlassTable for
-				 ENTITES, ENTITE, BLOC, F, INSTS, INST, SIX, E, AFFX, A, AX, DECL, FONCTION, PARFS, PARF, PARFSX,
-				 R, RX, T, TX, FX, ES, ESX, IDC, HERITAGE, DEFS, DEF, BASE
+				 ENTITES, ENTITE, BLOC, F, INSTS, INST, SIX, E, 
+				 AFFX, A, AX, DECL, FONCTION, PARFS, PARF, PARFSX,
+				 R, RX, T, TX, FX, ES, ESX, IDC, HERITAGE, DEFS, DEF, BASE, 
+				 TYPE, STYPE, CHAMPS, CHAMP
 				 ;	
 
 inh tns : NamespaceTable for
@@ -430,7 +432,8 @@ ENTITE -> #attTYPE TYPE ident #attDECL DECL #attENTITE;
 local
 do
   TYPE^talias := ENTITE^talias;
-  TYPE^indentation := ENTITE^indentation + 1; 
+  TYPE^tklass := ENTITE^tklass;
+	TYPE^indentation := ENTITE^indentation + 1; 
 end
 }
 
@@ -777,6 +780,7 @@ PARF -> #attTYPE TYPE ident #attPARF;
 local
 do
   TYPE^talias := PARF^talias;
+	TYPE^tklass := PARF^tklass;
 	TYPE^indentation := PARF^indentation + 1; 
 end
 }
@@ -837,6 +841,7 @@ TYPE -> #attSTYPE STYPE #attPTRS PTRS #attTYPE;
 local
 do
   STYPE^talias := TYPE^talias;
+	STYPE^tklass := TYPE^tklass;
 	STYPE^indentation := TYPE^indentation + 1;
 end
 }
@@ -935,8 +940,11 @@ do
   typeRech := STYPE^talias.lookup(identc^txt);
   -- Si identc n'est pas une clef dans la TDSvar, erreur.
   if (typeRech = null) then
-     error(IDENT_UNDEFINED, identc^txt);
-  end
+	  typeRech := STYPE^tklass.lookup(identc^txt);
+	  if (typeRech = null) then
+	    error(IDENT_UNDEFINED, identc^txt);
+    end
+	end
   STYPE^type := typeRech;
 end
 }
@@ -955,6 +963,7 @@ local
 do
   CHAMPS^champs := new StructFields();
 	CHAMPS^talias := STYPE^talias;
+	CHAMPS^tklass := STYPE^tklass;
 	CHAMPS^indentation := STYPE^indentation + 1;
 end
 }
@@ -988,6 +997,7 @@ CHAMPS -> #attCHAMP CHAMP #attCHAMPS1 CHAMPS #attCHAMPS ;
 local
 do
   CHAMP^talias := CHAMPS^talias;
+	CHAMP^tklass := CHAMPS^tklass;
 	CHAMP^indentation := CHAMPS^indentation + 1;
 end
 }
@@ -1027,6 +1037,7 @@ CHAMP -> #attTYPE TYPE ident pv #attCHAMP ;
 local
 do
   TYPE^talias := CHAMP^talias;
+	TYPE^tklass := CHAMP^tklass;
 	TYPE^indentation := CHAMP^indentation + 1;
 end
 }
@@ -1161,6 +1172,7 @@ do
 --write("(28) Has you something to declare?\n");
 --write("Regle (28)\n");
   TYPE^talias := INST^talias;
+	TYPE^tklass := INST^tklass;
 	TYPE^indentation := INST^indentation + 1 ;
 end
 }
@@ -2796,7 +2808,8 @@ F ->  paro #attTYPE TYPE parf #attF1 F #attF;
 local
 do
   TYPE^talias := F^talias;
-  TYPE^indentation := F^indentation + 1 ; 
+  TYPE^tklass := F^tklass;
+	TYPE^indentation := F^indentation + 1 ; 
 end
 }
 
@@ -2922,6 +2935,7 @@ local
   listeDepl : DisplacementList ;
 	type : Type;
   info : SymbolInfo; 
+  estKlass : boolean;
 do
  
 --write("Regle (71) : " + ident^txt + ", " + F^ni.name() + "\n");
@@ -2931,6 +2945,7 @@ do
 	type := null;
 	varInfo := null;
 	info := null;
+	estKlass := false;
 --write("(71) VARTABLE :\n" + F^tvar);
 
 	-- Recherche dans la TVar (globalement).
@@ -2960,6 +2975,10 @@ do
 		  -- On rajoute toujours le déplacement de a à la liste.
 		  -- Le test pour savoir si a est bien un struct se fait dans les RP ,de FX.
 		  listeDepl.add(varInfo.displacement(), false);
+		  match type
+			with Klass then
+			  estKlass := true;
+			end
 		else
 		  error(SHOULD_NOT_HAPPEN_SI_NOT_VI);
 		end
@@ -2978,8 +2997,7 @@ do
   FX^listeNi := F^listeNi;
 	FX^indentation := F^indentation + 1 ; 
   FX^klass := F^klass;
-  -- TODO : L'ident peut représenter une poignée.
-  FX^estKlass := false; --TODO
+  FX^estKlass := estKlass; 
 --write("Regle 71 : au milieu à peu près\n");
 end
 }
@@ -3905,7 +3923,8 @@ DEF -> #attTYPE TYPE ident #attDECL DECL #attDEF ;
 local
 do
   TYPE^talias := DEF^talias;
-  TYPE^indentation := DEF^indentation + 1;
+  TYPE^tklass := DEF^tklass;
+	TYPE^indentation := DEF^indentation + 1;
 end
 }
 
@@ -4168,7 +4187,6 @@ F -> this #attFX FX #attF ;
 #attFX {
 local
   listeDepl : DisplacementList ;
-	type : Type;
   info : SymbolInfo; 
 do
   if (F^klass = null) then
@@ -4176,14 +4194,12 @@ do
 	end
 --Initialisations.
   listeDepl := new DisplacementList();
-	type := null;
 	info := null;
-	listeDepl.add(0, false);
+	listeDepl.add(F^klass.thisDisplacement(F^machine), false);
 	FX^listeDepl := listeDepl;
 	FX^estFun := false;
-	--TODO: Ajouter estKlass partout
 	FX^estKlass := true;
-	FX^typeH := type;
+	FX^typeH := F^klass;
 	FX^nom := F^klass.name();
 	FX^tvar := F^tvar;
 	FX^tfun := F^tfun;
@@ -4200,40 +4216,50 @@ end
 #attF {
 local
   listeDepl : DisplacementList; 
-  reg : Register;
 	code : String;
+	rv : RegisterWrapper;
+	ra : RegisterWrapper;
+	reg : Register; 
+	regAdr : Register;
+	estVar : boolean;
 do
   listeDepl := FX^listeDeplS;
-  reg := new Register();
+	rv := new RegisterWrapper();
+	ra := new RegisterWrapper();
 	code := FX^code; 
-	if ((listeDepl.size() != 0 )&&(listeDepl.size() != 1)) then --> 1) then
-    -- Des déplacements ont été ajoutés à la liste en plus de celui de base : on a accédé à des champs!
-	  -- Le registre contient l'adresse de la variable accédée par FX.
-    code := code
-		      + F^machine.generateComment("(104) Make address:", "\t\t") 
-		      + F^machine.generateMakeAddress(listeDepl, reg)
-					+ F^machine.generateComment("(104) End make address.", "\t\t");
+	code := code
+	      + F^machine.generateComment("(104) Make address:", "\t\t") 
+	      + F^machine.generateMakeAddress(listeDepl, FX^reg, rv, ra)
+				+ F^machine.generateComment("(104) End make address.", "\t\t");
+  reg := rv.get();
+	regAdr := ra.get();
+	if (listeDepl.size() != 1) then --> 1) then
+    -- On a pas un this seul, il peut s'agir d'une variable si FX le permet.
+		estVar := FX^estVar;
+	else 
+	  -- Le this seul, pas une variable.
+	  estVar := false;
 	end
     -- Sinon, accès direct à this, on ne génère pas de code.	
 	F^vi := null;
 	F^code := code;
-  F^estVar := false;
+  F^estVar := estVar;
   F^type := FX^type;
 	F^reg := reg;
+	F^regAdr := regAdr;
 end
 }
 
 
 -- (105) : base = super
 F -> base #attFX FX #attF ;
+global
+  kl : klass;
 
 -- Attributs inh de FX.
 #attFX {
 local
   listeDepl : DisplacementList ;
-	type : Type;
-  info : SymbolInfo; 
-  kl : klass;
 do
   kl := null;
   if (F^klass = null) then
@@ -4241,19 +4267,18 @@ do
 	else
 	  kl := F^klass.parent();
 		if (kl = null) then
-		  error(NO_PARENT_CLASS,F^kl.name());
+		  error(NO_PARENT_CLASS, F^klass.name());
 		end
 	end
   --Initialisations.
   listeDepl := new DisplacementList();
-	type := null;
-	info := null;
 	listeDepl.add(0, false);
 	FX^listeDepl := listeDepl;
-	FX^estFun := false;
+	-- On a un appel de fonction.
+	FX^estFun := true;
 	FX^estKlass := true;
-	FX^klass := klass;
-	FX^typeH := type;
+	FX^klass := kl;
+	FX^typeH := kl;
 	FX^nom := kl.name();
 	FX^tvar := F^tvar;
 	FX^tfun := F^tfun;
@@ -4272,25 +4297,26 @@ end
 local
   listeDepl : DisplacementList; 
   reg : Register;
+	regAdr : Register;
+	rv : RegisterWrapper;
+	ra : RegisterWrapper;
 	code : String;
 do
   listeDepl := FX^listeDeplS;
-  reg := new Register();
-	code := FX^code; 
-	if ((listeDepl.size() != 0 )&&(listeDepl.size() != 1)) then --> 1) then
-    -- Des déplacements ont été ajoutés à la liste en plus de celui de base : on a accédé à des champs!
-	  -- Le registre contient l'adresse de la variable accédée par FX.
-    code := code
-		      + F^machine.generateComment("(105) Make address:", "\t\t") 
-		      + F^machine.generateMakeAddress(listeDepl, reg)
-					+ F^machine.generateComment("(105) End make address.", "\t\t");
-	end
-    -- Sinon, accès direct à base, on ne génère pas de code.	
+  rv := new RegisterWrapper();
+	ra := new RegisterWrapper();
+	code := FX^code
+		    + F^machine.generateComment("(71) Make address:", "\t\t")
+		    + F^machine.generateMakeAddress(listeDepl, FX^reg, rv, ra)
+				+ F^machine.generateComment("(71) End make address.", "\t\t"); 
+	reg := rv.get();
+	regAdr := ra.get();
 	F^vi := null;
 	F^code := code;
   F^estVar := false;
-  F^type := FX^type;
+  F^type := kl;
 	F^reg := reg;
+	F^regAdr := regAdr;
 end
 }
 
@@ -4306,6 +4332,7 @@ do
 	F^code := F^machine.generateComment("(106) Null object: NO CODE", "\t\t");
 	F^type := null;
 	F^reg := null;
+	F^regAdr := null;
 end
 }
 
@@ -4315,17 +4342,16 @@ F -> new identc #attIDC IDC #attES paro ES parf #attF ;
 
 #attIDC {
 local 
-do
   ni : NamespaceInfo;
 	k : Klass;
 do
 	-- On recherche l'existence d'identc, d'abord dans les ns, 
 	-- en précisant le ns de F comme parent.
   k := null;
-  ni := F^tns.lookup(ident^txt, F^ni, F^listeNi);
-  if (ni = null)) then
+  ni := F^tns.lookup(identc^txt, F^ni, F^listeNi);
+  if (ni = null) then
 		-- On cherche si ce n'est pas une classe, avec le même ns en parent.
-		k := F^tklass.lookup(ident^txt, F^ni, F^listeNi);
+		k := F^tklass.lookup(identc^txt, F^ni, F^listeNi);
 		if (k = null) then
 		  error(INVALID_PATH);
 		end
@@ -4350,9 +4376,9 @@ do
 	ES^tklass := F^tklass;
 	ES^machine := F^machine;
 	ES^ni := F^ni;
-	ES^tableNi := F^tableNi;
-  ES^indentation := FX^indentation + 1 ; 
-  ES^klass := FX^klass;
+	ES^listeNi := F^listeNi;
+  ES^indentation := F^indentation + 1 ; 
+  ES^klass := F^klass;
 end
 }
 
@@ -4365,7 +4391,12 @@ do
 	if (ci = null) then
 	  error(NO_CONSTR_WITH_SUCH_PARS, identc^txt);
 	end
-	F^code := ES^code + F^machine.generateConstructorCall(ci, true);
+	F^code := ES^code + F^machine.generateConstructorCall(ci);
+	F^estVar := false;
+	F^vi := null;
+	F^type := IDC^klassS;
+  F^reg := null;
+	F^regAdr := null;
 end
 }
 
