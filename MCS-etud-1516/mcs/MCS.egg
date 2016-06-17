@@ -37,11 +37,6 @@ inh talias : AliasTable for
          R, RX, T, TX, FX, ES, ESX, DEFS, DEF, BASE
          ; --Table des alias contenant les types propres au programme.
 
--- TODO : virer ça.
-syn taliasS : AliasTable for
-         ENTITE
-				 ;
-
 inh tfun : FunctionTable for
          ENTITES, ENTITE, BLOC, F, INSTS, INST, SIX, E, AFFX, A, AX, DECL, FONCTION, PARFS, PARF, PARFSX,
 				 R, RX, T, TX, FX, ES, ESX, DEFS, DEF, BASE
@@ -347,7 +342,6 @@ local
 do
   ENTITES1^tvar := ENTITES^tvar;
   ENTITES1^tfun := ENTITE^tfunS;
-	ENTITES1^talias := ENTITE^taliasS;
 	ENTITES1^machine := ENTITES^machine;
 	ENTITES1^ni := ENTITES^ni;
 	ENTITES1^listeNi := ENTITES^listeNi;
@@ -413,8 +407,6 @@ do
 			end
     end
   end  
-	-- On fait remonter la nouvelle talias.
-	ENTITE^taliasS := ta;
 	-- Les autres tds ne sont pas modifiées.
 	ENTITE^tfunS := ENTITE^tfun;
 	-- Pas de code pour cette RP.
@@ -519,8 +511,6 @@ do
     end
 	end
   ENTITE^tfunS := tf ;
-	-- La talias n'est pas modifiée par cette RP.
-	ENTITE^taliasS := ENTITE^talias ;
   -- Passage du code généré par DECL à ENTITE.
 --write("Code (5) : " + DECL^code + "\n");
   ENTITE^code := code + ENTITE^machine.generateComment("(5) End of declaration.", "");
@@ -3525,7 +3515,6 @@ end
 do
   -- On recupere le code assembleur 'inline' dans : ASM^code_asm ;
   ENTITE^code := AASM^code_asm;
-  ENTITE^taliasS := ENTITE^talias;
   ENTITE^tfunS := ENTITE^tfun;
 end
 }
@@ -3610,7 +3599,6 @@ do
 	-- on fait tout de même remonter le code des ENTITES du namespace.
   ENTITE^code := ENTITES^code;
 	ENTITE^tfunS := ENTITE^tfun;
-	ENTITE^taliasS := ENTITE^talias;
 end
 }
 
@@ -3651,7 +3639,6 @@ do
 	ENTITE^listeNi.add(IDC^niS);
 	ENTITE^code := "";
 	ENTITE^tfunS := ENTITE^tfun;
-	ENTITE^taliasS := ENTITE^talias;
 end
 }
 
@@ -3758,7 +3745,7 @@ end
 local
 	kl : Klass;
 do
-	kl := new Klass(ENTITE^klas.intToEnum(ACCES^acc), identc^txt, HERITAGE^klassS, ENTITE^ni);
+	kl := new Klass(ENTITE^klass.intToEnum(ACCES^acc), identc^txt, HERITAGE^klassS, ENTITE^ni);
 	ENTITE^tklass.insert(kl);
   DEFS^tvar := ENTITE^tvar;
 	DEFS^tfun := ENTITE^tfun;
@@ -3778,7 +3765,6 @@ end
 local
 do
   ENTITE^code := DEFS^code;
-  ENTITE^taliasS := ENTITE^talias;
 	ENTITE^tfunS := ENTITE^tfun;
 end
 }
