@@ -1408,9 +1408,9 @@ do
 	code := "";
 	codeTHEN := BLOC^code;
 	codeELSE := SIX^code;
-	-- On vérifie que le type dans la conditionnelle est bien un entier (en l'absence de booléens)
+	-- On vérifie que le type dans la conditionnelle est bien un booléen (prec. un entier)
 	match E^type
-	with IntegerType then
+	with BooleanType then
 		-- Si c'est le cas, on génère le code
 		code := INST^machine.generateComment("(31) IF THEN ELSE:", "\t") 
 		      + INST^machine.generateComment("(31) Expression for condition:", "\t\t")
@@ -1520,9 +1520,9 @@ local
 do
 	-- Génération du code pour une boucle tant que.
 	code := "";
-	-- On vérifie que le type dans la conditionnelle est bien un entier (en l'absence de booléens)
+	-- On vérifie que le type dans la conditionnelle est bien un booléen (prec. un entier)
 	match E^type
-	with IntegerType then
+	with BooleanType then
 		-- Si c'est le cas, on génère le code
     code := INST^machine.generateWhile(E^code, E^reg, BLOC^code);
 	else
@@ -1781,7 +1781,7 @@ A -> #attR R #attAX AX #attA ;
 #attR {
 local
 do
---write("Regle (38)\n");
+  write("Regle (38)\n");
 	R^machine := A^machine;
 	R^tvar := A^tvar;
 	R^tfun := A^tfun;
@@ -1824,7 +1824,7 @@ do
 	rw := new RegisterWrapper();
 	code := R^code;
 	t := R^type;
---write("(38) R^type = " + t + "\n");
+  --write("(38) R^type = " + t + "\n");
 	-- Si AX n'est pas une variable, on doit générer le code de l'opération.
 	if !(AX^estVar) then
 		-- Le type de A doit être comparable, ie il doit s'agir d'un type simple.
@@ -1835,7 +1835,7 @@ do
 			if !(t.isCompatible(AX^type)) then 
 				error(TYPE_NOT_EQUAL);
 			else
-				-- On génnère le code de l'opération.
+				-- On génère le code de l'opération.
 				code := A^machine.generateComment("(38) Comparison, left part:","\t\t")
 				      + code
 							+ A^machine.generateComment("(38) End left part, right part:","\t\t")
@@ -1844,8 +1844,8 @@ do
 							+ A^machine.generateOperation(AX^oprel,R^reg,AX^reg,rw)
 							+ A^machine.generateComment("(38) End of comparison.","\t\t");
 				reg := rw.get();
-				-- Une comparaison renvoie un entier (/un booléen)
-				type := new IntegerType();
+				-- Une comparaison renvoie un booléen (précédemment un entier)
+				type := new BooleanType();
 			end
 		else
 			-- Le type n'est pas simple : impossible de faire une comparaison.

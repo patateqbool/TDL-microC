@@ -37,8 +37,8 @@ public class VirtualTable {
     this.content.put(classid, methodclassid);
   }*/
 
-  public void set(int classid, String classname) {
-    this.content.put(classid, classname);
+  public void set(int classid, String methlabel) {
+    this.content.put(classid, methlabel);
   }
 
   public String get(int classid) {

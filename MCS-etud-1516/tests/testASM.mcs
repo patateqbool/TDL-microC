@@ -1,9 +1,9 @@
 int a;
 
 asm {
-    // Un test en ASM
+    MOV r1, $15
     LDR r0, #a
-    STR r0, [sb, #1]
+    STR r0, [sb, $1]
     B _main
 }
 
@@ -16,10 +16,11 @@ asm {
 _main:
 }
 
-void main() {
+int main() {
     asm {
         MOV r0, sb
     }
+		return 0;
 }
 
 

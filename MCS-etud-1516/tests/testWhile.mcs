@@ -4,3 +4,7 @@ int wwhile(int a) {
 	  i = i+1;
 	}
 }
+
+int main() {
+  return wwhile(3);
+}

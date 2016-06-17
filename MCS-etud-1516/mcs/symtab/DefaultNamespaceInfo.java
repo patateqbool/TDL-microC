@@ -14,6 +14,11 @@ public class DefaultNamespaceInfo extends NamespaceInfo {
   public boolean equals(NamespaceInfo ni) {
       return (ni instanceof DefaultNamespaceInfo);
   }
+
+  @Override
+  public String label() {
+      return "";
+  }
 }
 
 

@@ -31,10 +31,10 @@ public class ConstructorInfo extends MethodInfo {
     return this.parent().isEqualTo(other.parent()) && this.similar(other);
   }
 
-  /*@Override
+  @Override
   public String label() {
-    return "__cstr_" + super.label();
-  }*/
+      return this.parent().completeName() + "__cstr__" + this.makeParamsLabel();
+  }
 
 	@Override
 	public String toString() {
