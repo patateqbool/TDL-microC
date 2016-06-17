@@ -23,6 +23,7 @@ public class ARMEngine extends AbstractMachine {
      * Moreover, we use R10 as a register for storing the object's class id when we jump from methods to vtables.
      */
     static private final int NUM_REGISTER = 10;
+    static private final String ExitLabel = "___exit___";
     static private final String Prefix = "\t\t", Spacing = "\t\t";  // For a nice code
     private List<Register> registers;							// List of registers on the machine
     private Register sp, lr, pc, ht, sb, oi, fr;	// Special registers
@@ -64,6 +65,9 @@ public class ARMEngine extends AbstractMachine {
      */
     @Override
     public void writeCode(String fileName, String code) throws MCSException {
+        // main function is of the form "int main()"
+        FunctionInfo mainfi = new FunctionInfo("main", new IntegerType(), new DefaultNamespaceInfo(), fr);
+
         // Generate the vtables
         String vtables =
             generateAllVtables() +
@@ -75,6 +79,20 @@ public class ARMEngine extends AbstractMachine {
             generateComment("Initialize registers", "") +
             generateInstruction("MOV", ht, "hb") +
             generateInstruction("MOV", sb, sp) +
+            "\n";
+
+        // Generate the code to go to main entry
+        String callmain =
+            generateInstruction("BL", mainfi.label()) +
+            generateInstruction("B", ARMEngine.ExitLabel) + 
+            "\n";
+
+        // Generate the exit
+        String exit = 
+            generateLabel(ARMEngine.ExitLabel) +
+            generateInstruction("MOV", this.registers.get(0), fr) +
+            generateInstruction("MOV", this.registers.get(7), 1) +
+            generateInstruction("SVC", 0) +
             "\n";
 
         // Generate preliminary
@@ -92,6 +110,8 @@ public class ARMEngine extends AbstractMachine {
             "hb:\t.word\t" + (heapbase+4)*4 + "\n" +
             "\n" +
             ".text\n" +
+            "\n" +
+            ".global " + mainfi.label() + "\n" +
             // Declarations
             generateComment("Preliminary definitions : heap top, stack base, object id, function return", "") +
             ht.alias() + "\t.req\t" + ht.name() + "\n" +
@@ -101,7 +121,14 @@ public class ARMEngine extends AbstractMachine {
             "\n";
 
         // Actually write the code to the file
-        super.writeCode(fileName, preliminary + init + vtables + code);
+        super.writeCode(fileName,
+                preliminary +
+                init +
+                callmain +
+                vtables +
+                code +
+                exit
+        );
     }
 
     /**
@@ -130,14 +157,14 @@ public class ARMEngine extends AbstractMachine {
 
         // Generate a little header
         String code =
-            generateComment("Virtual Table for method " + mi.label(), "") +
-            generateLabel(mi.label() + ".vtable");
+            generateComment("Virtual Table for method " + mi.shortLabel(), "") +
+            generateLabel(mi.shortLabel() + ".vtable");
 
         // Generate the code for each entry
         for (int key : vt.allKeys()) {
             code +=
                 generateInstruction("CMP", oi, key) +
-                generateInstruction("BEQ", vt.get(key) + mi.label());
+                generateInstruction("BEQ", vt.get(key));
         }
 
         return code + "\n";
@@ -664,10 +691,6 @@ public class ARMEngine extends AbstractMachine {
     public String generateFunctionDeclaration(FunctionInfo info, String blockcode) throws MCSException {
         String label = info.label();
 
-        if (info instanceof MethodInfo)
-            // Method labels are preceded by the class's name
-            label = ((MethodInfo)info).parent().name() + label;
-
         String code =
             generateMultiComments(
                     "@@\n" +
@@ -730,9 +753,6 @@ public class ARMEngine extends AbstractMachine {
     public String generateFunctionReturn(FunctionInfo info, Register rval) throws MCSException {
         String code = "", label = info.label();
 
-        if (info instanceof MethodInfo)
-            label = ((MethodInfo)info).parent().name() + label;
-
         if (!(info.returnType() instanceof VoidType)) {
             code +=
                 generateInstruction("MOV", info.register(), ht) +
@@ -784,16 +804,16 @@ public class ARMEngine extends AbstractMachine {
             generateComment("Vtable redirection", ARMEngine.Prefix) +
             // We need to retrieve the object's id. First, we get the address of the object,
             // which is just below the context, so with a displacement of -16
-            generateInstruction("LDR", true, oi, sb, -16) +
+            generateInstruction("LDR", true, oi, sb, kmeth.thisDisplacement(this)) +
             // Then we load the very first field of the object (displacement 0)
             generateInstruction("LDR", true, oi, oi) +
             // We then compare the id of the retrieved object to the id of the class
             generateInstruction("CMP", oi, kmeth.classId()) +
             // Then we branch to the vtable if needed
-            generateInstruction("BEQ", info.label() + ".vtable") +
+            generateInstruction("BEQ", info.shortLabel() + ".vtable") +
             "\n" +
             // Next part is the "real code" that we labellize with .body
-            generateLabel(kmeth.name() + info.label()) +
+            generateLabel(info.label() + "_body") +
             blockcode;
 
         return generateFunctionDeclaration(info, code);
@@ -824,7 +844,7 @@ public class ARMEngine extends AbstractMachine {
         Register r = getNextUnusedRegister();
 
         String codeinst =
-            generateLabel(info.parent().name() + info.label() + "_inst") +
+            generateLabel(info.label() + "_inst") +
             generateComment("Instanciate the class", ARMEngine.Prefix) +
             generateInstruction("MOV", info.register(), ht) +
             generateComment("Real ID of the object", ARMEngine.Prefix) +
@@ -848,7 +868,7 @@ public class ARMEngine extends AbstractMachine {
         if (base != null)
             ecode =
                 pcode +
-                generateInstruction("BL", base.parent().name() + info.label() + "_inst") +
+                generateInstruction("BL", base.label()) +
                 bcode;
 
         return codeinst + generateFunctionDeclaration(info, ecode);
@@ -861,7 +881,7 @@ public class ARMEngine extends AbstractMachine {
      */
     public String generateConstructorCall(ConstructorInfo info) throws MCSException {
         String code =
-            generateInstruction("BL", info.parent().name() + info.label() + "_inst");
+            generateInstruction("BL", info.label() + "_inst");
         return code;
     }
 

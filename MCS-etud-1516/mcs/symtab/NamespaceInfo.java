@@ -52,6 +52,10 @@ public class NamespaceInfo {
         return "Namespace : " + this.name;
     }
 
+    public String label() {
+        return this.parent.label() + this.name + ".";
+    }
+
     public boolean equals(NamespaceInfo ni) {
         return (ni.parent.equals(this.parent) && ni.name.equals(this.name));
     }

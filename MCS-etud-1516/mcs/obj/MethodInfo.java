@@ -44,6 +44,17 @@ public class MethodInfo extends FunctionInfo {
   }
 
   @Override
+  public String label() {
+      return
+          "_" + this.parent.completeName() + "#" + this.name() + "@" + this.returnType() + this.makeParamsLabel();
+  }
+
+  public String shortLabel() {
+      return
+          "_" + this.name() + "@" + this.returnType() + this.makeParamsLabel();
+  }
+
+  @Override
   public boolean equals(FunctionInfo other) {
     if (other instanceof MethodInfo) {
       return this.equals((MethodInfo)other);

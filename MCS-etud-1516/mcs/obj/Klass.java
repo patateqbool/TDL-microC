@@ -187,14 +187,15 @@ public class Klass extends CompositeType {
       // is called overriding !
       // This causes a change in the vtable
       MethodInfo old = lookupMethod(name, mi.parameters());
-      if (old.vtable().get(this.id) == this.name) // this method is already defined !
+      if (old.vtable().get(this.id) == mi.label()) // this method is already defined !
         return false;
 
-      old.vtable().set(this.id, this.name);
+      //old.vtable().set(this.id, this.name);
+      old.vtable().set(this.id, mi.label());
 		} else {
       // This method does not exists; we must create a vtable for it
       VirtualTable vt = new VirtualTable();
-      vt.set(this.id, this.name);
+      vt.set(this.id, mi.label());
       mi.assignVtable(vt);
 			mi.setName(name);
 		  this.methodTable.add(mi);
@@ -301,6 +302,10 @@ public class Klass extends CompositeType {
 	public String name() {
 		return this.name();
 	}
+
+  public String completeName() {
+      return this.namespace.label() + this.name;
+  }
 
   public List<Type> attributeTypes() {
     List<Type> res = new ArrayList<Type>();
