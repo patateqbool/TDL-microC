@@ -11,7 +11,7 @@ inh parlist		: List<Object> for PAR, PARS, PARSX;
 
 -- Separators
 space	spce		is	"[\t ]+";
-sugar nl			is	"(\n|\r)";
+space nl			is	"(\n|\r)";
 sugar	column	is	"\:";
 sugar semicol	is	";";
 sugar coma		is	",";
@@ -44,14 +44,14 @@ sugar sb	is "sb";
 sugar fr	is "fr";
 
 -- Terms
-term	str			is	"\"([^\"]|\\.)*\"";
+term  opcode  is  "[A-Z][A-Z0-9]*";
+term	genreg	is	"r[0-9]";
 term 	num			is	"((\-|\+)?[0-9]+|0x[0-9a-fA-F]+|0b[0-1]+)";
+term	str			is	"\"([^\"]|\\.)*\"";
+term	direct	is	"\.[a-z0-9_\.]+";
 term	var			is	"[A-Za-z][A-Za-z0-9_]*";
 term  ident		is	"[0-9a-zA-Z_\$@#\.\?\<\>]+";
-term	direct	is	"\.[a-z0-9_\.]+";
-term	genreg	is	"r[0-9]";
 term 	comm 		is	"[^\n]*\n";
-term  opcode  is  "[A-Z][A-Z0-9]*";
 
 -- Rules
 ASM -> ocbrack #init INSTS ccbrack #gen ;

@@ -974,7 +974,6 @@ public class ARMEngine extends AbstractMachine {
 
 
     private String format(Object o) throws MCSException {
-        
         if (o instanceof String)
             return (String)o;
         else if (o instanceof Integer)
@@ -982,8 +981,7 @@ public class ARMEngine extends AbstractMachine {
         else if (o instanceof Register)
             return generateRegister((Register)o);
 
-        throw new MCSWrongUseException("format()");
-        
+        throw new MCSWrongUseException("format()", "you used it with an object of type '" + o.getClass().getName() + "'");
     }
 
     /**
