@@ -4404,17 +4404,20 @@ end
 #attF {
 local
 	ci : ConstructorInfo;
+	ciReg : Register;
 do
   ci := IDC^klassS.lookupConstructor(ES^typesParamsS);
+	ciReg := ci.register();	
 	if (ci = null) then
 	  error(NO_CONSTR_WITH_SUCH_PARS, identc^txt);
 	end
-	F^code := ES^code + F^machine.generateConstructorCall(ci);
+	F^code := ES^code + F^machine.generateConstructorCall(ci)
+					+ F^machine.generateLoadFromHeap(ciReg, 0, new RegisterWrapper());
 	F^estVar := false;
 	F^vi := null;
 	F^type := IDC^klassS;
-  F^reg := null;
-	F^regAdr := null;
+	F^regAdr := ciReg;
+  F^reg := rw.get();
 end
 }
 
