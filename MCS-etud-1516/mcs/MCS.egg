@@ -1520,9 +1520,9 @@ local
 do
 	-- Génération du code pour une boucle tant que.
 	code := "";
-	-- On vérifie que le type dans la conditionnelle est bien un entier (en l'absence de booléens)
+	-- On vérifie que le type dans la conditionnelle est bien un booléen (prec. un entier)
 	match E^type
-	with IntegerType then
+	with BooleanType then
 		-- Si c'est le cas, on génère le code
     code := INST^machine.generateWhile(E^code, E^reg, BLOC^code);
 	else
