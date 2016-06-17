@@ -90,7 +90,7 @@ syn code : String for
 				 ;
 
 inh codeH : String for
-				 ES, ESX
+				 ES, ESX, FX
 				 ;
 
 syn op : Integer for -- Operator for
@@ -193,9 +193,9 @@ syn ci : ConstructorInfo for
          BASE
 				 ;
 
-inh estKlass : Boolean for
+inh regH : Register for
          FX
-         ;
+				 ;
 
 -- Ces attributs permettent de recuperer les instructions du code ASM inline       
 syn code_asm : STRING for AASM;
@@ -512,6 +512,7 @@ do
 				--write("(5) Add variable \\o/\n");
 				  -- Si ce n'est pas le cas, on peut add la variable à la tvar.
           tv.insert(ident^txt, TYPE^type, ENTITE^ni);
+			  	write("on est actuellement en train d'ajouter " + ident^txt + " dans le ns " + ENTITE^ni.name() + "\n");					
 					code := ENTITE^machine.generateComment("(5) Variable declaration:", "") + code ;
 				end
 	   else
@@ -939,7 +940,6 @@ STYPE-> char #attSTYPE ;
 #attSTYPE {
 local
 do
-  --write("(60) I has recognizzz char's type.\n");
   STYPE^type  := new CharacterType();
 end
 }
@@ -1189,7 +1189,6 @@ INST -> #attTYPE TYPE ident #attAFFX AFFX pv #attINST;
 #attTYPE {
 local
 do
---write("(28) Has you something to declare?\n");
 --write("Regle (28)\n");
   TYPE^talias := INST^talias;
 	TYPE^tklass := INST^tklass;
@@ -2769,8 +2768,8 @@ do
   FX^listeNi := F^listeNi;
 	FX^indentation := F^indentation + 1 ; 
   FX^klass := F^klass;
-  -- On décide qu'il n'y a pas de sens à mettre this entre parenthèses.
-  FX^estKlass := false;
+	FX^regH := null; -- A modifier si on veut autoriser une EP à etre une poignée.
+  FX^codeH := "";
 end
 }
 
@@ -2964,17 +2963,20 @@ local
   listeDepl : DisplacementList ;
 	type : Type;
   info : SymbolInfo; 
-  estKlass : boolean;
+	code : String;
+	rw : RegisterWrapper;
+  reg : Register;
 do
- 
 --write("Regle (71) : " + ident^txt + ", " + F^ni.name() + "\n");
   --Initialisations.
+	code := "";
   listeDepl := new DisplacementList();
 	estFun := false;
 	type := null;
 	varInfo := null;
 	info := null;
-	estKlass := false;
+	reg := null;
+	rw := new RegisterWrapper();
 --write("(71) VARTABLE :\n" + F^tvar);
 
 	-- Recherche dans la TVar (globalement).
@@ -3001,12 +3003,15 @@ do
 		with VariableInfo then
 		  varInfo := info;
 	    type := varInfo.type();
-		  -- On rajoute toujours le déplacement de a à la liste.
-		  -- Le test pour savoir si a est bien un struct se fait dans les RP ,de FX.
-		  listeDepl.add(varInfo.displacement(), false);
-		  match type
+			match type
 			with Klass then
-			  estKlass := true;
+			  -- Si on a une poignée, on génère le code pour y accéder, de manière à faire passer le reg.
+			  code := F^machine.generateLoadFromStack(type.thisDisplacement(F^machine), rw);
+			  reg := rw.get();
+			else
+		    -- On rajoute toujours le déplacement de a à la liste.
+		    -- Le test pour savoir si a est bien un struct se fait dans les RP ,de FX.
+		    listeDepl.add(varInfo.displacement(), false);
 			end
 		else
 		  error(SHOULD_NOT_HAPPEN_SI_NOT_VI);
@@ -3026,7 +3031,8 @@ do
   FX^listeNi := F^listeNi;
 	FX^indentation := F^indentation + 1 ; 
   FX^klass := F^klass;
-  FX^estKlass := estKlass; 
+	FX^regH := reg;
+	FX^codeH := code;
 --write("Regle 71 : au milieu à peu près\n");
 end
 }
@@ -3108,11 +3114,11 @@ do
   if (FX^estFun) then
 	  error(FUNCTION_CALL_WITHOUT_PARS);
 	end
-  FX^code := "";
+  FX^code := FX^codeH;
   FX^type := FX^typeH;
   FX^listeDeplS := FX^listeDepl;
 	FX^estVar := true;
-	FX^reg := null;
+	FX^reg := FX^regH;
 --write("Regle (72) (FX -> /\\)\n");
 end
 }
@@ -3129,14 +3135,17 @@ local
 	type2 : Type;
 	listeDepl : DisplacementList;
 	fields : List<String>;
+	estFun : boolean;
+  att : AttributeInfo;
 do
   -- On vérifie qu'on était pas dans un appel de fonction.
-	if FX^estFun then
+	if (FX^estFun) then
 	  error(FUNCTION_CALL_WITHOUT_PARS);
 	end
   listeDepl := FX^listeDepl;
 	type := FX^typeH;
-  -- On vérifie que ce qui est à gauche de cet appel est bien un struct.
+	estFun := false;
+  -- On regarde ce qui est à gauche de cet appel, soit un struct, soit une poignée.
 	type2 := FX^typeH;
   match type2
 	with StructType then  
@@ -3151,14 +3160,31 @@ do
 			listeDepl.add(typeStruct.fieldDisplacement(ident^txt),false);
 			-- On récupère le type.
    		type := typeStruct.find(ident^txt);
+			estFun := false;
 	  end
+	with Klass then
+	  --On a une poignée à gauche. On regarde si ident représente un attribut ou si c'est un appel de méthode.
+    att := type2.lookupAttribute(ident^txt);
+		if (att = null) then
+      -- Ce n'est pas un attribut : c'est forcément un appel de méthode.
+		  -- La verification se fera plus tard.
+			estFun := true;
+			listeDepl.add(0, false);
+			type := type;
+		else
+		  -- On a un attribut.
+			-- TODO vérifier l'accès (si on est dans une méthode : tous ok, sinon : public).
+			-- On ajoute le déplacement et on récupère le type.
+			listeDepl.add(att.displacement(), false);
+			type := att.type();
+			estFun := false;
+  	end
 	else
 		-- Sinon : erreur !
-	  error(NOT_STRUCT);
+	  error(NOT_STRUCT_OR_KLASS);
   end
 	FX1^listeDepl := listeDepl;
-	FX1^estFun := false;
-	--FX1^funInfoH := null;
+	FX1^estFun := estFun;
 	FX1^typeH := type;
   FX1^nom := ident^txt;	
 	FX1^tvar := FX^tvar;
@@ -3168,6 +3194,7 @@ do
 	FX1^ni := FX^ni;
   FX1^indentation := FX^indentation + 1 ; 
   FX1^klass := FX^klass;
+	FX1^codeH := FX^codeH;
 end
 }
 
@@ -3201,7 +3228,7 @@ local
 	fields : List<String>;
 do
   -- On vérifie qu'on était pas dans un appel de fonction.
-	if FX^estFun then
+	if (FX^estFun) then
 	  error(FUNCTION_CALL_WITHOUT_PARS);
 	end
   type := FX^typeH;
@@ -3246,6 +3273,7 @@ do
   FX1^listeNi := FX^listeNi;
 	FX1^indentation := FX^indentation + 1 ; 
   FX1^klass := FX^klass;
+  FX1^codeH := FX^codeH;
 end
 }
 
@@ -3267,16 +3295,12 @@ end
 -- La verification des paramètres ainsi que la generation des pushs
 -- se font dans ES.
 FX -> #attES paro ES parf #attFX1 FX #attFX;
-global
-	code : String;  
 
 -- Attributs inh de ES.
 -- Verification que l'appelant est une fonction.
 #attES {
 local
 do
-	code := "";
-
 --write("Regle (75)\n");
   if !(FX^estFun) then
 	  error(NOT_A_FUN);
@@ -3291,6 +3315,7 @@ do
   ES^listeNi := FX^listeNi;
 	ES^indentation := FX^indentation + 1 ; 
   ES^klass := FX^klass;
+
 end
 }
 
@@ -3299,41 +3324,90 @@ end
 #attFX1 {
 local
 	type : Type;
+	th : Type;
 	si : SymbolInfo;
+  code : String;
+  listeDepl : DisplacementList;
+	rv : RegisterWrapper;
+	ra : RegisterWrapper;
 	reg : Register;
+	regAdr : Register;
+	regH : Register;
 do
 	reg := null;
 	type := null;
-
-  if (FX^nom = "") then
+	rv := new RegisterWrapper();
+	ra := new RegisterWrapper();
+  code := FX^codeH;
+  listeDepl := FX^listeDepl;
+	regH := FX^regH;
+  -- On va générer le function/method pour ça, on a besoin de générer l'addresse.
+  if (regH = null) then 
+    code := FX^machine.generateComment("(75) Make address before function call:", "\t\t") 
+		      + FX^machine.generateMakeAddress(listeDepl, rv, ra)
+					+ FX^machine.generateComment("(75) End of make address.", "\t\t");
+	else 
+	  code := FX^machine.generateComment("(75) Make address before function call:", "\t\t") 
+		      + FX^machine.generateMakeAddress(listeDepl, regH, rv, ra)
+					+ FX^machine.generateComment("(75) End of make address.", "\t\t");
+  end
+	reg := rv.get();
+	regAdr := ra.get();
+  listeDepl := new DisplacementList();
+	if (FX^nom = "") then
 	  error(NO_PAR_CALL);
-	else
-	  -- On cherche avec la fonction qui ne prend pas de booléen, mais une liste de types pour les params.
-    si := FX^tfun.lookup(FX^nom, FX^ni, FX^listeNi, ES^typesParamsS);
-	--write("(75) " + si + "\n");
-	  if (si = null) then
-	    error(NO_FUN_WITH_SUCH_PARS, FX^nom);
-	  end
-		match si
-		with FunctionInfo then
-	  	code := FX^machine.generateComment("(75) Function call, parameters pushes:", "\t\t")
-			      + ES^code
-						+ FX^machine.generateComment("(75) End of pushes. Generate function call:", "\t\t")
-						+ FX^machine.generateFunctionCall(si)
-						+ FX^machine.generateComment("(75) End of function call.", "\t\t");
-			type := si.returnType();
-			reg := si.register();
-		--write("(75) fi : " + si + "\n");
-  	else 
-	  	error(SHOULD_NOT_HAPPEN_SI_NOT_FI);
+	else  
+	  if (FX^typeH = null) then
+		  -- On est dans un cas d'appelle de fonction sans rien avant.
+		  -- On cherche avec la fonction qui ne prend pas de booléen, mais une liste de types pour les params.
+      si := FX^tfun.lookup(FX^nom, FX^ni, FX^listeNi, ES^typesParamsS);
+	    --write("(75) " + si + "\n");
+		  if (si = null) then
+		    error(NO_FUN_WITH_SUCH_PARS, FX^nom);
+		  end
+			match si
+			with FunctionInfo then
+		  	code := code
+				      + FX^machine.generateComment("(75) Function call, parameters pushes:", "\t\t")
+				      + ES^code
+							+ FX^machine.generateComment("(75) End of pushes. Generate function call:", "\t\t")
+							+ FX^machine.generateFunctionCall(si)
+							+ FX^machine.generateComment("(75) End of function call.", "\t\t");
+				type := si.returnType();
+				reg := si.register();
+			--write("(75) fi : " + si + "\n");
+	  	else 
+		  	error(SHOULD_NOT_HAPPEN_SI_NOT_FI);
+			end
+		else
+		  th := FX^typeH;
+		  match th
+		  with Klass then
+        si := th.lookupMethod(FX^nom, ES^typesParamsS);
+			  match si
+			  with MethodInfo then
+			    code := FX^machine.generateComment("(75) Method call, parameters pushes:", "\t\t")
+				        + ES^code
+					    	+ FX^machine.generateComment("(75) End of pushes. Generate method call:", "\t\t")
+						    + FX^machine.generateMethodCall(si, reg)
+						    + FX^machine.generateComment("(75) End of method call.", "\t\t");
+				  type := si.returnType();
+				  reg := si.register();
+			  else
+          error(SHOULD_NOT_HAPPEN_SI_NOT_MI);
+			  end
+			else
+		    error(TYPE_NOT_KLASS_NOR_NULL_IN_CALL);
+	    end
 		end
 	end
 
-  -- La liste des deplacements n'a pas été modifié par le parcours des arguments.
-  FX1^listeDepl := FX^listeDepl;
+-- TODO faut-il faire qqchose de regAdr 
+
+  -- La liste des depl a été réinitialisée comme on a 'consommé' les déplacements antèrieurs à l'appel.
+  FX1^listeDepl := listeDepl;
 	-- L'appel de fonction n'est pas une fonction.
 	FX1^estFun := false; 
-	--FX1^funInfoH := null;
 	-- Le type de l'appel est le type de retour de la fonction.
 	FX1^typeH := type;
 	-- Pas de nom pour FX ici.
@@ -3342,17 +3416,12 @@ do
 	FX1^tfun := FX^tfun;
 	FX1^talias := FX^talias;
 	FX1^machine := FX^machine;
-	FX^reg := reg;
 	FX1^ni := FX^ni;
 	FX1^listeNi := FX^listeNi;
---write("(75) Code: " + code + "\n");
---	if reg = null then
-	--write("(75) Reg: NULL\n");
---	else
-	--write("(75) Reg: " + reg + "\n");
---	end
   FX1^indentation := FX^indentation + 1 ; 
   FX1^klass := FX^klass;
+	FX1^codeH := code; 
+	FX1^regH := reg;
 end
 }
 
@@ -3362,11 +3431,11 @@ end
 #attFX {
 local
 do
-  code := code + FX1^code;	
-	FX^code := code;
+	FX^code := FX1^code;
 	FX^type := FX1^type;
 	FX^listeDeplS := FX1^listeDeplS;
 	FX^estVar := false;
+  FX^reg := FX1^reg;
 end
 }
 
@@ -3586,6 +3655,7 @@ ENTITE -> namespace identc #attENTITES aco ENTITES acf #attENTITE;
 #attENTITES {
 local
 	tns : NamespaceTable;
+	ni : NamespaceInfo;
 do
   tns := ENTITE^tns;
   -- Si identc est une clef dans la TDSKlass, erreur.
@@ -3600,7 +3670,9 @@ do
 	if (ENTITE^talias.exists(identc^txt, ENTITE^ni, ENTITE^listeNi)) then
 	  error(IDENT_TAKEN, identc^txt);
 	end
-	tns.add(new NamespaceInfo(identc^txt, ENTITE^ni));
+	ni := new NamespaceInfo(identc^txt, ENTITE^ni);
+	tns.add(ni);
+	ENTITES^ni := ni;
   ENTITES^machine := ENTITE^machine;
 	ENTITES^tvar := ENTITE^tvar;
 	ENTITES^tfun := ENTITE^tfun;
@@ -4214,17 +4286,19 @@ F -> this #attFX FX #attF ;
 local
   listeDepl : DisplacementList ;
   info : SymbolInfo; 
+	rw : RegisterWrapper;
+  code : String;
 do
   if (F^klass = null) then
 	  error(NOT_IN_A_CLASS);
 	end
 --Initialisations.
-  listeDepl := new DisplacementList();
+  rw := new RegisterWrapper();
+	listeDepl := new DisplacementList();
 	info := null;
 	listeDepl.add(F^klass.thisDisplacement(F^machine), false);
 	FX^listeDepl := listeDepl;
 	FX^estFun := false;
-	FX^estKlass := true;
 	FX^typeH := F^klass;
 	FX^nom := F^klass.name();
 	FX^tvar := F^tvar;
@@ -4235,6 +4309,9 @@ do
 	FX^ni := F^ni;
   FX^indentation := F^indentation + 1 ; 
   FX^klass := F^klass;
+  code := F^machine.generateLoadFromStack(F^klass.thisDisplacement(F^machine), rw);
+  FX^regH := rw.get();
+	FX^codeH := code;
 end
 }
 
@@ -4242,18 +4319,17 @@ end
 #attF {
 local
   listeDepl : DisplacementList; 
-	code : String;
-	rv : RegisterWrapper;
 	ra : RegisterWrapper;
+	rv : RegisterWrapper;
 	reg : Register; 
 	regAdr : Register;
 	estVar : boolean;
+  code : String;
 do
   listeDepl := FX^listeDeplS;
 	rv := new RegisterWrapper();
 	ra := new RegisterWrapper();
-	code := FX^code; 
-	code := code
+	code := FX^code 
 	      + F^machine.generateComment("(104) Make address:", "\t\t") 
 	      + F^machine.generateMakeAddress(listeDepl, FX^reg, rv, ra)
 				+ F^machine.generateComment("(104) End make address.", "\t\t");
@@ -4302,7 +4378,6 @@ do
 	FX^listeDepl := listeDepl;
 	-- On a un appel de fonction.
 	FX^estFun := true;
-	FX^estKlass := true;
 	FX^klass := kl;
 	FX^typeH := kl;
 	FX^nom := kl.name();
@@ -4315,6 +4390,8 @@ do
   FX^listeNi := F^listeNi;
 	FX^indentation := F^indentation + 1 ; 
   FX^klass := F^klass;
+  FX^regH := null; --TODO
+  FX^codeH := "";
 end
 }
 
@@ -4332,9 +4409,9 @@ do
   rv := new RegisterWrapper();
 	ra := new RegisterWrapper();
 	code := FX^code
-		    + F^machine.generateComment("(71) Make address:", "\t\t")
+		    + F^machine.generateComment("(105) Make address:", "\t\t")
 		    + F^machine.generateMakeAddress(listeDepl, FX^reg, rv, ra)
-				+ F^machine.generateComment("(71) End make address.", "\t\t"); 
+				+ F^machine.generateComment("(105) End make address.", "\t\t"); 
 	reg := rv.get();
 	regAdr := ra.get();
 	F^vi := null;
