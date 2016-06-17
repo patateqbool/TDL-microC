@@ -14,7 +14,7 @@ int test(int a, int b) {
 int main() {
 	int a = 0;
 	int b;
-	char c;
+	Crabe c;
 
 	b = a*2;
 	c = test(5, a);
