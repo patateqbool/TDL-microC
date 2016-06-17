@@ -6,9 +6,9 @@ syn code_asm	: STRING for  ASM, INSTS, INST, PAR, SHIFTOP, SHIFTTYPE, ADDR, ADDR
 inh namespace_asm : NamespaceInfo for ASM, INSTS, INST, PAR, PARS, PARSX, ADDR, VARIABLE;
 inh listeni_asm : NamespaceInfoList for ASM, INSTS, INST, PAR, PARS, PARSX, ADDR, VARIABLE;
 inh tds_asm		: VariableTable for ASM, INSTS, INST, PAR, PARS, PARSX, ADDR, VARIABLE;
-inh mach_asm	:	AbstractMachine for ASM, INSTS, INST, PAR, PARS, PARSX, ADDR, ADDRSEC, REGISTER, NUMBER, VARIABLE, REGORNUM;
+inh mach_asm	:	AbstractMachine for ASM, INSTS, INST, PAR, PARS, PARSX, ADDR, ADDRSEC, REGISTER, NUMBER, VARIABLE, REGORNUM, REGLIST, REGLISTX;
 inh parlist		: List<Object> for PAR, PARS, PARSX;
-inh reglist   : List<Register> for REGLIST, REGLISTX;
+inh reglist   : List<String> for REGLIST, REGLISTX;
 
 -- Separators
 space	spce		is	"[\t ]+";
@@ -145,10 +145,19 @@ PAR -> SHIFTOP REGORNUM #gen ;
     end
 }
 
-PAR -> ocbrack REGLIST ccbrack #gen ;
+PAR -> ocbrack #init REGLIST ccbrack #gen ;
+global
+    reglist : List<String>;
+#init {
+    do
+        reglist := new ArrayList<String>();
+        REGLIST^reglist := reglist;
+    end
+}
+
 #gen {
     do
-        PAR^code_asm := PAR^mach_asm.generateRegisterList(REGLIST^reglist);
+        PAR^code_asm := PAR^mach_asm.generateRegisterList(reglist);
     end
 }
 
@@ -156,6 +165,23 @@ PAR -> ident #gen ;
 #gen {
     do
         PAR^code_asm := ident^txt;
+    end
+}
+
+-- Register list
+REGLIST -> REGISTER REGLISTX #gen ;
+#gen {
+    do
+        REGLIST^reglist.add(REGISTER^code_asm);
+    end
+}
+
+REGLISTX -> ;
+
+REGLISTX -> coma REGISTER REGLISTX #gen ;
+#gen {
+    do
+        REGLISTX^reglist.add(REGISTER^code_asm);
     end
 }
 

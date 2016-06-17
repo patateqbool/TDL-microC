@@ -1011,7 +1011,24 @@ public class ARMEngine extends AbstractMachine {
         ListIterator<Register> rli = reglist.listIterator();
         code += rli.next();
         while (rli.hasNext()) {
-            code += ", " + rli.next();
+            code += ", " + generateRegister(rli.next());
+        }
+
+        return code + "}";
+    }
+
+    /**
+     * Generate a register list
+     * @param regl the register list
+     * @return the generated code
+     */
+    public String generateRegisterList(List<String> reglist) throws MCSException {
+        String code = "{";
+
+        ListIterator<String> rli = reglist.listIterator();
+        code += rli.next();
+        while (rli.hasNext()) {
+            code += ", " + generateRegister(rli.next());
         }
 
         return code + "}";

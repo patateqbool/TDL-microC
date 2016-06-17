@@ -362,6 +362,13 @@ public interface IMachine {
     String generateRegisterList(RegisterList reglist) throws MCSException;
 
     /**
+     * Generate a register list
+     * @param regl the register list
+     * @return the generated code
+     */
+    String generateRegisterList(List<String> reglist) throws MCSException;
+
+    /**
      * Generate a direct access to a macro
      * @param macro
      * @return the generated code
