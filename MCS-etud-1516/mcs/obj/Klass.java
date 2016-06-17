@@ -34,6 +34,19 @@ public class Klass extends CompositeType {
     public int value() {
       return this.value;
     }
+
+    static public AccessSpecifier fromValue(int v) {
+        switch (v) {
+            case 1:
+                return APublic;
+            case 2:
+                return APrivate;
+            case 3:
+                return AProtected;
+            default:
+                return AHidden;
+        }
+    }
   };
 
   private static int nextID = 0;
@@ -48,8 +61,14 @@ public class Klass extends CompositeType {
   private Map<String,Integer> daughters;
   private NamespaceInfo namespace;
 	private AccessSpecifier accessspec;
- 
-  // public Klass(String name, List<Klass> parents) {
+
+  /**
+   * Constructor for building with an integer (used in EGG)
+   */
+  public Klass(int as, String name, Klass parent, NamespaceInfo ns) {
+      this(AccessSpecifier.fromValue(as), name, parent, ns);
+  }
+
   /**
    * Constructor
    * Build a class from its name and its parent; it also set the
@@ -97,6 +116,13 @@ public class Klass extends CompositeType {
         }
       }
     }
+  }
+
+  /**
+   * Utility function for transforming an int to an enum
+   */
+  public AccessSpecifier intToEnum(int n) {
+      return AccessSpecifier.fromValue(n);
   }
 
   /**

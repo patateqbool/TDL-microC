@@ -837,8 +837,9 @@ public class ARMEngine extends AbstractMachine {
         codeinst +=
             generateAllocate(k, raddr, null);
 
+        // this is the last argument, we push it
         codeinst +=
-            generateInstruction("PUSH", info.register());
+            generateInstruction("PUSH", raddr);
 
         info.register().setStatus(Register.Status.Loaded);
 
