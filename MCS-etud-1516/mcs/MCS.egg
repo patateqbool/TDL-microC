@@ -272,6 +272,10 @@ compil AASM;
 PROGRAMME -> #attENTITES ENTITES #attPROGRAMME;
 global
    machine : AbstractMachine;
+   ni : NamespaceInfo;
+	 listeNi : NamespaceInfoList;
+   tfun : FunctionTable;
+
 -- Transmission de la machine cible  (choisie par l'option -m au lancement) 
 #attENTITES {
 local
@@ -283,13 +287,16 @@ do
     ENTITES^machine := machine;
   end
   ENTITES^tvar := new VariableTable();
-  ENTITES^tfun := new FunctionTable();
+  tfun := new FunctionTable();
+	ENTITES^tfun := tfun;
   ENTITES^talias := new AliasTable();
 	ENTITES^tklass := new KlassTable();
 	ENTITES^tns := new NamespaceTable();
 	ENTITES^machine := machine;
-	ENTITES^ni := new DefaultNamespaceInfo();
-  ENTITES^listeNi := new NamespaceInfoList();
+	ni := new DefaultNamespaceInfo();
+	ENTITES^ni := ni;
+	listeNi := new NamespaceInfoList();
+  ENTITES^listeNi := listeNi;
 	ENTITES^indentation := 0;
   ENTITES^klass := null;
 end
@@ -297,9 +304,25 @@ end
 -- Ecrit le code dans un fichier
 #attPROGRAMME {
 local
+  fi : SymbolInfo;
+  t : Type;
 do
-   machine.writeCode(PROGRAMME^source.getFileName(), ENTITES^code); 
-   write("\nEtat final des registres (L est une anomalie) :\n" + machine.logRegisters());
+  fi := tfun.lookup("main", ni, listeNi, new ArrayList<Type>());
+	if (fi = null) then
+    error(NO_MAIN);
+	else
+	  match fi 
+		with FunctionInfo then
+		  t := fi.returnType();
+	    match t
+		  with IntegerType then
+		  else
+		    error(MAIN_NOT_INT);
+		  end
+		end
+	end
+	machine.writeCode(PROGRAMME^source.getFileName(), ENTITES^code); 
+  write("\nEtat final des registres (L est une anomalie) :\n" + machine.logRegisters());
 end
 }
 
