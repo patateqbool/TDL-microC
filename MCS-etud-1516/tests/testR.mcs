@@ -3,3 +3,8 @@ int a;
 void f(){
   a = ( a = ( a = ( a = ( a = ( a = ( a = ( a = ( a = ( a = ( a = ( a = 2)))))))))));
 }
+
+int main() {
+	f();
+	return 0;
+}

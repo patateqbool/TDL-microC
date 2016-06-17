@@ -16,10 +16,11 @@ asm {
 _main:
 }
 
-void main() {
+int main() {
     asm {
         MOV r0, sb
     }
+		return 0;
 }
 
 
