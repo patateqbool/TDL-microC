@@ -939,7 +939,6 @@ STYPE-> char #attSTYPE ;
 #attSTYPE {
 local
 do
-  --write("(60) I has recognizzz char's type.\n");
   STYPE^type  := new CharacterType();
 end
 }
@@ -1189,7 +1188,6 @@ INST -> #attTYPE TYPE ident #attAFFX AFFX pv #attINST;
 #attTYPE {
 local
 do
---write("(28) Has you something to declare?\n");
 --write("Regle (28)\n");
   TYPE^talias := INST^talias;
 	TYPE^tklass := INST^tklass;
